@@ -14,6 +14,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getToneInstruction, getTonePreferences, ToneStyle } from './tonePreferencesService';
 import { getContextForClaude } from './userContextService';
+import { getLifeContextForClaude } from './lifeContextService';
 
 // Storage keys
 const API_KEY_STORAGE = 'moodling_claude_api_key';
@@ -413,10 +414,14 @@ export async function sendMessage(
   const toneInstruction = getToneInstruction(tonePrefs);
 
   // Build context and prompt
-  // Combine conversation context with rich user context (Unit 18B)
+  // Combine: rich user context (Unit 18B) + lifetime context + conversation context
   const conversationContext = buildConversationContext(context);
   const richContext = await getContextForClaude();
-  const fullContext = richContext + '\n\n' + conversationContext;
+  const lifeContext = await getLifeContextForClaude();
+
+  // Assemble full context: lifetime overview first, then recent context, then current conversation
+  const contextParts = [lifeContext, richContext, conversationContext].filter(Boolean);
+  const fullContext = contextParts.join('\n\n');
   const systemPrompt = buildSystemPrompt(fullContext, toneInstruction);
   const messages = buildMessages(message, context.recentMessages);
 

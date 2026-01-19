@@ -202,15 +202,45 @@ function extractRecentTheme(entries: JournalEntry[]): string | undefined {
 const SIGNIFICANT_KEYWORDS = [
   // Relationships
   'girlfriend', 'boyfriend', 'partner', 'wife', 'husband', 'married', 'engaged', 'breakup', 'divorce',
+  'dating', 'relationship', 'proposal', 'love',
   // Family
   'mom', 'dad', 'mother', 'father', 'brother', 'sister', 'grandma', 'grandpa', 'family',
-  // Life events
-  'died', 'death', 'funeral', 'passed away', 'lost', 'cancer', 'hospital', 'accident', 'surgery',
-  'doctor', 'diagnosed', 'sick', 'illness', 'pregnant', 'baby', 'born',
-  // Work/School
+  'son', 'daughter', 'kids', 'children', 'parents', 'aunt', 'uncle', 'cousin',
+  // Life events - loss/grief
+  'died', 'death', 'funeral', 'passed away', 'lost', 'grief', 'grieving', 'mourning', 'goodbye',
+  // Health/Medical
+  'cancer', 'hospital', 'accident', 'surgery', 'doctor', 'diagnosed', 'sick', 'illness',
+  'pregnant', 'baby', 'born', 'miscarriage', 'emergency', 'ER', 'ambulance', 'chronic',
+  // Work/School/Career
   'fired', 'quit', 'job', 'promotion', 'interview', 'graduated', 'college', 'school',
+  'degree', 'thesis', 'exam', 'finals', 'scholarship', 'raise', 'salary', 'unemployed', 'hired',
   // Major events
-  'moved', 'moving', 'new house', 'apartment', 'car', 'wedding', 'birthday', 'anniversary',
+  'moved', 'moving', 'new house', 'apartment', 'car accident', 'wedding', 'birthday', 'anniversary',
+  // Mental health journey
+  'therapy', 'therapist', 'counselor', 'psychiatrist', 'medication', 'antidepressant',
+  'anxiety', 'depression', 'panic attack', 'breakdown', 'mental health',
+  // Pets
+  'dog', 'cat', 'pet', 'puppy', 'kitten', 'adopted', 'rescue', 'vet',
+  // Finances
+  'debt', 'loan', 'mortgage', 'bankruptcy', 'savings', 'investment',
+  // Friendships
+  'best friend', 'friendship', 'falling out', 'reconnected', 'betrayed', 'ghosted',
+  // Personal growth/Achievements
+  'accomplished', 'achieved', 'milestone', 'first time', 'personal best', 'goal', 'finally',
+  // Spiritual/Religious
+  'church', 'temple', 'meditation', 'spiritual', 'faith', 'prayer', 'baptism',
+  // Legal
+  'lawyer', 'court', 'custody', 'lawsuit', 'arrested',
+  // Addiction/Recovery
+  'sober', 'sobriety', 'relapse', 'clean', 'addiction', 'AA', 'rehab', 'recovery',
+  // Identity
+  'coming out', 'transition', 'identity',
+  // Trauma (handle sensitively)
+  'assault', 'abuse', 'trauma',
+  // Travel/Living
+  'vacation', 'trip', 'travel', 'new city', 'hometown',
+  // Celebrations
+  'celebration', 'reunion', 'party', 'holiday',
 ];
 
 /**
