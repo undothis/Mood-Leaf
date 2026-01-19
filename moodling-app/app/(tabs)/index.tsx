@@ -52,13 +52,7 @@ export default function JournalScreen() {
   const characterCount = entryText.length;
   const canSave = entryText.trim().length > 0 && !isSaving;
 
-  // Load entries on mount and when screen comes into focus
-  useFocusEffect(
-    useCallback(() => {
-      loadEntries();
-    }, [loadEntries])
-  );
-
+  // Define loadEntries first
   const loadEntries = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -70,6 +64,13 @@ export default function JournalScreen() {
       setIsLoading(false);
     }
   }, []);
+
+  // Load entries on mount and when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadEntries();
+    }, [loadEntries])
+  );
 
   const handleSave = async () => {
     if (!canSave) return;
