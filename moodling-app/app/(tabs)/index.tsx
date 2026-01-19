@@ -17,6 +17,14 @@ import { JournalEntry, createJournalEntry } from '@/types/JournalEntry';
 import { saveEntry, getAllEntries } from '@/services/journalStorage';
 import { analyzeSentiment } from '@/services/sentimentAnalysis';
 import { voiceRecording, isVoiceRecordingSupported, VoiceRecordingState } from '@/services/voiceRecording';
+import {
+  recordEntry,
+  getAntiDependencyMessage,
+  getAffirmationMessage,
+  AntiDependencyMessage,
+} from '@/services/usageTrackingService';
+import { generateSimpleReflection } from '@/services/reflectionService';
+import { MoodCategory } from '@/services/sentimentAnalysis';
 
 /**
  * Journal Tab - Primary Entry Point
@@ -59,9 +67,28 @@ export default function JournalScreen() {
   const [interimTranscript, setInterimTranscript] = useState('');
   const [voiceError, setVoiceError] = useState<string | null>(null);
 
+  // Anti-dependency state (Unit 13)
+  const [antiDepMessage, setAntiDepMessage] = useState<AntiDependencyMessage | null>(null);
+  const [showAffirmation, setShowAffirmation] = useState(false);
+  const [affirmationText, setAffirmationText] = useState('');
+
+  // Compassionate reflection state (Unit 15)
+  const [savedReflection, setSavedReflection] = useState<string>('');
+
   // Check voice support on mount
   useEffect(() => {
     setVoiceSupported(isVoiceRecordingSupported());
+  }, []);
+
+  // Load anti-dependency message on mount (Unit 13)
+  useEffect(() => {
+    const loadMessage = async () => {
+      const message = await getAntiDependencyMessage();
+      if (message.show) {
+        setAntiDepMessage(message);
+      }
+    };
+    loadMessage();
   }, []);
 
   const characterCount = entryText.length;
@@ -103,13 +130,32 @@ export default function JournalScreen() {
       });
       await saveEntry(newEntry);
 
+      // Record entry for usage tracking (Unit 13)
+      await recordEntry();
+
       // Update local state
       setEntries((prev) => [newEntry, ...prev]);
       setEntryText('');
       setJustSaved(true);
 
-      // Clear "just saved" feedback after 3 seconds
-      setTimeout(() => setJustSaved(false), 3000);
+      // Generate compassionate reflection (Unit 15)
+      const reflection = generateSimpleReflection(sentimentResult.mood as MoodCategory);
+      setSavedReflection(reflection);
+
+      // Occasionally show affirmation after saving (Unit 13)
+      // Check updated anti-dependency status
+      const updatedMessage = await getAntiDependencyMessage();
+      if (updatedMessage.type === 'gentle_nudge' && updatedMessage.show) {
+        setAffirmationText(getAffirmationMessage());
+        setShowAffirmation(true);
+        setTimeout(() => setShowAffirmation(false), 5000);
+      }
+
+      // Clear "just saved" feedback after 5 seconds (longer to read reflection)
+      setTimeout(() => {
+        setJustSaved(false);
+        setSavedReflection('');
+      }, 5000);
     } catch (error) {
       console.error('Failed to save entry:', error);
       // Could show error toast here
@@ -174,6 +220,26 @@ export default function JournalScreen() {
         contentContainerStyle={styles.contentContainer}
         keyboardShouldPersistTaps="handled"
       >
+        {/* Anti-Dependency Message (Unit 13) */}
+        {antiDepMessage && antiDepMessage.show && (
+          <View style={[styles.antiDepCard, { backgroundColor: colors.card }]}>
+            <Text style={[styles.antiDepTitle, { color: colors.text }]}>
+              {antiDepMessage.title}
+            </Text>
+            <Text style={[styles.antiDepBody, { color: colors.textSecondary }]}>
+              {antiDepMessage.body}
+            </Text>
+            <TouchableOpacity
+              style={styles.antiDepDismiss}
+              onPress={() => setAntiDepMessage(null)}
+            >
+              <Text style={[styles.antiDepDismissText, { color: colors.textMuted }]}>
+                Got it
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Header */}
         <View style={styles.welcomeContainer}>
           <Text style={[styles.greeting, { color: colors.text }]}>
@@ -277,11 +343,27 @@ export default function JournalScreen() {
           )}
         </TouchableOpacity>
 
-        {/* Just saved feedback */}
+        {/* Just saved feedback with reflection (Unit 15) */}
         {justSaved && (
-          <Text style={[styles.savedFeedback, { color: colors.success }]}>
-            Entry saved
-          </Text>
+          <View style={styles.savedFeedbackContainer}>
+            <Text style={[styles.savedFeedback, { color: colors.success }]}>
+              Entry saved
+            </Text>
+            {savedReflection && (
+              <Text style={[styles.savedReflection, { color: colors.textSecondary }]}>
+                {savedReflection}
+              </Text>
+            )}
+          </View>
+        )}
+
+        {/* Affirmation message after saving (Unit 13) */}
+        {showAffirmation && (
+          <View style={[styles.affirmationCard, { backgroundColor: colors.card }]}>
+            <Text style={[styles.affirmationText, { color: colors.textSecondary }]}>
+              {affirmationText}
+            </Text>
+          </View>
         )}
 
         {/* Loading indicator */}
@@ -410,11 +492,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  savedFeedbackContainer: {
+    marginTop: 12,
+    alignItems: 'center',
+  },
   savedFeedback: {
     textAlign: 'center',
-    marginTop: 12,
     fontSize: 14,
     fontWeight: '500',
+  },
+  savedReflection: {
+    marginTop: 8,
+    textAlign: 'center',
+    fontSize: 14,
+    fontStyle: 'italic',
+    lineHeight: 20,
+    paddingHorizontal: 20,
   },
   loadingContainer: {
     marginTop: 32,
@@ -510,5 +603,42 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 8,
     fontSize: 13,
+  },
+  // Anti-dependency styles (Unit 13)
+  antiDepCard: {
+    marginTop: 20,
+    marginBottom: 8,
+    padding: 16,
+    borderRadius: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: '#4CAF50',
+  },
+  antiDepTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  antiDepBody: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  antiDepDismiss: {
+    marginTop: 12,
+    alignSelf: 'flex-end',
+  },
+  antiDepDismissText: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  affirmationCard: {
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  affirmationText: {
+    fontSize: 14,
+    fontStyle: 'italic',
+    textAlign: 'center',
   },
 });
