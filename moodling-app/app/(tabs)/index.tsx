@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -11,6 +11,7 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Colors } from '@/constants/Colors';
 import { JournalEntry, createJournalEntry } from '@/types/JournalEntry';
 import { saveEntry, getAllEntries } from '@/services/journalStorage';
@@ -25,12 +26,13 @@ import { saveEntry, getAllEntries } from '@/services/journalStorage';
  *
  * Unit 1: Text editor, save button, timestamp, character count
  * Unit 2: Persistent storage (data survives restart)
- * Unit 3 will add: Entry history list
+ * Unit 3: Entry history list, detail view, delete
  */
 
 export default function JournalScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
+  const router = useRouter();
 
   // Entry text state
   const [entryText, setEntryText] = useState('');
@@ -50,10 +52,12 @@ export default function JournalScreen() {
   const characterCount = entryText.length;
   const canSave = entryText.trim().length > 0 && !isSaving;
 
-  // Load entries on mount
-  useEffect(() => {
-    loadEntries();
-  }, []);
+  // Load entries on mount and when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadEntries();
+    }, [loadEntries])
+  );
 
   const loadEntries = useCallback(async () => {
     try {
@@ -196,10 +200,23 @@ export default function JournalScreen() {
         {/* Latest Entry Preview */}
         {!isLoading && latestEntry && (
           <View style={styles.savedEntrySection}>
-            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
-              Your last entry
-            </Text>
-            <View style={[styles.savedEntryCard, { backgroundColor: colors.card }]}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
+                Your last entry
+              </Text>
+              {entries.length > 0 && (
+                <TouchableOpacity onPress={() => router.push('/history')}>
+                  <Text style={[styles.viewAllLink, { color: colors.tint }]}>
+                    View all →
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            <TouchableOpacity
+              style={[styles.savedEntryCard, { backgroundColor: colors.card }]}
+              onPress={() => router.push(`/entry/${latestEntry.id}`)}
+              activeOpacity={0.7}
+            >
               <Text
                 style={[styles.savedEntryText, { color: colors.text }]}
                 numberOfLines={4}
@@ -209,11 +226,13 @@ export default function JournalScreen() {
               <Text style={[styles.savedEntryTime, { color: colors.textMuted }]}>
                 {formatTimestamp(latestEntry.createdAt)}
               </Text>
-            </View>
+            </TouchableOpacity>
             {entries.length > 1 && (
-              <Text style={[styles.entryCount, { color: colors.textMuted }]}>
-                + {entries.length - 1} more {entries.length - 1 === 1 ? 'entry' : 'entries'}
-              </Text>
+              <TouchableOpacity onPress={() => router.push('/history')}>
+                <Text style={[styles.entryCount, { color: colors.textMuted }]}>
+                  + {entries.length - 1} more {entries.length - 1 === 1 ? 'entry' : 'entries'}
+                </Text>
+              </TouchableOpacity>
             )}
           </View>
         )}
@@ -306,10 +325,19 @@ const styles = StyleSheet.create({
   savedEntrySection: {
     marginTop: 32,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   sectionLabel: {
     fontSize: 14,
     fontWeight: '500',
-    marginBottom: 12,
+  },
+  viewAllLink: {
+    fontSize: 14,
+    fontWeight: '500',
   },
   savedEntryCard: {
     borderRadius: 12,
