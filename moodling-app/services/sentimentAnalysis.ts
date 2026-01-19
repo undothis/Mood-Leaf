@@ -64,7 +64,7 @@ const MOOD_EMOJIS: Record<MoodCategory, string> = {
   neutral: '😐',
   slightly_negative: '🌧️',
   negative: '😔',
-  very_negative: '💙', // Heart instead of very sad face - shows care, not judgment
+  very_negative: '😢', // Clearly expresses sadness without being clinical
 };
 
 /**
