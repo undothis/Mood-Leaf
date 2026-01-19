@@ -102,7 +102,10 @@ export function analyzeSentiment(text: string): SentimentResult {
 
   // Normalize score to -1 to +1 range
   // Using comparative score (per-word average) for more consistent results
-  const normalizedScore = Math.max(-1, Math.min(1, result.comparative * 2));
+  // Multiplier of 0.8 provides better calibration:
+  // - "tired and stressed" → slightly_negative or negative
+  // - "I feel horrible" → negative or very_negative
+  const normalizedScore = Math.max(-1, Math.min(1, result.comparative * 0.8));
 
   // Determine mood category based on normalized score
   const mood = getMoodCategory(normalizedScore);
@@ -121,14 +124,18 @@ export function analyzeSentiment(text: string): SentimentResult {
 
 /**
  * Get mood category from normalized score
+ *
+ * Thresholds calibrated for typical journal entries:
+ * - Short phrases with one or two negative words → slightly_negative or negative
+ * - Very strong language or multiple intense words → very_negative
  */
 function getMoodCategory(normalizedScore: number): MoodCategory {
-  if (normalizedScore >= 0.5) return 'very_positive';
-  if (normalizedScore >= 0.25) return 'positive';
-  if (normalizedScore >= 0.1) return 'slightly_positive';
-  if (normalizedScore >= -0.1) return 'neutral';
-  if (normalizedScore >= -0.25) return 'slightly_negative';
-  if (normalizedScore >= -0.5) return 'negative';
+  if (normalizedScore >= 0.4) return 'very_positive';
+  if (normalizedScore >= 0.2) return 'positive';
+  if (normalizedScore >= 0.05) return 'slightly_positive';
+  if (normalizedScore >= -0.05) return 'neutral';
+  if (normalizedScore >= -0.2) return 'slightly_negative';
+  if (normalizedScore >= -0.4) return 'negative';
   return 'very_negative';
 }
 
