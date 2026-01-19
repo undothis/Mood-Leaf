@@ -52,6 +52,13 @@ export interface UserContext {
   avgMoodScore?: number;
   entriesThisWeek?: number;
 
+  // Journal history
+  recentEntrySummaries: string[];
+  totalEntries: number;
+  avgEntriesPerWeek: number;
+  longestStreak: number;
+  commonMoods: string[];
+
   // Patterns discovered
   knownTriggers: string[];
   knownHelpers: string[];
@@ -168,7 +175,6 @@ function calculateVariance(scores: number[]): number {
 function extractRecentTheme(entries: JournalEntry[]): string | undefined {
   if (entries.length === 0) return undefined;
 
-  const recentEntry = entries[0];
   const moods = entries.slice(0, 3).map(e => e.sentiment?.mood).filter(Boolean) as MoodCategory[];
 
   // Simple theme based on mood
@@ -191,6 +197,75 @@ function extractRecentTheme(entries: JournalEntry[]): string | undefined {
 }
 
 /**
+ * Get brief summaries of recent journal entries (privacy-preserving)
+ * Only includes first 40 chars + mood, no personal details
+ */
+function getRecentEntrySummaries(entries: JournalEntry[], count: number = 3): string[] {
+  return entries.slice(0, count).map(entry => {
+    const preview = entry.text.slice(0, 40).trim();
+    const truncated = entry.text.length > 40 ? preview + '...' : preview;
+    const mood = entry.sentiment?.mood?.replace(/_/g, ' ') || 'reflective';
+    const date = new Date(entry.createdAt);
+    const daysAgo = Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24));
+    const timeDesc = daysAgo === 0 ? 'today' : daysAgo === 1 ? 'yesterday' : `${daysAgo} days ago`;
+    return `${timeDesc} (${mood}): "${truncated}"`;
+  });
+}
+
+/**
+ * Analyze journaling patterns over time
+ */
+function analyzeJournalingPatterns(entries: JournalEntry[]): {
+  totalEntries: number;
+  avgEntriesPerWeek: number;
+  longestStreak: number;
+  commonMoods: string[];
+} {
+  const totalEntries = entries.length;
+
+  if (totalEntries === 0) {
+    return { totalEntries: 0, avgEntriesPerWeek: 0, longestStreak: 0, commonMoods: [] };
+  }
+
+  // Calculate average entries per week
+  const oldestEntry = new Date(entries[entries.length - 1].createdAt);
+  const newestEntry = new Date(entries[0].createdAt);
+  const weeksBetween = Math.max(1, (newestEntry.getTime() - oldestEntry.getTime()) / (1000 * 60 * 60 * 24 * 7));
+  const avgEntriesPerWeek = Math.round((totalEntries / weeksBetween) * 10) / 10;
+
+  // Calculate longest streak (consecutive days)
+  let longestStreak = 1;
+  let currentStreak = 1;
+  const dates = entries.map(e => new Date(e.createdAt).toDateString());
+  for (let i = 1; i < dates.length; i++) {
+    const prevDate = new Date(dates[i - 1]);
+    const currDate = new Date(dates[i]);
+    const dayDiff = (prevDate.getTime() - currDate.getTime()) / (1000 * 60 * 60 * 24);
+    if (dayDiff <= 1.5) { // Account for same day or next day
+      currentStreak++;
+      longestStreak = Math.max(longestStreak, currentStreak);
+    } else {
+      currentStreak = 1;
+    }
+  }
+
+  // Find common moods
+  const moodCounts: Record<string, number> = {};
+  for (const entry of entries) {
+    if (entry.sentiment?.mood) {
+      const simplified = entry.sentiment.mood.replace('very_', '').replace('slightly_', '');
+      moodCounts[simplified] = (moodCounts[simplified] || 0) + 1;
+    }
+  }
+  const commonMoods = Object.entries(moodCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 2)
+    .map(([mood]) => mood);
+
+  return { totalEntries, avgEntriesPerWeek, longestStreak, commonMoods };
+}
+
+/**
  * Build comprehensive user context
  */
 export async function buildUserContext(): Promise<UserContext> {
@@ -208,6 +283,10 @@ export async function buildUserContext(): Promise<UserContext> {
 
   // Analyze mood trend
   const { trend, description, avgScore } = analyzeMoodTrend(recentEntries);
+
+  // Get journal history insights
+  const recentEntrySummaries = getRecentEntrySummaries(entries, 3);
+  const journalPatterns = analyzeJournalingPatterns(entries);
 
   // Patterns - will be populated as user tracks more data
   const triggers: string[] = [];
@@ -227,6 +306,13 @@ export async function buildUserContext(): Promise<UserContext> {
     recentMoodDescription: description,
     avgMoodScore: avgScore,
     entriesThisWeek: recentEntries.length,
+
+    // Journal history
+    recentEntrySummaries,
+    totalEntries: journalPatterns.totalEntries,
+    avgEntriesPerWeek: journalPatterns.avgEntriesPerWeek,
+    longestStreak: journalPatterns.longestStreak,
+    commonMoods: journalPatterns.commonMoods,
 
     // Patterns
     knownTriggers: triggers,
@@ -259,12 +345,38 @@ export function formatContextForPrompt(context: UserContext): string {
     parts.push(`Communication style: ${context.communicationStyle}`);
   }
 
+  // Journal history overview
+  if (context.totalEntries > 0) {
+    let historyDesc = `Journal history: ${context.totalEntries} total entries`;
+    if (context.avgEntriesPerWeek > 0) {
+      historyDesc += `, ~${context.avgEntriesPerWeek} per week`;
+    }
+    if (context.longestStreak > 1) {
+      historyDesc += `, longest streak: ${context.longestStreak} days`;
+    }
+    parts.push(historyDesc);
+  }
+
+  // Common moods
+  if (context.commonMoods.length > 0) {
+    parts.push(`Most common moods: ${context.commonMoods.join(', ')}`);
+  }
+
   // Current state
   if (context.recentMoodDescription) {
-    parts.push(`Recent mood: ${context.recentMoodDescription}`);
+    parts.push(`Recent mood trend: ${context.recentMoodDescription}`);
   }
-  if (context.entriesThisWeek !== undefined) {
-    parts.push(`Journaling frequency: ${context.entriesThisWeek} entries this week`);
+  if (context.entriesThisWeek !== undefined && context.entriesThisWeek > 0) {
+    parts.push(`This week: ${context.entriesThisWeek} entries`);
+  }
+
+  // Recent journal summaries (brief previews)
+  if (context.recentEntrySummaries.length > 0) {
+    parts.push('');
+    parts.push('Recent journal entries:');
+    for (const summary of context.recentEntrySummaries) {
+      parts.push(`  • ${summary}`);
+    }
   }
 
   // Patterns
@@ -281,14 +393,18 @@ export function formatContextForPrompt(context: UserContext): string {
   }
 
   // Preferences
+  const prefParts: string[] = [];
   if (context.prefersDirectness) {
-    parts.push('Prefers direct communication');
+    prefParts.push('direct communication');
   }
   if (context.dislikesPlatitudes) {
-    parts.push('Dislikes generic platitudes');
+    prefParts.push('dislikes platitudes');
   }
   if (context.respondsWellToHumor) {
-    parts.push('Responds well to light humor');
+    prefParts.push('responds to humor');
+  }
+  if (prefParts.length > 0) {
+    parts.push(`Communication preferences: ${prefParts.join(', ')}`);
   }
 
   // Social exposure
@@ -301,7 +417,7 @@ export function formatContextForPrompt(context: UserContext): string {
     parts.push(`Social comfort: ${levelDesc} (level ${level}/8)`);
   }
 
-  return parts.length === 0 ? 'No additional context available.' : parts.join('\n');
+  return parts.length === 0 ? 'New user - no history yet.' : parts.join('\n');
 }
 
 /**
