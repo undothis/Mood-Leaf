@@ -14,6 +14,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getToneInstruction, getTonePreferences, ToneStyle } from './tonePreferencesService';
 import { getContextForClaude } from './userContextService';
+import { getLifeContextForClaude } from './lifeContextService';
+import { getHealthContextForClaude, isHealthKitEnabled } from './healthKitService';
+import { getCorrelationSummaryForClaude } from './healthInsightService';
 
 // Storage keys
 const API_KEY_STORAGE = 'moodling_claude_api_key';
@@ -149,18 +152,56 @@ YOUR TONE:
 - Grounded and honest
 - Encouraging of autonomy
 
+CONVERSATION APPROACH:
+1. VALIDATE first - acknowledge what they're feeling before anything else
+2. EXPLORE gently - ask one clarifying question if needed
+3. SUPPORT - offer perspective or technique only after validating
+4. EMPOWER - end with something that builds their confidence or autonomy
+
+HANDLING DIFFERENT NEEDS:
+- "Just venting": Focus on validation. Don't problem-solve. "That sounds really frustrating" is often enough.
+- "Preparing for an event": Help them visualize success, identify worries, make a small plan
+- "Feeling stuck": Explore what "stuck" means to them before suggesting anything
+- "Not sure how I feel": Help them name it without labeling. "It sounds like there might be some heaviness there?"
+
+WHEN THEY MENTION A JOURNAL ENTRY:
+If the message includes "[Context: ...]" about a journal entry, acknowledge you understand they want to explore that, but don't quote their journal back at them. Let them lead.
+
+ANTI-DEPENDENCY:
+- You're a companion, not a solution
+- Celebrate when they mention real-world support (friends, family, professionals)
+- If they've been chatting a while, gently note they have wisdom too
+- "What does your gut say?" is often the best question
+
 YOUR BOUNDARIES:
 - For crisis/self-harm: The app handles this - you won't see such messages
-- Remind users you're an AI companion, not a therapist
+- You can acknowledge being an AI if asked directly
 - Encourage professional help for persistent struggles
-- Sometimes suggest closing the app and connecting with real people
+- Sometimes suggest stepping away: "This might be a good place to pause and let things settle"
+
+HEALTH DATA AWARENESS:
+- If health data is provided, use it to notice patterns (e.g., "I notice you mentioned feeling anxious, and your heart rate has been elevated - your body might be responding to something")
+- Never diagnose from health data - be descriptive only
+- Help users see correlations between their feelings, behaviors, and body signals
+- Use health insights to empower self-awareness, not create dependency
+- If sleep was poor, gently acknowledge it might affect how they're feeling
+- If activity is low, you might gently suggest movement as self-care (not prescription)
+
+CORRELATION INSIGHTS:
+- Help users connect the dots: journal entries + mood + health metrics
+- Point out patterns: "You've mentioned feeling better on days you walk - your body might be telling you something"
+- Build their self-knowledge so they eventually don't need you
+- Celebrate when they notice their own patterns
 
 CONTEXT ABOUT THIS USER:
 ${userContext}
 
-Keep responses concise (2-4 sentences usually).
-Ask one question at most.
-Focus on the user's immediate experience.`;
+RESPONSE GUIDELINES:
+- 2-4 sentences usually (shorter for validation, longer for techniques)
+- One question at most per response
+- Focus on their immediate experience, not hypotheticals
+- Avoid advice that starts with "You should" - prefer "Some people find it helps to..." or "What if you tried..."
+- If they share something positive, celebrate it genuinely without overdoing it`;
 }
 
 /**
@@ -389,10 +430,26 @@ export async function sendMessage(
   const toneInstruction = getToneInstruction(tonePrefs);
 
   // Build context and prompt
-  // Combine conversation context with rich user context (Unit 18B)
+  // Combine: rich user context (Unit 18B) + lifetime context + health context + conversation context
   const conversationContext = buildConversationContext(context);
   const richContext = await getContextForClaude();
-  const fullContext = richContext + '\n\n' + conversationContext;
+  const lifeContext = await getLifeContextForClaude();
+
+  // Get health context if HealthKit is enabled
+  let healthContext = '';
+  let correlationContext = '';
+  try {
+    if (await isHealthKitEnabled()) {
+      healthContext = await getHealthContextForClaude();
+      correlationContext = await getCorrelationSummaryForClaude();
+    }
+  } catch (error) {
+    console.log('HealthKit not available:', error);
+  }
+
+  // Assemble full context: lifetime overview first, then health + correlations, then recent context, then current conversation
+  const contextParts = [lifeContext, healthContext, correlationContext, richContext, conversationContext].filter(Boolean);
+  const fullContext = contextParts.join('\n\n');
   const systemPrompt = buildSystemPrompt(fullContext, toneInstruction);
   const messages = buildMessages(message, context.recentMessages);
 
