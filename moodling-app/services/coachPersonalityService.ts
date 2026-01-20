@@ -243,6 +243,9 @@ export interface CoachSettings {
   // Custom name for the coach (optional - uses persona name if not set)
   customName?: string;
 
+  // Custom emoji/icon for the coach (optional - uses persona emoji if not set)
+  customEmoji?: string;
+
   // Detailed customization (power user settings)
   detailedSettings: DetailedSettings;
   useDetailedSettings: boolean; // If false, derive from persona
@@ -276,6 +279,16 @@ export function getCoachDisplayName(settings: CoachSettings): string {
     return settings.customName.trim();
   }
   return PERSONAS[settings.selectedPersona].name;
+}
+
+/**
+ * Get the display emoji for the coach (custom emoji or persona default)
+ */
+export function getCoachEmoji(settings: CoachSettings): string {
+  if (settings.customEmoji && settings.customEmoji.trim()) {
+    return settings.customEmoji.trim();
+  }
+  return PERSONAS[settings.selectedPersona].emoji;
 }
 
 // ============================================
