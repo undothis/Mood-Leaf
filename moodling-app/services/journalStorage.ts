@@ -121,3 +121,112 @@ export async function clearAllEntries(): Promise<void> {
     throw new Error('Failed to clear journal entries');
   }
 }
+
+/**
+ * Get recent journal entries for Claude context
+ * This allows Claude to reference what the user actually wrote (with limits for privacy)
+ */
+export async function getRecentJournalContextForClaude(): Promise<string> {
+  try {
+    const entries = await getAllEntries();
+    if (entries.length === 0) return '';
+
+    const parts: string[] = ['RECENT JOURNAL ENTRIES (what user actually wrote):'];
+
+    // Get entries from last 7 days
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const recentEntries = entries.filter(
+      e => new Date(e.createdAt) >= sevenDaysAgo
+    );
+
+    if (recentEntries.length === 0) {
+      // Show last 3 entries if none in past week
+      const lastEntries = entries.slice(0, 3);
+      parts.push('\n  (No entries in past week. Showing most recent:)');
+
+      for (const entry of lastEntries) {
+        const date = new Date(entry.createdAt);
+        const dateStr = date.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric'
+        });
+        const mood = entry.sentiment?.mood || 'unknown';
+        // Truncate long entries
+        const text = entry.text.length > 300
+          ? entry.text.substring(0, 300) + '...'
+          : entry.text;
+        parts.push(`\n  [${dateStr}] (${mood}):`);
+        parts.push(`    "${text}"`);
+      }
+    } else {
+      // Show recent entries (limit to 10 for context size)
+      for (const entry of recentEntries.slice(0, 10)) {
+        const date = new Date(entry.createdAt);
+        const dateStr = date.toLocaleDateString('en-US', {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric'
+        });
+        const timeStr = date.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit'
+        });
+        const mood = entry.sentiment?.mood || 'unknown';
+        // Truncate long entries
+        const text = entry.text.length > 300
+          ? entry.text.substring(0, 300) + '...'
+          : entry.text;
+        parts.push(`\n  [${dateStr} ${timeStr}] (${mood}):`);
+        parts.push(`    "${text}"`);
+      }
+
+      // Add summary stats
+      const moodCounts: Record<string, number> = {};
+      for (const entry of recentEntries) {
+        const mood = entry.sentiment?.mood || 'unknown';
+        moodCounts[mood] = (moodCounts[mood] || 0) + 1;
+      }
+      const moodSummary = Object.entries(moodCounts)
+        .map(([mood, count]) => `${mood}: ${count}`)
+        .join(', ');
+
+      parts.push(`\n  Week summary: ${recentEntries.length} entries (${moodSummary})`);
+    }
+
+    // Add total count
+    parts.push(`  Total journal entries all time: ${entries.length}`);
+
+    // Add journaling streak info
+    const today = new Date().toISOString().split('T')[0];
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    const hasToday = entries.some(e => e.createdAt.startsWith(today));
+    const hasYesterday = entries.some(e => e.createdAt.startsWith(yesterday));
+
+    let streak = 0;
+    const checkDate = new Date();
+    for (let i = 0; i < 365; i++) {
+      const dateStr = checkDate.toISOString().split('T')[0];
+      const hasEntry = entries.some(e => e.createdAt.startsWith(dateStr));
+      if (hasEntry) {
+        streak++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else if (i === 0) {
+        // Skip today if no entry yet
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+
+    if (streak > 0) {
+      parts.push(`  Current journaling streak: ${streak} day${streak !== 1 ? 's' : ''}`);
+    }
+
+    return parts.join('\n');
+  } catch (error) {
+    console.error('[journalStorage] Failed to build Claude context:', error);
+    return '';
+  }
+}

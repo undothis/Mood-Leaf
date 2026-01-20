@@ -221,3 +221,96 @@ export async function adjustTodayFactor(
   await saveFactors(today, factors);
   return newValue;
 }
+
+/**
+ * Get lifestyle factors context for Claude
+ * Includes caffeine, alcohol, exercise, outdoor time, social time, sleep
+ */
+export async function getLifestyleFactorsContextForClaude(): Promise<string> {
+  const summaries = await getRecentSummaries(14); // Last 2 weeks
+  if (summaries.length === 0) return '';
+
+  const parts: string[] = ['LIFESTYLE FACTORS (manually tracked daily):'];
+
+  // Today's factors
+  const today = formatDateString(new Date());
+  const todayFactors = await getFactors(today);
+  const hasToday = Object.keys(todayFactors).length > 0;
+
+  if (hasToday) {
+    parts.push('\n  Today:');
+    if (todayFactors.caffeineCount !== undefined) {
+      parts.push(`    - Caffeine: ${todayFactors.caffeineCount} drink${todayFactors.caffeineCount !== 1 ? 's' : ''}`);
+    }
+    if (todayFactors.alcoholCount !== undefined) {
+      parts.push(`    - Alcohol: ${todayFactors.alcoholCount} drink${todayFactors.alcoholCount !== 1 ? 's' : ''}`);
+    }
+    if (todayFactors.exerciseMinutes !== undefined) {
+      parts.push(`    - Exercise: ${todayFactors.exerciseMinutes} minutes`);
+    }
+    if (todayFactors.outdoorMinutes !== undefined) {
+      parts.push(`    - Outdoor time: ${todayFactors.outdoorMinutes} minutes`);
+    }
+    if (todayFactors.socialMinutes !== undefined) {
+      parts.push(`    - Social time: ${todayFactors.socialMinutes} minutes`);
+    }
+    if (todayFactors.sleepHours !== undefined) {
+      parts.push(`    - Sleep: ${todayFactors.sleepHours} hours`);
+    }
+  }
+
+  // Calculate weekly averages from summaries
+  const daysWithData = summaries.filter(s => Object.keys(s.factors).length > 0);
+  if (daysWithData.length > 0) {
+    const totals = {
+      caffeine: [] as number[],
+      alcohol: [] as number[],
+      exercise: [] as number[],
+      outdoor: [] as number[],
+      social: [] as number[],
+      sleep: [] as number[],
+    };
+
+    for (const day of daysWithData) {
+      if (day.factors.caffeineCount !== undefined) totals.caffeine.push(day.factors.caffeineCount);
+      if (day.factors.alcoholCount !== undefined) totals.alcohol.push(day.factors.alcoholCount);
+      if (day.factors.exerciseMinutes !== undefined) totals.exercise.push(day.factors.exerciseMinutes);
+      if (day.factors.outdoorMinutes !== undefined) totals.outdoor.push(day.factors.outdoorMinutes);
+      if (day.factors.socialMinutes !== undefined) totals.social.push(day.factors.socialMinutes);
+      if (day.factors.sleepHours !== undefined) totals.sleep.push(day.factors.sleepHours);
+    }
+
+    const avg = (arr: number[]) => arr.length > 0 ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length * 10) / 10 : null;
+
+    parts.push('\n  2-week averages:');
+    if (totals.caffeine.length > 0) parts.push(`    - Caffeine: ${avg(totals.caffeine)} drinks/day`);
+    if (totals.alcohol.length > 0) parts.push(`    - Alcohol: ${avg(totals.alcohol)} drinks/day`);
+    if (totals.exercise.length > 0) parts.push(`    - Exercise: ${avg(totals.exercise)} min/day`);
+    if (totals.outdoor.length > 0) parts.push(`    - Outdoor time: ${avg(totals.outdoor)} min/day`);
+    if (totals.social.length > 0) parts.push(`    - Social time: ${avg(totals.social)} min/day`);
+    if (totals.sleep.length > 0) parts.push(`    - Sleep: ${avg(totals.sleep)} hrs/night`);
+  }
+
+  // Show daily breakdown for past week
+  const last7 = summaries.slice(0, 7);
+  const daysWithFactors = last7.filter(s => Object.keys(s.factors).length > 0);
+
+  if (daysWithFactors.length > 0) {
+    parts.push('\n  Recent daily breakdown:');
+    for (const day of daysWithFactors) {
+      const factorParts: string[] = [];
+      if (day.factors.caffeineCount !== undefined) factorParts.push(`☕${day.factors.caffeineCount}`);
+      if (day.factors.alcoholCount !== undefined) factorParts.push(`🍺${day.factors.alcoholCount}`);
+      if (day.factors.exerciseMinutes !== undefined) factorParts.push(`🏃${day.factors.exerciseMinutes}m`);
+      if (day.factors.outdoorMinutes !== undefined) factorParts.push(`🌳${day.factors.outdoorMinutes}m`);
+      if (day.factors.socialMinutes !== undefined) factorParts.push(`👥${day.factors.socialMinutes}m`);
+      if (day.factors.sleepHours !== undefined) factorParts.push(`😴${day.factors.sleepHours}h`);
+
+      if (factorParts.length > 0) {
+        parts.push(`    ${day.date}: ${factorParts.join(', ')}`);
+      }
+    }
+  }
+
+  return parts.length > 1 ? parts.join('\n') : '';
+}

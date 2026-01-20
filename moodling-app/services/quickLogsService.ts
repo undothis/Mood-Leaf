@@ -670,6 +670,69 @@ export async function getLogsContextForClaude(): Promise<string> {
   return parts.join('\n');
 }
 
+/**
+ * Get detailed logs data for Claude - includes full counts and history
+ * This enables Claude to answer questions like "how many times did I exercise?"
+ */
+export async function getDetailedLogsContextForClaude(): Promise<string> {
+  const logs = await getQuickLogs();
+  if (logs.length === 0) return '';
+
+  const parts: string[] = ['DETAILED TRACKING DATA (Twigs - raw atomic facts):'];
+
+  for (const log of logs) {
+    const streak = await getStreak(log.id);
+    const todayCount = await getTodayCount(log.id);
+    const weekEntries = await getEntriesForLog(log.id, 7);
+    const monthEntries = await getEntriesForLog(log.id, 30);
+    const allEntries = await getEntriesForLog(log.id);
+
+    // Get daily breakdown for the week
+    const dailyBreakdown: string[] = [];
+    for (let i = 0; i < 7; i++) {
+      const date = getDaysAgo(i);
+      const dayLabel = i === 0 ? 'Today' : i === 1 ? 'Yesterday' : date;
+      const dayEntries = weekEntries.filter(e => e.timestamp.startsWith(date));
+      if (dayEntries.length > 0) {
+        dailyBreakdown.push(`${dayLabel}: ${dayEntries.length}`);
+      }
+    }
+
+    // Build comprehensive status
+    parts.push(`\n  ${log.emoji} ${log.name} (${log.type}):`);
+    parts.push(`    - Today: ${todayCount} time${todayCount !== 1 ? 's' : ''}`);
+    parts.push(`    - This week: ${weekEntries.length} time${weekEntries.length !== 1 ? 's' : ''}`);
+    parts.push(`    - This month (30 days): ${monthEntries.length} time${monthEntries.length !== 1 ? 's' : ''}`);
+    parts.push(`    - All time total: ${allEntries.length} time${allEntries.length !== 1 ? 's' : ''}`);
+
+    if (streak) {
+      parts.push(`    - Current streak: ${streak.currentStreak} day${streak.currentStreak !== 1 ? 's' : ''}`);
+      parts.push(`    - Longest streak: ${streak.longestStreak} day${streak.longestStreak !== 1 ? 's' : ''}`);
+      parts.push(`    - Weekly average: ${streak.weeklyAverage} per week`);
+    }
+
+    if (dailyBreakdown.length > 0) {
+      parts.push(`    - Recent breakdown: ${dailyBreakdown.join(', ')}`);
+    }
+
+    // Include recent notes if any
+    const recentWithNotes = weekEntries.filter(e => e.note).slice(0, 3);
+    if (recentWithNotes.length > 0) {
+      parts.push(`    - Recent notes: ${recentWithNotes.map(e => `"${e.note}"`).join(', ')}`);
+    }
+
+    // First and last logged date
+    if (allEntries.length > 0) {
+      const firstEntry = allEntries[allEntries.length - 1];
+      const lastEntry = allEntries[0];
+      parts.push(`    - First logged: ${firstEntry.timestamp.split('T')[0]}`);
+      parts.push(`    - Last logged: ${lastEntry.timestamp.split('T')[0]}`);
+    }
+  }
+
+  return parts.join('\n');
+}
+
 // ============================================
 // PRESET TEMPLATES
 // ============================================
