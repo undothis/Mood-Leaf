@@ -65,6 +65,18 @@
 //    - USER_FAQ.md - Searchable FAQ with code of conduct, data storage, learning explanation
 //    - USER_MANUAL.md - Complete user manual
 //    - DEVELOPER_GUIDE.md - Full technical documentation
+// ✅ Quick Logs / Branches (quickLogsService.ts)
+//    - Customizable tracking buttons for habits, goals, meds, anything
+//    - Types: habit_build, habit_break, goal, symptom, medication, custom
+//    - Streak tracking with current/longest/weekly average
+//    - 30+ preset templates across 8 categories
+//    - Reminder integration
+//    - Context for Claude conversations
+// ✅ Mood Leaf Product Philosophy (MOOD_LEAF_PHILOSOPHY.md)
+//    - Tree metaphor: Leaves (journal), Sprout (AI), Branches (habits), Weather (health)
+//    - Anti-dependency design principles
+//    - Visual language and naming conventions
+//    - Rebrand mapping from Moodling to Mood Leaf
 //
 // NOT YET IMPLEMENTED (future enhancements):
 // ⬜ Compression templates (relationship, condition, event, pattern, preference, goal)

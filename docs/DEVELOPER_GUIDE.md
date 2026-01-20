@@ -59,6 +59,7 @@ moodling-app/
 │   ├── healthInsightService.ts   # Correlation & insights
 │   ├── obliqueStrategiesService.ts # Oblique strategies cards
 │   ├── secureDeleteService.ts    # Secure data deletion
+│   ├── quickLogsService.ts       # Customizable tracking buttons (Branches)
 │   ├── tonePreferencesService.ts # Communication style
 │   ├── sentimentAnalysis.ts      # Mood detection
 │   ├── patternService.ts         # Pattern detection
@@ -948,6 +949,99 @@ const ALL_STORAGE_KEYS = [
   'moodling_life_context',
   // ... 30+ keys total
 ];
+```
+
+---
+
+### quickLogsService.ts
+
+**Purpose**: Customizable tracking buttons for habits, goals, medications, symptoms, or anything users want to track. Called "Branches" in Mood Leaf terminology.
+
+**Key Exports**:
+```typescript
+interface QuickLog {
+  id: string;
+  name: string;                    // "Took meds", "Walked", etc.
+  emoji: string;                   // Visual icon
+  type: QuickLogType;              // habit_build, habit_break, goal, symptom, medication, custom
+  frequency: LogFrequency;         // daily, multiple_daily, weekly, as_needed
+  targetPerDay?: number;
+  targetPerWeek?: number;
+  reminderEnabled: boolean;
+  reminderTimes?: string[];
+  isActive: boolean;
+  position: number;
+  invertedTracking?: boolean;      // For habit breaking
+}
+
+interface LogEntry {
+  id: string;
+  logId: string;
+  timestamp: string;
+  note?: string;
+  value?: number;
+  mood?: string;
+}
+
+interface LogStreak {
+  logId: string;
+  currentStreak: number;
+  longestStreak: number;
+  lastLogDate: string;
+  totalLogs: number;
+  weeklyAverage: number;
+}
+
+// CRUD for quick logs
+createQuickLog(name, emoji, type, options): Promise<QuickLog>
+updateQuickLog(id, updates): Promise<QuickLog | null>
+deleteQuickLog(id): Promise<void>
+getQuickLogs(): Promise<QuickLog[]>
+
+// Logging entries
+logEntry(logId, options): Promise<LogEntry>
+undoLastEntry(logId): Promise<boolean>
+getTodayCount(logId): Promise<number>
+isCompletedToday(logId): Promise<boolean>
+
+// Streaks
+getStreak(logId): Promise<LogStreak | null>
+
+// For Claude context
+getLogsContextForClaude(): Promise<string>
+
+// Presets
+createFromPreset(presetName, options): Promise<QuickLog | null>
+LOG_PRESETS: Array<{ name, emoji, type, frequency, category }>
+```
+
+**Log Types**:
+```typescript
+type QuickLogType =
+  | 'habit_build'    // Building a habit (want MORE)
+  | 'habit_break'    // Breaking a habit (want LESS)
+  | 'goal'           // One-time or milestone
+  | 'symptom'        // Tracking symptoms/feelings
+  | 'medication'     // Med tracking
+  | 'custom';        // Anything else
+```
+
+**Preset Categories**:
+- Health (meds, water, sleep)
+- Wellness (meditation, exercise, journaling)
+- Self-care (shower, brushed teeth)
+- Connection (called someone)
+- Habit Breaking (no smoking, no alcohol)
+- Tracking (anxious, headache, good energy)
+
+**Context for Claude**:
+```typescript
+// Example output from getLogsContextForClaude()
+`QUICK LOGS (user-defined tracking):
+  💊 Morning meds: taken today
+  🧘 Meditated: 5 day streak
+  🚭 No smoking: 12 days strong
+  😰 Anxious: 3 total`
 ```
 
 ---
