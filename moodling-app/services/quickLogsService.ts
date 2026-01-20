@@ -787,13 +787,14 @@ export const LOG_PRESETS: Array<{
   { name: 'No junk food', emoji: '🥗', type: 'habit_break', frequency: 'daily', category: 'Health' },
   { name: 'No caffeine', emoji: '☕', type: 'habit_break', frequency: 'daily', category: 'Health' },
 
-  // Symptoms/Feelings
-  { name: 'Anxious', emoji: '😰', type: 'symptom', frequency: 'as_needed', category: 'Tracking' },
-  { name: 'Low mood', emoji: '😔', type: 'symptom', frequency: 'as_needed', category: 'Tracking' },
+  // Symptoms/Feelings - Mental health safe: no sad face emojis
+  // Using neutral symbols that don't reinforce negative feelings
+  { name: 'Anxious moment', emoji: '🌊', type: 'symptom', frequency: 'as_needed', category: 'Tracking' },
+  { name: 'Heavy day', emoji: '☁️', type: 'symptom', frequency: 'as_needed', category: 'Tracking' },
   { name: 'Good energy', emoji: '⚡', type: 'symptom', frequency: 'as_needed', category: 'Tracking' },
-  { name: 'Headache', emoji: '🤕', type: 'symptom', frequency: 'as_needed', category: 'Health' },
+  { name: 'Headache', emoji: '🌡️', type: 'symptom', frequency: 'as_needed', category: 'Health' },
   { name: 'Slept well', emoji: '😴', type: 'symptom', frequency: 'daily', category: 'Health' },
-  { name: 'Panic attack', emoji: '💔', type: 'symptom', frequency: 'as_needed', category: 'Tracking' },
+  { name: 'Panic moment', emoji: '🌊', type: 'symptom', frequency: 'as_needed', category: 'Tracking' },
 
   // Self-care
   { name: 'Showered', emoji: '🚿', type: 'habit_build', frequency: 'daily', category: 'Self-care' },
