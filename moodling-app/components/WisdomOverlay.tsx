@@ -9,7 +9,7 @@
  * - Below: Customizable categories (Anxiety, Movement, Creativity, etc.)
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -22,7 +22,14 @@ import {
   Dimensions,
   ScrollView,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/Colors';
+import {
+  PRESET_CATEGORIES,
+  CustomCategory,
+  getEnabledPresets,
+  getCustomCategories,
+} from '@/services/firefliesService';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -245,11 +252,35 @@ interface WisdomOverlayProps {
 export function WisdomOverlay({ visible, onClose }: WisdomOverlayProps) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
+  const router = useRouter();
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [currentWisdom, setCurrentWisdom] = useState<string>('');
   const [isTimeCategory, setIsTimeCategory] = useState(false);
   const [currentTimeOfDay, setCurrentTimeOfDay] = useState<TimeOfDay>(getCurrentTimeOfDay);
+  const [enabledPresets, setEnabledPresets] = useState<string[]>([]);
+  const [customCategories, setCustomCategories] = useState<CustomCategory[]>([]);
+
+  // Load categories from service
+  const loadCategories = useCallback(async () => {
+    try {
+      const [presets, custom] = await Promise.all([
+        getEnabledPresets(),
+        getCustomCategories(),
+      ]);
+      setEnabledPresets(presets);
+      setCustomCategories(custom);
+    } catch (error) {
+      console.error('Failed to load fireflies categories:', error);
+    }
+  }, []);
+
+  // Reload categories when overlay opens
+  useEffect(() => {
+    if (visible) {
+      loadCategories();
+    }
+  }, [visible, loadCategories]);
 
   // Animation
   const slideAnim = useState(new Animated.Value(SCREEN_HEIGHT))[0];
@@ -304,21 +335,48 @@ export function WisdomOverlay({ visible, onClose }: WisdomOverlayProps) {
     setIsTimeCategory(true);
   };
 
-  // Select a custom category
+  // Select a preset category
   const selectCustomCategory = (categoryKey: string) => {
     const category = CUSTOM_CATEGORIES[categoryKey];
+    if (!category) return;
     const randomIndex = Math.floor(Math.random() * category.wisdoms.length);
     setSelectedCategory(categoryKey);
     setCurrentWisdom(category.wisdoms[randomIndex]);
     setIsTimeCategory(false);
   };
 
+  // Select a custom (user-created) category by ID
+  const selectCustomCategoryById = (categoryId: string) => {
+    const category = customCategories.find(c => c.id === categoryId);
+    if (!category || category.wisdoms.length === 0) return;
+    const randomIndex = Math.floor(Math.random() * category.wisdoms.length);
+    setSelectedCategory(categoryId);
+    setCurrentWisdom(category.wisdoms[randomIndex]);
+    setIsTimeCategory(false);
+  };
+
+  // Get category by selected ID/key
+  const getCategoryData = () => {
+    if (!selectedCategory) return null;
+    if (isTimeCategory) {
+      return TIME_CATEGORIES[selectedCategory as TimeOfDay];
+    }
+    // Check if it's a preset category
+    if (CUSTOM_CATEGORIES[selectedCategory]) {
+      return CUSTOM_CATEGORIES[selectedCategory];
+    }
+    // Check if it's a custom user category
+    const customCat = customCategories.find(c => c.id === selectedCategory);
+    if (customCat) {
+      return { emoji: customCat.emoji, label: customCat.label, wisdoms: customCat.wisdoms };
+    }
+    return null;
+  };
+
   // Get another wisdom from same category
   const getAnother = () => {
-    if (!selectedCategory) return;
-    const category = isTimeCategory
-      ? TIME_CATEGORIES[selectedCategory as TimeOfDay]
-      : CUSTOM_CATEGORIES[selectedCategory];
+    const category = getCategoryData();
+    if (!category || category.wisdoms.length === 0) return;
     let newIndex = Math.floor(Math.random() * category.wisdoms.length);
     const currentIndex = category.wisdoms.indexOf(currentWisdom);
     if (category.wisdoms.length > 1 && newIndex === currentIndex) {
@@ -334,13 +392,8 @@ export function WisdomOverlay({ visible, onClose }: WisdomOverlayProps) {
     setIsTimeCategory(false);
   };
 
-  // Get current category data
-  const getCurrentCategory = () => {
-    if (!selectedCategory) return null;
-    return isTimeCategory
-      ? TIME_CATEGORIES[selectedCategory as TimeOfDay]
-      : CUSTOM_CATEGORIES[selectedCategory];
-  };
+  // Get current category data (alias for getCategoryData for display)
+  const getCurrentCategory = getCategoryData;
 
   return (
     <Modal
@@ -378,8 +431,8 @@ export function WisdomOverlay({ visible, onClose }: WisdomOverlayProps) {
                 Catch a firefly ✨
               </Text>
               <TouchableOpacity onPress={() => {
-                // TODO: Navigate to customize screen
                 onClose();
+                router.push('/fireflies/manage');
               }}>
                 <Text style={[styles.customizeLink, { color: colors.tint }]}>
                   Customize
@@ -415,13 +468,29 @@ export function WisdomOverlay({ visible, onClose }: WisdomOverlayProps) {
             {/* Divider */}
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
-            {/* Custom categories grid */}
+            {/* Categories grid - enabled presets + custom */}
             <View style={styles.categoryGrid}>
-              {Object.entries(CUSTOM_CATEGORIES).map(([key, category]) => (
+              {/* Enabled preset categories */}
+              {PRESET_CATEGORIES.filter(p => enabledPresets.includes(p.key)).map((preset) => (
                 <TouchableOpacity
-                  key={key}
+                  key={preset.key}
                   style={[styles.categoryButton, { backgroundColor: colors.card }]}
-                  onPress={() => selectCustomCategory(key)}
+                  onPress={() => selectCustomCategory(preset.key)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.categoryEmoji}>{preset.emoji}</Text>
+                  <Text style={[styles.categoryLabel, { color: colors.text }]}>
+                    {preset.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+
+              {/* Custom categories */}
+              {customCategories.map((category) => (
+                <TouchableOpacity
+                  key={category.id}
+                  style={[styles.categoryButton, { backgroundColor: colors.card }]}
+                  onPress={() => selectCustomCategoryById(category.id)}
                   activeOpacity={0.7}
                 >
                   <Text style={styles.categoryEmoji}>{category.emoji}</Text>
@@ -430,7 +499,6 @@ export function WisdomOverlay({ visible, onClose }: WisdomOverlayProps) {
                   </Text>
                 </TouchableOpacity>
               ))}
-
             </View>
 
             <View style={styles.bottomPadding} />
