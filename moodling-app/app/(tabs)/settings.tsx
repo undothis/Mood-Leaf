@@ -410,6 +410,38 @@ export default function SettingsScreen() {
           <Text style={[styles.faqArrow, { color: colors.textMuted }]}>→</Text>
         </TouchableOpacity>
 
+        <TouchableOpacity
+          style={[styles.faqItem, { backgroundColor: colors.background }]}
+          onPress={() => router.push('/user-manual')}
+        >
+          <Text style={styles.faqEmoji}>📖</Text>
+          <View style={styles.faqContent}>
+            <Text style={[styles.faqTitle, { color: colors.text }]}>
+              Full User Manual
+            </Text>
+            <Text style={[styles.faqSubtitle, { color: colors.textSecondary }]}>
+              Complete guide to all features
+            </Text>
+          </View>
+          <Text style={[styles.faqArrow, { color: colors.textMuted }]}>→</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.faqItem, { backgroundColor: colors.background }]}
+          onPress={() => router.push('/faq')}
+        >
+          <Text style={styles.faqEmoji}>❓</Text>
+          <View style={styles.faqContent}>
+            <Text style={[styles.faqTitle, { color: colors.text }]}>
+              Full FAQ
+            </Text>
+            <Text style={[styles.faqSubtitle, { color: colors.textSecondary }]}>
+              All questions answered
+            </Text>
+          </View>
+          <Text style={[styles.faqArrow, { color: colors.textMuted }]}>→</Text>
+        </TouchableOpacity>
+
         <View style={styles.faqDivider} />
 
         <Text style={[styles.faqSectionLabel, { color: colors.textSecondary }]}>
