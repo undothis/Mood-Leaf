@@ -20,8 +20,9 @@ Complete technical documentation for the Moodling codebase.
 12. [API Integration](#api-integration)
 13. [Ethics Implementation](#ethics-implementation)
 14. [Testing](#testing)
-15. [Psychological Analysis System](#psychological-analysis-system) ← NEW
-16. [Future Enhancements](#future-enhancements)
+15. [Psychological Analysis System](#psychological-analysis-system)
+16. [AI Coach Adaptive System](#ai-coach-adaptive-system) ← NEW
+17. [Future Enhancements](#future-enhancements)
 
 ---
 
@@ -1393,6 +1394,272 @@ profile.cognitiveDistortions[0].lastSeen = now
 3. **User agency**: Suggestions are offered, not imposed
 4. **Privacy**: All analysis is local, only compressed summary sent to API
 5. **Anti-dependency**: System celebrates user self-awareness, not app usage
+
+---
+
+## AI Coach Adaptive System
+
+### Overview
+
+The AI Coach Adaptive System creates a personalized, responsive AI companion that adapts to the user in multiple dimensions:
+
+1. **Persona Selection** - 7 nature-themed personalities with distinct traits
+2. **Mood-to-Persona Switches** - Automatically shifts personality based on detected mood
+3. **Time-of-Day Energy Modulation** - Subtly adjusts energy throughout the day
+4. **Chronotype Awareness** - Respects user's natural sleep/wake rhythm
+5. **Psychological Context** - Incorporates cognitive patterns and attachment style
+
+**Key Principle**: Adaptation happens invisibly. The user experiences a guide that "just gets them" without seeing the mechanics.
+
+### Architecture
+
+```
+User Message
+    ↓
+Mood Detection ────────────→ Mood-to-Persona Switch
+    ↓
+Time-of-Day Check ─────────→ Energy Modulation
+    ↓
+Chronotype Check ──────────→ Rhythm Adjustment
+    ↓
+Psych Context ─────────────→ Pattern-Aware Responses
+    ↓
+Active Persona + Settings
+    ↓
+Personality Prompt for Claude
+```
+
+### Service: coachPersonalityService.ts
+
+**Key Types**:
+```typescript
+// 7 nature-themed personas
+type CoachPersona = 'clover' | 'spark' | 'willow' | 'luna' | 'ridge' | 'flint' | 'fern';
+
+// User's natural rhythm
+type Chronotype = 'early_bird' | 'normal' | 'night_owl';
+
+interface CoachSettings {
+  selectedPersona: CoachPersona;
+  customName?: string;
+  chronotype?: Chronotype;
+  adaptiveSettings: AdaptiveSettings;
+  detailedSettings: DetailedSettings;
+  onboardingAnswers: Record<string, string | string[]>;
+}
+
+interface AdaptiveSettings {
+  enabled: boolean;
+  triggers: ('mood_detected' | 'time_of_day' | 'content_type')[];
+  basePersona: CoachPersona;
+  moodMappings: Record<string, CoachPersona>;  // Personalized per user
+}
+```
+
+### Persona Definitions
+
+Each persona has distinct traits:
+
+| Persona | Emoji | Tagline | Traits |
+|---------|-------|---------|--------|
+| Clover | 🍀 | Your lucky friend | warm, casual, relatable |
+| Spark | ✨ | Your cheerleader | energetic, motivating, uplifting |
+| Willow | 🌿 | The sage | calm, wise, reflective |
+| Luna | 🌙 | The mystic | mindful, grounding, present |
+| Ridge | ⛰️ | The coach | focused, goal-oriented, practical |
+| Flint | 🔥 | The straight shooter | direct, honest, no-nonsense |
+| Fern | 🌱 | The nurturer | gentle, soft, nurturing |
+
+### Mood-to-Persona Switches
+
+When adaptive mode is enabled, the coach automatically switches personas based on detected mood:
+
+```typescript
+// Mood detection from message content
+function detectMoodFromMessage(message: string): 'anxious' | 'sad' | 'angry' | 'happy' | 'neutral' | undefined {
+  // Keywords + somatic compression (body awareness signals)
+  // Examples: "chest tight" → anxious, "weight on shoulders" → sad
+}
+
+// Personalized mappings generated from onboarding answers
+function generateMoodMappings(answers, basePersona): Record<string, CoachPersona> {
+  // support_style: 'solutions' → Ridge for action
+  // support_style: 'validation' → Fern for nurturing
+  // communication_preference: 'direct' → Flint even in tough moments
+  // energy_preference: 'calm' → avoid Spark, prefer Luna
+}
+
+// Default mappings (personalized during onboarding):
+const defaultMappings = {
+  anxious: 'luna',    // Calm, grounding presence
+  sad: 'fern',        // Gentle nurturing
+  angry: 'flint',     // Direct acknowledgment
+  happy: 'spark',     // Match their energy
+  neutral: basePersona
+};
+```
+
+### Time-of-Day Energy Modulation
+
+The coach subtly adjusts energy throughout the day without the user noticing:
+
+```typescript
+function getTimeEnergyInstruction(timeOfDay: TimeOfDay, chronotype?: Chronotype): string {
+  // Morning: gentle awakening energy
+  // Afternoon: steady, supportive energy
+  // Evening: softening, wind-down energy
+  // Night: calm, soothing, prep for rest
+}
+```
+
+| Time | Standard | Early Bird | Night Owl |
+|------|----------|------------|-----------|
+| Morning | Gentle awakening | Full energy, engaged | Low-key, no pressure |
+| Afternoon | Steady support | Steady support | Steady support |
+| Evening | Start softening | Wind-down mode | Still engaged |
+| Night | Calm, prep for rest | Deep rest mode | Gently encourage wind-down |
+
+### Chronotype Awareness
+
+Users set their natural rhythm during onboarding:
+
+```typescript
+// Onboarding question
+{
+  id: 'schedule_preference',
+  question: "When are you most yourself?",
+  options: [
+    { id: 'early_bird', label: 'Early bird', description: 'I come alive in the morning' },
+    { id: 'normal', label: 'Daytime person', description: 'Pretty standard schedule' },
+    { id: 'night_owl', label: 'Night owl', description: 'I do my best thinking late' },
+  ],
+}
+```
+
+**Why it matters**:
+- Night owls shouldn't get "wind down" pressure at 9pm if that's their productive time
+- Early birds need calmer energy earlier in the evening
+- The coach matches their natural rhythm, not a one-size-fits-all schedule
+
+### Generating the Personality Prompt
+
+```typescript
+function generatePersonalityPrompt(settings: CoachSettings, timeOfDay?: TimeOfDay): string {
+  const parts: string[] = [];
+
+  // Identity (stays consistent)
+  parts.push(`You are ${displayName}, the user's AI companion in the Mood Leaf journaling app.`);
+  parts.push(`YOUR NAME IS ${displayName.toUpperCase()}. When asked your name, always say "${displayName}".`);
+  parts.push(`Stay in character as ${displayName}. Do not mention being an AI assistant, Claude, or Anthropic.`);
+
+  // Personality traits
+  parts.push(`Your personality: ${persona.description}`);
+  parts.push(`Core traits: ${persona.traits.join(', ')}.`);
+  parts.push(`Examples of how you speak: "${persona.samplePhrases.join('" | "')}"`);
+
+  // Time-aware energy (invisible to user)
+  parts.push(getTimeEnergyInstruction(timeOfDay, settings.chronotype));
+
+  // Communication style from detailed settings
+  // ... directness, validation, response length, etc.
+
+  return parts.join('\n');
+}
+```
+
+### Integration with Claude API
+
+In `claudeAPIService.ts`:
+
+```typescript
+async function sendMessage(message: string, context: ConversationContext) {
+  // 1. Get coach settings
+  const coachSettings = await getCoachSettings();
+
+  // 2. Detect mood and time
+  const timeOfDay = getCurrentTimeOfDay();
+  const detectedMood = detectMoodFromMessage(message);
+
+  // 3. Get adaptive persona (may switch based on mood)
+  const activePersona = getAdaptivePersona(coachSettings, {
+    timeOfDay,
+    detectedMood,
+    userMessage: message,
+  });
+
+  // 4. Generate personality prompt with time awareness
+  const personalityPrompt = generatePersonalityPrompt(
+    { ...coachSettings, selectedPersona: activePersona },
+    timeOfDay
+  );
+
+  // 5. Get psychological context
+  const psychContext = await psychAnalysisService.getCompressedContext();
+
+  // 6. Build full context and send to Claude
+  const contextParts = [lifeContext, psychContext, healthContext, ...];
+  const systemPrompt = buildSystemPrompt(fullContext, toneInstruction, personalityPrompt);
+}
+```
+
+### Context Flow to Claude
+
+The AI receives a rich, personalized context:
+
+```
+SYSTEM PROMPT:
+├── Personality Prompt (persona identity, traits, time-aware energy)
+├── Role & Boundaries (Moodling Ethics)
+├── Conversation Approach (validate → explore → support → empower)
+└── User Context:
+    ├── Life Context (facts, events, people)
+    ├── Psychological Profile (cognitive patterns, attachment style)
+    ├── Health Context (sleep, activity, heart rate)
+    └── Current Conversation Context (recent mood, upcoming events)
+```
+
+### Onboarding Flow
+
+1. **"What brings you to Mood Leaf?"** - Multi-select challenges
+2. **"When you're struggling, what helps most?"** - Support style (affects mood mappings)
+3. **"How do you prefer to be spoken to?"** - Communication preference
+4. **"What energy level do you prefer?"** - Calm ↔ Energetic slider
+5. **"When are you most yourself?"** - Chronotype selection
+6. **"Which approaches interest you?"** - Mindfulness, CBT, Somatic, etc.
+7. **"Meet your guides"** - Initial persona selection
+
+All answers influence:
+- Recommended persona
+- Personalized mood-to-persona mappings
+- Detailed communication settings
+- Chronotype awareness
+
+### Testing Adaptation
+
+```typescript
+// Test mood-to-persona switching
+describe('getAdaptivePersona', () => {
+  it('switches to Luna for anxious mood', () => {
+    const persona = getAdaptivePersona(settings, { detectedMood: 'anxious' });
+    expect(persona).toBe('luna');
+  });
+
+  it('respects user preference for direct support', () => {
+    // User who prefers solutions gets Ridge even when anxious
+    const settings = { moodMappings: { anxious: 'ridge' } };
+    const persona = getAdaptivePersona(settings, { detectedMood: 'anxious' });
+    expect(persona).toBe('ridge');
+  });
+});
+
+// Test time-aware energy
+describe('getTimeEnergyInstruction', () => {
+  it('gives night owl flexibility in evening', () => {
+    const instruction = getTimeEnergyInstruction('evening', 'night_owl');
+    expect(instruction).toContain('still engaged');
+  });
+});
+```
 
 ---
 
