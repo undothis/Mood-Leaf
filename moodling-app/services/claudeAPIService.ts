@@ -17,6 +17,7 @@ import { getContextForClaude } from './userContextService';
 import { getLifeContextForClaude } from './lifeContextService';
 import { getHealthContextForClaude, isHealthKitEnabled } from './healthKitService';
 import { getCorrelationSummaryForClaude } from './healthInsightService';
+import { psychAnalysisService } from './psychAnalysisService';
 import {
   getCoachSettings,
   generatePersonalityPrompt,
@@ -618,8 +619,16 @@ export async function sendMessage(
     console.log('HealthKit not available:', error);
   }
 
-  // Assemble full context: lifetime overview first, then health + correlations, then recent context, then current conversation
-  const contextParts = [lifeContext, healthContext, correlationContext, richContext, conversationContext].filter(Boolean);
+  // Get psychological profile context (cognitive patterns, attachment style, etc.)
+  let psychContext = '';
+  try {
+    psychContext = await psychAnalysisService.getCompressedContext();
+  } catch (error) {
+    console.log('Could not load psych context:', error);
+  }
+
+  // Assemble full context: lifetime overview first, then psych profile, health + correlations, then recent context, then current conversation
+  const contextParts = [lifeContext, psychContext, healthContext, correlationContext, richContext, conversationContext].filter(Boolean);
   const fullContext = contextParts.join('\n\n');
   const systemPrompt = buildSystemPrompt(fullContext, toneInstruction, personalityPrompt);
   const messages = buildMessages(message, context.recentMessages);
