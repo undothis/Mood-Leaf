@@ -210,6 +210,9 @@ export interface AdaptiveSettings {
 // MAIN SETTINGS INTERFACE
 // ============================================
 
+// User's natural sleep schedule / chronotype
+export type Chronotype = 'early_bird' | 'normal' | 'night_owl';
+
 export interface CoachSettings {
   // Primary persona selection
   selectedPersona: CoachPersona;
@@ -223,6 +226,9 @@ export interface CoachSettings {
 
   // Adaptive mode
   adaptiveSettings: AdaptiveSettings;
+
+  // User's natural rhythm (detected from patterns or set manually)
+  chronotype?: Chronotype;
 
   // Onboarding answers (for context)
   onboardingAnswers: {
@@ -490,10 +496,68 @@ export async function resetOnboarding(): Promise<void> {
 // ============================================
 
 /**
+ * Time-of-day energy modulation
+ * Subtly shifts energy throughout the day, respecting user's natural rhythm
+ */
+type TimeOfDay = 'morning' | 'afternoon' | 'evening' | 'night';
+
+/**
+ * Get time-aware energy instructions that respect user's chronotype
+ * - Early birds: wind down earlier, gentle mornings
+ * - Night owls: stay engaged later, don't push mornings
+ * - Normal: standard day rhythm
+ */
+function getTimeEnergyInstruction(
+  timeOfDay?: TimeOfDay,
+  chronotype?: Chronotype
+): string {
+  if (!timeOfDay) return '';
+
+  // Adjust energy based on chronotype
+  const isNightOwl = chronotype === 'night_owl';
+  const isEarlyBird = chronotype === 'early_bird';
+
+  switch (timeOfDay) {
+    case 'morning':
+      if (isNightOwl) {
+        return 'It\'s morning - keep energy gentle and low-key. Don\'t push too hard, they may be warming up slowly.';
+      }
+      if (isEarlyBird) {
+        return 'It\'s morning - match their natural energy! They\'re likely at their best. Be present and engaged.';
+      }
+      return 'It\'s morning - bring gentle, awakening energy. Be warm and encouraging to start their day positively.';
+
+    case 'afternoon':
+      return 'It\'s afternoon - maintain steady, supportive energy. Match their pace as they move through the day.';
+
+    case 'evening':
+      if (isNightOwl) {
+        return 'It\'s evening - they may be hitting their stride. Stay engaged and present without pushing wind-down yet.';
+      }
+      if (isEarlyBird) {
+        return 'It\'s evening - they\'re likely winding down. Keep energy soft and help them transition to rest mode.';
+      }
+      return 'It\'s evening - begin to soften your energy. Help them start winding down and reflecting on the day.';
+
+    case 'night':
+      if (isNightOwl) {
+        return 'It\'s late - they may still be active, but gently support winding down when they\'re ready. No pressure.';
+      }
+      return 'It\'s nighttime - keep your energy calm and soothing. Help them prepare for rest. Avoid anything activating or urgent.';
+
+    default:
+      return '';
+  }
+}
+
+/**
  * Generate system prompt instructions based on current settings
  * This is used when calling the Claude API
  */
-export function generatePersonalityPrompt(settings: CoachSettings): string {
+export function generatePersonalityPrompt(
+  settings: CoachSettings,
+  timeOfDay?: TimeOfDay
+): string {
   const persona = PERSONAS[settings.selectedPersona];
   const displayName = getCoachDisplayName(settings);
   const detailed = settings.useDetailedSettings
@@ -510,11 +574,17 @@ export function generatePersonalityPrompt(settings: CoachSettings): string {
   parts.push(`Core traits: ${persona.traits.join(', ')}.`);
   parts.push(`Examples of how you speak: "${persona.samplePhrases.join('" | "')}"`);
 
-  // Energy and tone
+  // Time-of-day energy modulation (subtle, respects user's chronotype)
+  const timeInstruction = getTimeEnergyInstruction(timeOfDay, settings.chronotype);
+  if (timeInstruction) {
+    parts.push(timeInstruction);
+  }
+
+  // User's base energy preference (combined with time-of-day)
   if (detailed.energyLevel === 'calm') {
-    parts.push('Keep your energy calm and grounding.');
+    parts.push('The user prefers calm energy - lean into grounding even more.');
   } else if (detailed.energyLevel === 'energetic') {
-    parts.push('Bring positive energy and enthusiasm.');
+    parts.push('The user prefers energetic responses - but still respect the time of day rhythm.');
   }
 
   // Directness
@@ -730,6 +800,17 @@ export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
     },
   },
   {
+    id: 'schedule_preference',
+    question: "When are you most yourself?",
+    subtitle: "This helps your guide match your natural rhythm",
+    type: 'single',
+    options: [
+      { id: 'early_bird', emoji: '🌅', label: 'Early bird', description: 'I come alive in the morning' },
+      { id: 'normal', emoji: '☀️', label: 'Daytime person', description: 'Pretty standard schedule' },
+      { id: 'night_owl', emoji: '🦉', label: 'Night owl', description: 'I do my best thinking late' },
+    ],
+  },
+  {
     id: 'approach_preference',
     question: "Which approaches interest you?",
     subtitle: "Select any that resonate",
@@ -831,4 +912,78 @@ export function mapAnswersToSettings(
   }
 
   return settings;
+}
+
+/**
+ * Generate personalized mood mappings based on onboarding answers
+ * This determines which persona to switch to for each detected mood
+ */
+export function generateMoodMappings(
+  answers: Record<string, string | string[]>,
+  basePersona: CoachPersona
+): Record<string, CoachPersona> {
+  const supportStyle = answers.support_style as string;
+  const commPref = answers.communication_preference as string;
+  const energyPref = answers.energy_preference as string;
+  const approaches = (answers.approach_preference as string[]) || [];
+
+  // Start with base mappings
+  const mappings: Record<string, CoachPersona> = {
+    anxious: 'luna',
+    sad: 'fern',
+    angry: 'flint',
+    happy: 'spark',
+    neutral: basePersona,
+  };
+
+  // Personalize based on support style preference
+  if (supportStyle === 'solutions') {
+    // They want practical help - use goal-oriented personas
+    mappings.anxious = 'ridge'; // Focus on action over calm
+    mappings.sad = 'ridge';     // Give them something to do
+  } else if (supportStyle === 'validation') {
+    // They want to feel heard - use nurturing personas
+    mappings.anxious = 'fern';  // Extra gentle
+    mappings.angry = 'fern';    // Validate before addressing
+  } else if (supportStyle === 'motivation') {
+    // They want energy - use uplifting personas
+    mappings.sad = 'spark';     // Energize them
+    mappings.anxious = 'spark'; // Positive redirect
+  } else if (supportStyle === 'perspective') {
+    // They want wisdom - use reflective personas
+    mappings.anxious = 'willow';
+    mappings.sad = 'willow';
+    mappings.angry = 'willow';
+  }
+
+  // Further adjust based on communication preference
+  if (commPref === 'gentle') {
+    // Override any direct personas with gentle ones
+    if (mappings.angry === 'flint') mappings.angry = 'fern';
+    if (mappings.anxious === 'ridge') mappings.anxious = 'luna';
+  } else if (commPref === 'direct') {
+    // They can handle directness even in tough moments
+    if (mappings.sad === 'fern') mappings.sad = 'flint';
+  }
+
+  // Adjust based on energy preference
+  if (energyPref === '0') {
+    // Prefer calm energy across the board
+    if (mappings.happy === 'spark') mappings.happy = 'clover';
+    if (mappings.anxious === 'spark') mappings.anxious = 'luna';
+  } else if (energyPref === '2') {
+    // Prefer high energy
+    if (mappings.neutral === 'clover') mappings.neutral = 'spark';
+  }
+
+  // Adjust based on approaches they're interested in
+  if (approaches.includes('mindfulness') || approaches.includes('spiritual')) {
+    mappings.anxious = 'luna'; // Mindful presence for anxiety
+  }
+  if (approaches.includes('somatic')) {
+    // Body-aware personas
+    if (mappings.anxious !== 'luna') mappings.anxious = 'luna';
+  }
+
+  return mappings;
 }

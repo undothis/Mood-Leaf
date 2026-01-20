@@ -591,12 +591,12 @@ export async function sendMessage(
       userMessage: message,
     });
 
-    // Generate personality prompt for the active persona
+    // Generate personality prompt for the active persona with time awareness
     const activeSettings = {
       ...coachSettings,
       selectedPersona: activePersona,
     };
-    personalityPrompt = generatePersonalityPrompt(activeSettings);
+    personalityPrompt = generatePersonalityPrompt(activeSettings, timeOfDay);
   } catch (error) {
     console.log('Could not load coach personality:', error);
   }
