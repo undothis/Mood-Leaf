@@ -353,3 +353,57 @@ export function getMotivationalMessage(stats: Awaited<ReturnType<typeof getProgr
 
   return "You've started this journey. That's the hardest part. Keep going at your own pace.";
 }
+
+/**
+ * Get exposure ladder context for Claude
+ * Provides social anxiety exposure progress and history
+ */
+export async function getExposureContextForClaude(): Promise<string> {
+  const currentLevel = await getCurrentLevel();
+  const stats = await getProgressStats();
+  const recentAttempts = await getRecentAttempts(30);
+
+  if (stats.totalAttempts === 0 && currentLevel === 1) {
+    return ''; // User hasn't started exposure ladder
+  }
+
+  const levelInfo = getLevelInfo(currentLevel);
+  const parts: string[] = ['SOCIAL EXPOSURE PROGRESS (anxiety management):'];
+
+  parts.push(`\n  Current comfort level: ${currentLevel}/8 - "${levelInfo.name}"`);
+  parts.push(`  Level description: ${levelInfo.description}`);
+
+  if (stats.totalAttempts > 0) {
+    parts.push(`\n  Progress statistics:`);
+    parts.push(`    - Total attempts: ${stats.totalAttempts}`);
+    parts.push(`    - Completed: ${stats.completedAttempts}`);
+    parts.push(`    - Highest level attempted: ${stats.highestLevelAttempted}/8`);
+    if (stats.avgAnxietyReduction > 0) {
+      parts.push(`    - Average anxiety reduction: ${stats.avgAnxietyReduction} points`);
+    }
+    if (stats.streakDays > 0) {
+      parts.push(`    - Current practice streak: ${stats.streakDays} day${stats.streakDays !== 1 ? 's' : ''}`);
+    }
+  }
+
+  // Recent attempts with details
+  if (recentAttempts.length > 0) {
+    parts.push(`\n  Recent exposure attempts (last 30 days):`);
+    for (const attempt of recentAttempts.slice(0, 5)) {
+      const date = attempt.date.split('T')[0];
+      const levelName = getLevelInfo(attempt.level).name;
+      const status = attempt.completed ? '✓' : '○';
+      let anxietyChange = '';
+      if (attempt.anxietyAfter !== undefined) {
+        const change = attempt.anxietyBefore - attempt.anxietyAfter;
+        anxietyChange = change > 0 ? ` (anxiety: ${attempt.anxietyBefore}→${attempt.anxietyAfter})` : '';
+      }
+      parts.push(`    ${date}: ${status} Level ${attempt.level} "${levelName}"${anxietyChange}`);
+      if (attempt.notes) {
+        parts.push(`      Note: "${attempt.notes}"`);
+      }
+    }
+  }
+
+  return parts.join('\n');
+}

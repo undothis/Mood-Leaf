@@ -17,7 +17,7 @@ import { getContextForClaude } from './userContextService';
 import { getLifeContextForClaude } from './lifeContextService';
 import { getHealthContextForClaude, isHealthKitEnabled } from './healthKitService';
 import { getCorrelationSummaryForClaude } from './healthInsightService';
-import { getLogsContextForClaude } from './quickLogsService';
+import { getLogsContextForClaude, getDetailedLogsContextForClaude } from './quickLogsService';
 import { psychAnalysisService } from './psychAnalysisService';
 import {
   getCoachSettings,
@@ -26,6 +26,9 @@ import {
   getChronotypeContextForClaude,
   PERSONAS,
 } from './coachPersonalityService';
+import { getLifestyleFactorsContextForClaude } from './patternService';
+import { getExposureContextForClaude } from './exposureLadderService';
+import { getRecentJournalContextForClaude } from './journalStorage';
 
 // Storage keys
 const API_KEY_STORAGE = 'moodling_claude_api_key';
@@ -637,16 +640,55 @@ export async function sendMessage(
     console.log('Could not load chronotype context:', error);
   }
 
-  // Get quick logs context (habit tracking, medications, symptoms)
+  // Get quick logs context - use DETAILED version for comprehensive data access
   let logsContext = '';
   try {
-    logsContext = await getLogsContextForClaude();
+    logsContext = await getDetailedLogsContextForClaude();
   } catch (error) {
     console.log('Could not load quick logs context:', error);
   }
 
-  // Assemble full context: lifetime overview first, then psych profile, chronotype/travel, health + correlations, quick logs, then recent context, then current conversation
-  const contextParts = [lifeContext, psychContext, chronotypeContext, healthContext, correlationContext, logsContext, richContext, conversationContext].filter(Boolean);
+  // Get lifestyle factors context (caffeine, alcohol, exercise, outdoor, social, sleep)
+  let lifestyleContext = '';
+  try {
+    lifestyleContext = await getLifestyleFactorsContextForClaude();
+  } catch (error) {
+    console.log('Could not load lifestyle factors context:', error);
+  }
+
+  // Get exposure ladder context (social anxiety progress)
+  let exposureContext = '';
+  try {
+    exposureContext = await getExposureContextForClaude();
+  } catch (error) {
+    console.log('Could not load exposure context:', error);
+  }
+
+  // Get recent journal entries context (what user actually wrote)
+  let journalContext = '';
+  try {
+    journalContext = await getRecentJournalContextForClaude();
+  } catch (error) {
+    console.log('Could not load journal context:', error);
+  }
+
+  // Assemble full context with ALL data sources:
+  // Order: lifetime overview, psych profile, chronotype/travel, health + correlations,
+  // detailed tracking logs, lifestyle factors, exposure progress, recent journals,
+  // user preferences, then current conversation
+  const contextParts = [
+    lifeContext,         // Lifetime overview (people, events, themes)
+    psychContext,        // Psychological profile (cognitive patterns, attachment, values)
+    chronotypeContext,   // Chronotype and travel awareness
+    healthContext,       // HealthKit data (heart rate, sleep, activity)
+    correlationContext,  // Health-mood correlations
+    logsContext,         // DETAILED tracking data (exact counts for exercises, habits, meds)
+    lifestyleContext,    // Lifestyle factors (caffeine, alcohol, outdoor, social time)
+    exposureContext,     // Social exposure ladder progress
+    journalContext,      // Recent journal entries (what user actually wrote)
+    richContext,         // User preferences and mood trends
+    conversationContext  // Current conversation context
+  ].filter(Boolean);
   const fullContext = contextParts.join('\n\n');
   const systemPrompt = buildSystemPrompt(fullContext, toneInstruction, personalityPrompt);
   const messages = buildMessages(message, context.recentMessages);
