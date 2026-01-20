@@ -285,6 +285,14 @@ export default function OnboardingScreen() {
             })
           )}
         </ScrollView>
+
+        {question.hint && (
+          <View style={[styles.hintContainer, { backgroundColor: colors.cardBackground }]}>
+            <Text style={[styles.hintText, { color: colors.textSecondary }]}>
+              {question.hint}
+            </Text>
+          </View>
+        )}
       </Animated.View>
     );
   };
@@ -472,5 +480,16 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 17,
     fontWeight: '600',
+  },
+  hintContainer: {
+    padding: 12,
+    borderRadius: 10,
+    marginTop: 12,
+  },
+  hintText: {
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
 });

@@ -214,6 +214,9 @@ export interface CoachSettings {
   // Primary persona selection
   selectedPersona: CoachPersona;
 
+  // Custom name for the coach (optional - uses persona name if not set)
+  customName?: string;
+
   // Detailed customization (power user settings)
   detailedSettings: DetailedSettings;
   useDetailedSettings: boolean; // If false, derive from persona
@@ -228,6 +231,16 @@ export interface CoachSettings {
     communicationPreference?: string;
     goals?: string[];
   };
+}
+
+/**
+ * Get the display name for the coach (custom name or persona name)
+ */
+export function getCoachDisplayName(settings: CoachSettings): string {
+  if (settings.customName && settings.customName.trim()) {
+    return settings.customName.trim();
+  }
+  return PERSONAS[settings.selectedPersona].name;
 }
 
 // ============================================
@@ -482,14 +495,15 @@ export async function resetOnboarding(): Promise<void> {
  */
 export function generatePersonalityPrompt(settings: CoachSettings): string {
   const persona = PERSONAS[settings.selectedPersona];
+  const displayName = getCoachDisplayName(settings);
   const detailed = settings.useDetailedSettings
     ? settings.detailedSettings
     : getSettingsForPersona(settings.selectedPersona);
 
   const parts: string[] = [];
 
-  // Persona identity
-  parts.push(`You are ${persona.name}, the user's AI companion in Mood Leaf.`);
+  // Persona identity (use custom name if set)
+  parts.push(`You are ${displayName}, the user's AI companion in Mood Leaf.`);
   parts.push(`Your personality: ${persona.description}`);
   parts.push(`Core traits: ${persona.traits.join(', ')}.`);
 
@@ -645,7 +659,8 @@ export interface OnboardingQuestion {
   id: string;
   question: string;
   subtitle?: string;
-  type: 'single' | 'multi' | 'slider';
+  hint?: string; // Additional info shown at bottom of question
+  type: 'single' | 'multi' | 'slider' | 'text';
   options?: {
     id: string;
     label: string;
@@ -656,6 +671,10 @@ export interface OnboardingQuestion {
     min: number;
     max: number;
     labels: string[];
+  };
+  textConfig?: {
+    placeholder: string;
+    maxLength?: number;
   };
 }
 
@@ -724,6 +743,7 @@ export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
     id: 'persona_pick',
     question: "Finally, meet your guides",
     subtitle: "Who do you want to talk to first?",
+    hint: "Your guide learns and adapts to you over time. Want to customize faster? Head to Settings anytime.",
     type: 'single',
     options: [
       { id: 'clover', emoji: '🍀', label: 'Clover', description: 'Your lucky friend - warm & casual' },

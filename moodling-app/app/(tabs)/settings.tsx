@@ -15,8 +15,10 @@ import { router } from 'expo-router';
 import { Colors } from '@/constants/Colors';
 import {
   getCoachSettings,
+  getCoachDisplayName,
   PERSONAS,
   CoachPersona,
+  CoachSettings,
 } from '@/services/coachPersonalityService';
 import {
   getReminderSettings,
@@ -93,7 +95,7 @@ export default function SettingsScreen() {
   const [showPersonalization, setShowPersonalization] = useState(false);
 
   // Coach personality state (Unit 17)
-  const [currentCoach, setCurrentCoach] = useState<CoachPersona>('clover');
+  const [coachSettings, setCoachSettings] = useState<CoachSettings | null>(null);
 
   // Load settings on mount
   useEffect(() => {
@@ -134,8 +136,8 @@ export default function SettingsScreen() {
       setUserPrefs(prefs);
 
       // Load coach personality (Unit 17)
-      const coachSettings = await getCoachSettings();
-      setCurrentCoach(coachSettings.selectedPersona);
+      const loadedCoachSettings = await getCoachSettings();
+      setCoachSettings(loadedCoachSettings);
     } catch (error) {
       console.error('Failed to load settings:', error);
     } finally {
@@ -625,21 +627,23 @@ export default function SettingsScreen() {
           </Text>
         </View>
 
-        <TouchableOpacity
-          style={[styles.coachCard, { backgroundColor: colors.background }]}
-          onPress={() => router.push('/coach/settings')}
-        >
-          <Text style={styles.coachEmoji}>{PERSONAS[currentCoach].emoji}</Text>
-          <View style={styles.coachInfo}>
-            <Text style={[styles.coachName, { color: colors.text }]}>
-              {PERSONAS[currentCoach].name}
-            </Text>
-            <Text style={[styles.coachTagline, { color: colors.textSecondary }]}>
-              {PERSONAS[currentCoach].tagline}
-            </Text>
-          </View>
-          <Text style={[styles.coachArrow, { color: colors.textMuted }]}>→</Text>
-        </TouchableOpacity>
+        {coachSettings && (
+          <TouchableOpacity
+            style={[styles.coachCard, { backgroundColor: colors.background }]}
+            onPress={() => router.push('/coach/settings')}
+          >
+            <Text style={styles.coachEmoji}>{PERSONAS[coachSettings.selectedPersona].emoji}</Text>
+            <View style={styles.coachInfo}>
+              <Text style={[styles.coachName, { color: colors.text }]}>
+                {getCoachDisplayName(coachSettings)}
+              </Text>
+              <Text style={[styles.coachTagline, { color: colors.textSecondary }]}>
+                {PERSONAS[coachSettings.selectedPersona].tagline}
+              </Text>
+            </View>
+            <Text style={[styles.coachArrow, { color: colors.textMuted }]}>→</Text>
+          </TouchableOpacity>
+        )}
 
         <Text style={[styles.coachNote, { color: colors.textMuted }]}>
           Customize your guide's personality, communication style, and adaptive behaviors.

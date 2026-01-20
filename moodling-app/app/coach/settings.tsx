@@ -18,6 +18,7 @@ import {
   ScrollView,
   Pressable,
   Switch,
+  TextInput,
   useColorScheme,
   ActivityIndicator,
 } from 'react-native';
@@ -32,6 +33,7 @@ import {
   getCoachSettings,
   saveCoachSettings,
   getSettingsForPersona,
+  getCoachDisplayName,
   DetailedSettings,
   EnergyLevel,
   ResponseLength,
@@ -360,7 +362,7 @@ export default function CoachSettingsScreen() {
           <Text style={styles.summaryEmoji}>{selectedPersona.emoji}</Text>
           <View style={styles.summaryInfo}>
             <Text style={[styles.summaryName, { color: colors.text }]}>
-              Currently: {selectedPersona.name}
+              {getCoachDisplayName(settings)}
             </Text>
             <Text style={[styles.summaryTagline, { color: colors.textSecondary }]}>
               {selectedPersona.tagline}
@@ -371,6 +373,31 @@ export default function CoachSettingsScreen() {
               <Text style={styles.adaptiveBadgeText}>Adaptive</Text>
             </View>
           )}
+        </View>
+
+        {/* Custom Name */}
+        <View style={[styles.nameSection, { backgroundColor: colors.cardBackground }]}>
+          <Text style={[styles.nameLabel, { color: colors.text }]}>
+            Give your guide a name
+          </Text>
+          <TextInput
+            style={[
+              styles.nameInput,
+              {
+                backgroundColor: colors.background,
+                color: colors.text,
+                borderColor: colors.border,
+              },
+            ]}
+            placeholder={selectedPersona.name}
+            placeholderTextColor={colors.textSecondary}
+            value={settings.customName || ''}
+            onChangeText={(text) => updateSettings({ customName: text })}
+            maxLength={20}
+          />
+          <Text style={[styles.nameHint, { color: colors.textSecondary }]}>
+            Leave blank to use "{selectedPersona.name}"
+          </Text>
         </View>
 
         {/* Persona Selection */}
@@ -946,5 +973,27 @@ const styles = StyleSheet.create({
   resetHint: {
     fontSize: 12,
     marginTop: 8,
+  },
+  nameSection: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 16,
+    borderRadius: 12,
+  },
+  nameLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 10,
+  },
+  nameInput: {
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 16,
+  },
+  nameHint: {
+    fontSize: 12,
+    marginTop: 8,
+    fontStyle: 'italic',
   },
 });
