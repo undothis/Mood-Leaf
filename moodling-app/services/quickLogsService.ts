@@ -115,19 +115,28 @@ function generateId(): string {
 }
 
 /**
- * Get today's date as YYYY-MM-DD
+ * Get today's date as YYYY-MM-DD in LOCAL timezone
+ * Note: Using local components instead of toISOString() to avoid timezone bugs
+ * where late evening users would see "tomorrow" due to UTC conversion.
  */
 function getToday(): string {
-  return new Date().toISOString().split('T')[0];
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 /**
- * Get date N days ago
+ * Get date N days ago as YYYY-MM-DD in LOCAL timezone
  */
 function getDaysAgo(days: number): string {
   const date = new Date();
   date.setDate(date.getDate() - days);
-  return date.toISOString().split('T')[0];
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 // ============================================
@@ -509,13 +518,21 @@ async function recalculateStreak(logId: string): Promise<void> {
   let tempStreak = 0;
   let lastDate = '';
 
+  // Helper to get local date as YYYY-MM-DD
+  const getLocalDateStr = (d: Date): string => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   for (const date of dates.sort()) {
     if (lastDate === '') {
       tempStreak = 1;
     } else {
       const expected = new Date(lastDate);
       expected.setDate(expected.getDate() + 1);
-      if (date === expected.toISOString().split('T')[0]) {
+      if (date === getLocalDateStr(expected)) {
         tempStreak++;
       } else {
         tempStreak = 1;
