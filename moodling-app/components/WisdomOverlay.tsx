@@ -380,7 +380,7 @@ export function WisdomOverlay({ visible, onClose }: WisdomOverlayProps) {
               </Text>
             </View>
 
-            {/* Time-based row */}
+            {/* Time-based row - current time prominent */}
             <View style={styles.timeRow}>
               {timeCategories.map((time) => {
                 const category = TIME_CATEGORIES[time];
@@ -390,17 +390,25 @@ export function WisdomOverlay({ visible, onClose }: WisdomOverlayProps) {
                     key={time}
                     style={[
                       styles.timeButton,
+                      isCurrent ? styles.timeButtonCurrent : styles.timeButtonOther,
                       {
                         backgroundColor: isCurrent ? colors.tint + '20' : colors.card,
                         borderColor: isCurrent ? colors.tint : 'transparent',
                         borderWidth: isCurrent ? 2 : 0,
+                        opacity: isCurrent ? 1 : 0.5,
                       },
                     ]}
                     onPress={() => selectTimeCategory(time)}
                     activeOpacity={0.7}
                   >
-                    <Text style={styles.timeEmoji}>{category.emoji}</Text>
-                    <Text style={[styles.timeLabel, { color: isCurrent ? colors.tint : colors.text }]}>
+                    <Text style={[styles.timeEmoji, !isCurrent && styles.timeEmojiSmall]}>
+                      {category.emoji}
+                    </Text>
+                    <Text style={[
+                      styles.timeLabel,
+                      { color: isCurrent ? colors.tint : colors.textMuted },
+                      !isCurrent && styles.timeLabelSmall,
+                    ]}>
                       {category.label}
                     </Text>
                   </TouchableOpacity>
@@ -426,6 +434,21 @@ export function WisdomOverlay({ visible, onClose }: WisdomOverlayProps) {
                   </Text>
                 </TouchableOpacity>
               ))}
+
+              {/* Customize button */}
+              <TouchableOpacity
+                style={[styles.categoryButton, styles.customizeButton, { borderColor: colors.border }]}
+                onPress={() => {
+                  // TODO: Navigate to customize screen
+                  onClose();
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.categoryEmoji}>+</Text>
+                <Text style={[styles.categoryLabel, { color: colors.textMuted }]}>
+                  Customize
+                </Text>
+              </TouchableOpacity>
             </View>
 
             <View style={styles.bottomPadding} />
@@ -512,13 +535,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     borderRadius: 12,
   },
+  timeButtonCurrent: {
+    flex: 1.5,
+  },
+  timeButtonOther: {
+    flex: 0.8,
+  },
   timeEmoji: {
-    fontSize: 24,
+    fontSize: 28,
     marginBottom: 4,
   },
+  timeEmojiSmall: {
+    fontSize: 20,
+  },
   timeLabel: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
+  },
+  timeLabelSmall: {
+    fontSize: 10,
   },
   // Divider
   divider: {
@@ -539,6 +574,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 12,
+  },
+  customizeButton: {
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    backgroundColor: 'transparent',
   },
   categoryEmoji: {
     fontSize: 28,
