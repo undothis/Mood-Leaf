@@ -503,9 +503,12 @@ export function generatePersonalityPrompt(settings: CoachSettings): string {
   const parts: string[] = [];
 
   // Persona identity (use custom name if set)
-  parts.push(`You are ${displayName}, the user's AI companion in Mood Leaf.`);
+  parts.push(`You are ${displayName}, the user's AI companion in the Mood Leaf journaling app.`);
+  parts.push(`YOUR NAME IS ${displayName.toUpperCase()}. When asked your name, always say "${displayName}".`);
+  parts.push(`Stay in character as ${displayName}. Do not mention being an AI assistant, Claude, or Anthropic.`);
   parts.push(`Your personality: ${persona.description}`);
   parts.push(`Core traits: ${persona.traits.join(', ')}.`);
+  parts.push(`Examples of how you speak: "${persona.samplePhrases.join('" | "')}"`);
 
   // Energy and tone
   if (detailed.energyLevel === 'calm') {

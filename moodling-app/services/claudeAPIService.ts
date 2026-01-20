@@ -17,6 +17,7 @@ import { getContextForClaude } from './userContextService';
 import { getLifeContextForClaude } from './lifeContextService';
 import { getHealthContextForClaude, isHealthKitEnabled } from './healthKitService';
 import { getCorrelationSummaryForClaude } from './healthInsightService';
+import { psychAnalysisService } from './psychAnalysisService';
 import {
   getCoachSettings,
   generatePersonalityPrompt,
@@ -431,60 +432,120 @@ function getCurrentTimeOfDay(): 'morning' | 'afternoon' | 'evening' | 'night' {
 
 /**
  * Detect mood from message content for adaptive persona selection
+ * More comprehensive keyword matching for better adaptation
  */
 function detectMoodFromMessage(
   message: string
 ): 'anxious' | 'sad' | 'angry' | 'happy' | 'neutral' | undefined {
   const lower = message.toLowerCase();
 
-  // Anxious keywords
+  // Anxious keywords - anxiety, worry, fear, overwhelm + somatic compression
   if (
     lower.includes('anxious') ||
     lower.includes('worried') ||
     lower.includes('nervous') ||
     lower.includes('panic') ||
     lower.includes('stress') ||
-    lower.includes('overwhelm')
+    lower.includes('overwhelm') ||
+    lower.includes('scared') ||
+    lower.includes('afraid') ||
+    lower.includes('fear') ||
+    lower.includes('dread') ||
+    lower.includes('on edge') ||
+    lower.includes('can\'t stop thinking') ||
+    lower.includes('racing thoughts') ||
+    lower.includes('freaking out') ||
+    // Somatic compression keywords
+    lower.includes('chest tight') ||
+    lower.includes('can\'t breathe') ||
+    lower.includes('heart racing') ||
+    lower.includes('stomach knots') ||
+    lower.includes('shaking') ||
+    lower.includes('tension')
   ) {
     return 'anxious';
   }
 
-  // Sad keywords
+  // Sad keywords - depression, grief, loss, loneliness + somatic compression
   if (
     lower.includes('sad') ||
     lower.includes('depressed') ||
     lower.includes('down') ||
     lower.includes('hopeless') ||
     lower.includes('lonely') ||
-    lower.includes('empty')
+    lower.includes('empty') ||
+    lower.includes('grief') ||
+    lower.includes('lost someone') ||
+    lower.includes('miss them') ||
+    lower.includes('crying') ||
+    lower.includes('tears') ||
+    lower.includes('heartbroken') ||
+    lower.includes('numb') ||
+    lower.includes('worthless') ||
+    lower.includes('give up') ||
+    // Somatic compression keywords
+    lower.includes('heavy') ||
+    lower.includes('weight on') ||
+    lower.includes('exhausted') ||
+    lower.includes('drained') ||
+    lower.includes('no energy') ||
+    lower.includes('can\'t get up')
   ) {
     return 'sad';
   }
 
-  // Angry keywords
+  // Angry keywords - frustration, irritation, rage + somatic compression
   if (
     lower.includes('angry') ||
     lower.includes('frustrated') ||
     lower.includes('annoyed') ||
     lower.includes('furious') ||
-    lower.includes('pissed')
+    lower.includes('pissed') ||
+    lower.includes('mad at') ||
+    lower.includes('rage') ||
+    lower.includes('irritated') ||
+    lower.includes('fed up') ||
+    lower.includes('sick of') ||
+    lower.includes('hate') ||
+    // Somatic compression keywords
+    lower.includes('clenched') ||
+    lower.includes('tight jaw') ||
+    lower.includes('boiling') ||
+    lower.includes('blood pressure') ||
+    lower.includes('want to scream')
   ) {
     return 'angry';
   }
 
-  // Happy keywords
+  // Happy keywords - joy, excitement, gratitude, accomplishment + somatic release
   if (
     lower.includes('happy') ||
     lower.includes('excited') ||
     lower.includes('great') ||
     lower.includes('amazing') ||
     lower.includes('wonderful') ||
-    lower.includes('good news')
+    lower.includes('good news') ||
+    lower.includes('grateful') ||
+    lower.includes('thankful') ||
+    lower.includes('proud') ||
+    lower.includes('accomplished') ||
+    lower.includes('did it') ||
+    lower.includes('finally') ||
+    lower.includes('celebration') ||
+    lower.includes('best day') ||
+    lower.includes('so good') ||
+    // Somatic release keywords
+    lower.includes('feel light') ||
+    lower.includes('weight lifted') ||
+    lower.includes('relief') ||
+    lower.includes('relaxed') ||
+    lower.includes('at peace') ||
+    lower.includes('smile')
   ) {
     return 'happy';
   }
 
-  return undefined; // No clear mood detected
+  return undefined; // No clear mood detected - use base persona
 }
 
 // ============ Main API Function ============
@@ -558,8 +619,16 @@ export async function sendMessage(
     console.log('HealthKit not available:', error);
   }
 
-  // Assemble full context: lifetime overview first, then health + correlations, then recent context, then current conversation
-  const contextParts = [lifeContext, healthContext, correlationContext, richContext, conversationContext].filter(Boolean);
+  // Get psychological profile context (cognitive patterns, attachment style, etc.)
+  let psychContext = '';
+  try {
+    psychContext = await psychAnalysisService.getCompressedContext();
+  } catch (error) {
+    console.log('Could not load psych context:', error);
+  }
+
+  // Assemble full context: lifetime overview first, then psych profile, health + correlations, then recent context, then current conversation
+  const contextParts = [lifeContext, psychContext, healthContext, correlationContext, richContext, conversationContext].filter(Boolean);
   const fullContext = contextParts.join('\n\n');
   const systemPrompt = buildSystemPrompt(fullContext, toneInstruction, personalityPrompt);
   const messages = buildMessages(message, context.recentMessages);
