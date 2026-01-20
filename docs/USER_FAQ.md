@@ -16,8 +16,9 @@ A comprehensive guide answering common questions about using Moodling.
 8. [Notifications & Insights](#notifications--insights)
 9. [Oblique Strategies](#oblique-strategies)
 10. [Personalization](#personalization)
-11. [Crisis Support](#crisis-support)
-12. [Technical Questions](#technical-questions)
+11. [How Your Guide Adapts](#how-your-guide-adapts) ← NEW
+12. [Crisis Support](#crisis-support)
+13. [Technical Questions](#technical-questions)
 
 ---
 
@@ -586,6 +587,97 @@ Just tell Moodling in chat:
 - "I quit that job last month"
 
 The life context will update based on new information.
+
+---
+
+## How Your Guide Adapts
+
+Your AI guide adapts to you in several ways. Here are the key terms:
+
+### What are Personas?
+
+**Personas** are the 7 nature-themed personalities your guide can embody:
+
+| Persona | Emoji | Style |
+|---------|-------|-------|
+| **Clover** | 🍀 | Your lucky friend - warm, casual, relatable |
+| **Spark** | ✨ | Your cheerleader - energetic, motivating |
+| **Willow** | 🌿 | The sage - calm, wise, reflective |
+| **Luna** | 🌙 | The mystic - mindful, grounding, present |
+| **Ridge** | ⛰️ | The coach - focused, goal-oriented |
+| **Flint** | 🔥 | The straight shooter - direct, honest |
+| **Fern** | 🌱 | The nurturer - gentle, soft, caring |
+
+You pick your base persona during onboarding, but your guide can adapt beyond that.
+
+### What are Mood-to-Persona Switches?
+
+**Mood-to-Persona Switches** are automatic personality shifts based on how you're feeling.
+
+When you share something anxious, sad, angry, or happy, your guide can temporarily switch to a persona better suited to support you in that moment:
+
+- **Feeling anxious?** → Your guide might become more like Luna (calm, grounding)
+- **Feeling sad?** → Your guide might become more like Fern (gentle, nurturing)
+- **Feeling frustrated?** → Your guide might become more like Flint (direct, validating)
+- **Feeling great?** → Your guide might become more like Spark (matching your energy)
+
+**These switches are personalized to you** based on your onboarding answers:
+- If you said you prefer "practical solutions" when struggling, you'll get Ridge (action-oriented) instead of Luna when anxious
+- If you said you prefer "gentle" communication, you won't get Flint when you're upset
+
+You can enable or disable this in **Settings** > **Coach Settings** > **Adaptive Mode**.
+
+### What is Chronotype Awareness?
+
+**Chronotype** is your natural sleep/wake rhythm - whether you're an early bird, night owl, or somewhere in between.
+
+Your guide respects your chronotype when adjusting energy throughout the day:
+
+| If you're a... | Morning | Evening | Night |
+|----------------|---------|---------|-------|
+| **Early Bird** | Full energy, engaged | Winding down | Deep calm |
+| **Normal** | Gentle awakening | Softening | Calm |
+| **Night Owl** | Low-key, no pressure | Still engaged | Gentle wind-down when ready |
+
+**Why this matters**: A night owl journaling at 10pm won't get "time to wind down" pressure if that's their productive time. The guide matches YOUR rhythm.
+
+You set this during onboarding with the question "When are you most yourself?"
+
+### What is Time-of-Day Energy Modulation?
+
+**Time-of-Day Energy Modulation** is how your guide subtly shifts energy throughout the day:
+
+- **Morning**: Gentle, awakening energy to start your day
+- **Afternoon**: Steady, supportive energy
+- **Evening**: Softening energy, helping you wind down
+- **Night**: Calm, soothing energy to prepare for rest
+
+You won't see these shifts announced - they just happen naturally. Combined with chronotype awareness, the guide feels like it "just gets" your daily rhythm.
+
+### What is Adaptive Mode?
+
+**Adaptive Mode** is the setting that enables all these automatic adjustments. When on, your guide:
+
+1. Detects mood from what you're sharing
+2. Switches personas when helpful (mood-to-persona switches)
+3. Adjusts energy based on time of day
+4. Respects your chronotype
+
+When off, your guide stays as your chosen base persona all the time.
+
+**Enable/disable**: Settings > Coach Settings > Adaptive Mode
+
+### How does my guide know what I need?
+
+Your guide combines several signals:
+
+1. **Your onboarding answers** - What kind of support helps you most
+2. **Mood detection** - Keywords and body-awareness phrases you use (like "chest tight" or "weight on shoulders")
+3. **Time of day** - Current time + your chronotype
+4. **Your psychological patterns** - Noticed over time from your journals (cognitive patterns, attachment style)
+5. **Your life context** - Facts, events, and people from your story
+
+All of this creates a personalized experience where the guide adapts to you without you having to ask.
 
 ---
 
