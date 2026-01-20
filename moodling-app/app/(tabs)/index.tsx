@@ -26,6 +26,11 @@ import {
 } from '@/services/usageTrackingService';
 import { generateStyledReflection } from '@/services/reflectionService';
 import { MoodCategory } from '@/services/sentimentAnalysis';
+import {
+  getCoachSettings,
+  getCoachDisplayName,
+  getCoachEmoji,
+} from '@/services/coachPersonalityService';
 
 /**
  * Journal Tab - Primary Entry Point
@@ -75,6 +80,20 @@ export default function JournalScreen() {
 
   // Compassionate reflection state (Unit 15)
   const [savedReflection, setSavedReflection] = useState<string>('');
+
+  // Coach persona state
+  const [coachName, setCoachName] = useState('Your Guide');
+  const [coachEmoji, setCoachEmoji] = useState('🌿');
+
+  // Load coach persona on mount
+  useEffect(() => {
+    const loadCoach = async () => {
+      const settings = await getCoachSettings();
+      setCoachName(getCoachDisplayName(settings));
+      setCoachEmoji(getCoachEmoji(settings));
+    };
+    loadCoach();
+  }, []);
 
   // Check voice support on mount
   useEffect(() => {
@@ -431,16 +450,16 @@ export default function JournalScreen() {
           </View>
         )}
 
-        {/* Talk to Moodling Button (Unit 19) */}
+        {/* Talk to Coach Button (Unit 19) */}
         <TouchableOpacity
           style={[styles.coachButton, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={() => router.push('/coach')}
           activeOpacity={0.7}
         >
-          <Ionicons name="chatbubble-ellipses-outline" size={22} color={colors.tint} />
+          <Text style={styles.coachButtonEmoji}>{coachEmoji}</Text>
           <View style={styles.coachButtonText}>
             <Text style={[styles.coachButtonTitle, { color: colors.text }]}>
-              Talk with Moodling
+              Talk with {coachName}
             </Text>
             <Text style={[styles.coachButtonSubtitle, { color: colors.textMuted }]}>
               Get support preparing for challenges
@@ -669,6 +688,9 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     gap: 12,
+  },
+  coachButtonEmoji: {
+    fontSize: 26,
   },
   coachButtonText: {
     flex: 1,
