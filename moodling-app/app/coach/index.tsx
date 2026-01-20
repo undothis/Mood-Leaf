@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -23,6 +23,12 @@ import {
   getFallbackResponse,
 } from '@/services/claudeAPIService';
 import { getTonePreferences, ToneStyle } from '@/services/tonePreferencesService';
+import {
+  getCoachSettings,
+  getCoachDisplayName,
+  getCoachEmoji,
+  CoachSettings,
+} from '@/services/coachPersonalityService';
 
 /**
  * Coaching Conversation Screen
@@ -106,7 +112,12 @@ export default function CoachScreen() {
   const [turnCount, setTurnCount] = useState(0);
   const [additionalContext, setAdditionalContext] = useState<string | undefined>(entryContext);
 
-  // Check API key on mount
+  // Coach persona info
+  const [coachName, setCoachName] = useState('Your Guide');
+  const [coachEmoji, setCoachEmoji] = useState('🌿');
+  const [coachSettings, setCoachSettings] = useState<CoachSettings | null>(null);
+
+  // Load coach settings and API key on mount
   useEffect(() => {
     const checkSetup = async () => {
       const keyExists = await hasAPIKey();
@@ -114,6 +125,12 @@ export default function CoachScreen() {
 
       const prefs = await getTonePreferences();
       setToneStyles(prefs.selectedStyles);
+
+      // Load coach persona
+      const settings = await getCoachSettings();
+      setCoachSettings(settings);
+      setCoachName(getCoachDisplayName(settings));
+      setCoachEmoji(getCoachEmoji(settings));
     };
     checkSetup();
   }, []);
@@ -272,9 +289,12 @@ export default function CoachScreen() {
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>
-          Talk with Moodling
-        </Text>
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerEmoji}>{coachEmoji}</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>
+            {coachName}
+          </Text>
+        </View>
         <TouchableOpacity style={styles.doneButton} onPress={() => router.back()}>
           <Text style={[styles.doneButtonText, { color: colors.tint }]}>Done</Text>
         </TouchableOpacity>
@@ -433,11 +453,19 @@ const styles = StyleSheet.create({
   backButton: {
     padding: 4,
   },
-  headerTitle: {
+  headerCenter: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  headerEmoji: {
+    fontSize: 22,
+  },
+  headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    textAlign: 'center',
   },
   doneButton: {
     padding: 4,
