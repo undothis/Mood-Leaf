@@ -2618,11 +2618,13 @@ Two alert types available:
 
 ```typescript
 interface CycleReminders {
-  enabled: boolean;
-  periodApproaching: boolean;      // 1-3 days before predicted period
-  pmsStarting: boolean;            // Based on user's historical patterns
-  logSymptomsReminder: boolean;    // Daily during period
-  alertType: 'push' | 'firefly';   // How to deliver alerts
+  enabled: boolean;                    // Master toggle for all reminders
+  notificationsEnabled: boolean;       // On/off switch for period notifications
+  periodApproaching: boolean;          // 1-3 days before predicted period
+  pmsStarting: boolean;                // Based on user's historical patterns
+  logSymptomsReminder: boolean;        // Daily during period
+  ovulationReminder: boolean;          // Fertility window alerts
+  alertType: 'push' | 'firefly';       // How to deliver alerts
 }
 
 // Firefly alert implementation
@@ -2715,6 +2717,80 @@ const PERSONALIZATION_QUESTIONS = [
   },
 ];
 ```
+
+### HealthKit Integration
+
+Cycle tracking fully integrates with Apple HealthKit for seamless data sync across health apps.
+
+**Required HealthKit Permissions**:
+```typescript
+const CYCLE_HEALTHKIT_TYPES = {
+  read: [
+    HKCategoryTypeIdentifier.menstrualFlow,
+    HKCategoryTypeIdentifier.intermenstrualBleeding,
+    HKCategoryTypeIdentifier.ovulationTestResult,
+    HKCategoryTypeIdentifier.cervicalMucusQuality,
+    HKCategoryTypeIdentifier.sexualActivity,
+    HKQuantityTypeIdentifier.basalBodyTemperature,
+  ],
+  write: [
+    HKCategoryTypeIdentifier.menstrualFlow,
+    HKCategoryTypeIdentifier.abdominalCramps,
+    HKCategoryTypeIdentifier.bloating,
+    HKCategoryTypeIdentifier.breastPain,
+    HKCategoryTypeIdentifier.headache,
+    HKCategoryTypeIdentifier.moodChanges,
+    HKCategoryTypeIdentifier.fatigue,
+  ],
+};
+```
+
+**Sync Implementation**:
+```typescript
+interface HealthKitCycleSync {
+  // Read cycle data from Apple Health
+  async importCycleData(): Promise<CycleData> {
+    const periods = await HealthKit.queryCategory(
+      HKCategoryTypeIdentifier.menstrualFlow,
+      { startDate: sixMonthsAgo }
+    );
+    return processPeriodData(periods);
+  }
+
+  // Write symptoms to Apple Health
+  async exportSymptom(symptom: CycleSymptom): Promise<void> {
+    await HealthKit.saveCategory(symptom.healthKitType, {
+      value: symptom.severity,
+      startDate: symptom.date,
+      metadata: { source: 'MoodLeaf' },
+    });
+  }
+
+  // Bi-directional sync
+  async syncWithHealthKit(): Promise<void> {
+    await this.importCycleData();
+    await this.exportPendingSymptoms();
+  }
+}
+```
+
+**Symptom Mapping**:
+| Mood Leaf Twig | HealthKit Category |
+|----------------|-------------------|
+| Cramps | abdominalCramps |
+| Bloating | bloating |
+| Breast Tenderness | breastPain |
+| Headache | headache |
+| Mood Shift | moodChanges |
+| Fatigue/Energy | fatigue |
+| Period Start/End | menstrualFlow |
+| Flow Level | menstrualFlow (with value) |
+
+**Privacy Notes**:
+- HealthKit data never leaves device
+- Symptoms sync bi-directionally
+- User controls read/write permissions separately
+- Data from other apps (Clue, Flo, Apple Cycle Tracking) becomes available
 
 ### Wearable Integrations
 

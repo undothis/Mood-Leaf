@@ -191,8 +191,18 @@ export const FAQ_CONTENT: FAQItem[] = [
   },
   {
     category: 'features',
+    question: 'How do I turn off period notifications?',
+    answer: 'In Settings > Cycle Tracking > Notifications, there\'s a master on/off switch for all period-related notifications. One tap turns them all off (or back on). Keep cycle tracking enabled but silence the alerts.',
+  },
+  {
+    category: 'features',
     question: 'What is a Firefly alert?',
     answer: 'Instead of a push notification, a Firefly can gently blink on your home screen to alert you. Tap it for cycle-related wisdom like "Your period is predicted in 2 days" or "PMS usually starts around now for you." Less intrusive than notifications.',
+  },
+  {
+    category: 'features',
+    question: 'Does cycle tracking sync with Apple Health?',
+    answer: 'Yes! With HealthKit enabled, Mood Leaf reads your cycle data from Apple Health (synced from apps like Clue, Flo, or Apple\'s Cycle Tracking). It can also write your logs back. One source of truth across all your health apps.',
   },
 
   // Personalization & Onboarding
@@ -428,7 +438,11 @@ export const USER_MANUAL_CONTENT: ManualSection[] = [
       },
       {
         title: 'Reminders',
-        content: 'Get gentle reminders about your cycle:\n• Period approaching (1-3 days before)\n• PMS starting (based on YOUR patterns)\n• Log symptoms reminder\n\nChoose push notifications or Firefly alerts (a Firefly blinks on your home screen). Less intrusive, still helpful.',
+        content: 'Get gentle reminders about your cycle:\n• Period approaching (1-3 days before)\n• PMS starting (based on YOUR patterns)\n• Log symptoms reminder\n• Ovulation/fertility window alerts\n\nChoose push notifications or Firefly alerts (a Firefly blinks on your home screen). Less intrusive, still helpful.\n\nMaster on/off switch: Settings → Cycle Tracking → Notifications. Turn all period notifications off (or back on) with one tap.',
+      },
+      {
+        title: 'HealthKit Integration',
+        content: 'With HealthKit enabled, Mood Leaf syncs with Apple Health:\n• Reads cycle data from other apps (Clue, Flo, Apple Cycle Tracking)\n• Writes your symptoms back to Apple Health\n• Heart rate, sleep, and activity data inform cycle insights\n• One source of truth across all your health apps',
       },
       {
         title: 'Privacy',
