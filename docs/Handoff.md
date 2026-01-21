@@ -765,6 +765,109 @@ All insights stay on your device 🔒
 
 ---
 
+## 18. FUTURE: Hybrid On-Device LLM Architecture
+
+### Concept: Compress → Send → Reassemble
+
+A privacy-first architecture where compressed context goes to Claude, but rich personalized responses are assembled locally using on-device LLMs.
+
+**Flow:**
+```
+┌─────────────────────────────────────────────────────────────┐
+│  DEVICE (Private)                                           │
+│  ┌──────────────┐                                           │
+│  │ Full Context │ ← Raw journals, patterns, relationships   │
+│  │ (~5000 tokens)│                                          │
+│  └──────┬───────┘                                           │
+│         │ Compress                                          │
+│         ▼                                                   │
+│  ┌──────────────┐      ┌─────────────┐                      │
+│  │  MoodPrint   │ ───► │ Claude API  │ ◄── Cloud            │
+│  │ (~100 tokens)│      └──────┬──────┘                      │
+│  └──────────────┘             │                             │
+│                               ▼                             │
+│                   "I hear you're struggling.                │
+│                    [EXPAND:sunday_pattern]                  │
+│                    [EXPAND:recent_wins]"                    │
+│                               │                             │
+│         ┌─────────────────────┘                             │
+│         ▼                                                   │
+│  ┌──────────────┐                                           │
+│  │ On-Device LLM│ ← Expands markers with local context      │
+│  │ (Apple/Google)│                                          │
+│  └──────┬───────┘                                           │
+│         ▼                                                   │
+│  "I hear you're struggling. I noticed Sunday evenings       │
+│   are often hard for you - last week you mentioned          │
+│   dreading Monday meetings. But remember, just yesterday    │
+│   you handled that conflict with Sarah really well..."      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Platform Requirements (Researched Jan 2026)
+
+| Platform | Chip/Hardware | OS Version | On-Device LLM | API |
+|----------|---------------|------------|---------------|-----|
+| **iPhone** | A17 Pro+ | iOS 18.1+ | Foundation Models | Swift |
+| **iPad** | M-series | iPadOS 18.1+ | Foundation Models | Swift |
+| **Android** | Pixel 10 (best) | Android 14+ | Gemini Nano | ML Kit |
+| **Mac** | M1+ | macOS 15.1+ | Foundation Models | Swift |
+| **Windows** | 40+ TOPS NPU | Win 11 24H2+ | Phi-Silica | Windows AI |
+
+### Platform Notes
+
+**iOS/Mac (Best Support)**
+- Apple Foundation Models Framework (WWDC 2025)
+- ~3B parameter model, free inference
+- Designed for summarization, extraction, rewriting
+- Privacy-first, no cloud dependency
+
+**Android (Workable with Constraints)**
+- Gemini Nano via ML Kit GenAI APIs
+- Must be foreground app (background blocked)
+- Per-app inference and battery quotas
+- Best on Pixel 10, limited on older devices
+
+**Windows (Stretch Goal)**
+- Requires Copilot+ PC with 40+ TOPS NPU
+- Snapdragon X Elite, AMD Ryzen AI 300, Intel Core Ultra 200V
+- Phi-Silica model for text generation
+- Most restrictive platform
+
+### Implementation Considerations
+
+**Expansion Markers:**
+```typescript
+// Claude's response includes markers
+"[EXPAND:temporal_pattern]" → On-device: "You tend to struggle on Sunday evenings..."
+"[EXPAND:recent_journal:3]" → On-device: "In your entry from Tuesday, you wrote..."
+"[EXPAND:relationship:mom]" → On-device: "With your mom, you've been working on..."
+```
+
+**Fallback Strategy:**
+- Devices without on-device LLM: Show Claude's response as-is (no expansion)
+- Or: Make second API call to expand (costs more, works everywhere)
+
+**Open Questions:**
+- [ ] How to handle expansion markers gracefully when LLM unavailable?
+- [ ] Should expansion be opt-in or automatic?
+- [ ] How to test on-device inference quality?
+- [ ] What's the latency impact of local expansion?
+
+### Files to Create (When Ready)
+
+| File | Purpose |
+|------|---------|
+| `services/onDeviceExpansionService.ts` | Platform detection, expansion logic |
+| `services/expansionMarkerParser.ts` | Parse `[EXPAND:...]` markers from responses |
+| `services/localContextRetriever.ts` | Fetch specific context (journals, patterns) |
+
+### Status: Research Complete, Implementation Pending
+
+The APIs are new (Apple Foundation Models just launched at WWDC 2025). Recommend waiting for APIs to stabilize before building.
+
+---
+
 ## 15. SUCCESS CRITERIA FOR THE NEXT CHECKPOINT
 
 - [ ] Cycle tracking works on iOS device (not just web)
