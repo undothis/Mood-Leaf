@@ -855,6 +855,200 @@ export default function CycleSettingsScreen() {
                 </Text>
               </Pressable>
             </View>
+
+            {/* Developer Testing - Only visible in dev mode */}
+            {__DEV__ && (
+              <View style={[styles.section, { backgroundColor: colors.accent.lavender + '30', borderWidth: 2, borderColor: colors.accent.lavender, borderStyle: 'dashed' }]}>
+                <Text style={[styles.sectionTitle, { color: colors.warmNeutral.charcoal }]}>
+                  🧪 Developer Testing
+                </Text>
+                <Text style={[styles.sectionDescription, { color: colors.warmNeutral.stone }]}>
+                  Test period functions without waiting for real cycles
+                </Text>
+
+                {/* Simulate Cycle Day */}
+                <Text style={[styles.subsectionTitle, { color: colors.warmNeutral.charcoal }]}>
+                  Set Cycle Day
+                </Text>
+                <View style={styles.devButtonRow}>
+                  {[1, 5, 10, 14, 21, 28].map((day) => (
+                    <Pressable
+                      key={day}
+                      style={[styles.devButton, { backgroundColor: colors.warmNeutral.cream }]}
+                      onPress={async () => {
+                        // Simulate setting cycle to specific day by creating fake period
+                        const fakeStartDate = new Date();
+                        fakeStartDate.setDate(fakeStartDate.getDate() - day + 1);
+                        Alert.alert('Dev Mode', `Simulating cycle day ${day}\n(Start: ${fakeStartDate.toLocaleDateString()})`);
+                        await startPeriod(fakeStartDate);
+                        if (day > 5) {
+                          // End period after 5 days for non-menstrual phases
+                          const endDate = new Date(fakeStartDate);
+                          endDate.setDate(endDate.getDate() + 4);
+                          await endPeriod(endDate);
+                        }
+                        loadSettings();
+                      }}
+                    >
+                      <Text style={[styles.devButtonText, { color: colors.warmNeutral.charcoal }]}>
+                        Day {day}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+
+                {/* Simulate Phase */}
+                <Text style={[styles.subsectionTitle, { color: colors.warmNeutral.charcoal }]}>
+                  Quick Phase Simulation
+                </Text>
+                <View style={styles.devButtonRow}>
+                  <Pressable
+                    style={[styles.devPhaseButton, { backgroundColor: colors.accent.terracotta + '60' }]}
+                    onPress={async () => {
+                      await startPeriod();
+                      loadSettings();
+                      Alert.alert('Dev Mode', 'Menstrual phase started (Day 1)');
+                    }}
+                  >
+                    <Text style={styles.devPhaseEmoji}>🩸</Text>
+                    <Text style={[styles.devPhaseText, { color: colors.warmNeutral.charcoal }]}>Menstrual</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.devPhaseButton, { backgroundColor: colors.accent.sage + '60' }]}
+                    onPress={async () => {
+                      const start = new Date();
+                      start.setDate(start.getDate() - 7);
+                      await startPeriod(start);
+                      const end = new Date(start);
+                      end.setDate(end.getDate() + 4);
+                      await endPeriod(end);
+                      loadSettings();
+                      Alert.alert('Dev Mode', 'Follicular phase (Day 8)');
+                    }}
+                  >
+                    <Text style={styles.devPhaseEmoji}>🌱</Text>
+                    <Text style={[styles.devPhaseText, { color: colors.warmNeutral.charcoal }]}>Follicular</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.devPhaseButton, { backgroundColor: colors.accent.lavender + '60' }]}
+                    onPress={async () => {
+                      const start = new Date();
+                      start.setDate(start.getDate() - 13);
+                      await startPeriod(start);
+                      const end = new Date(start);
+                      end.setDate(end.getDate() + 4);
+                      await endPeriod(end);
+                      loadSettings();
+                      Alert.alert('Dev Mode', 'Ovulation phase (Day 14)');
+                    }}
+                  >
+                    <Text style={styles.devPhaseEmoji}>✨</Text>
+                    <Text style={[styles.devPhaseText, { color: colors.warmNeutral.charcoal }]}>Ovulation</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.devPhaseButton, { backgroundColor: colors.accent.terracotta + '40' }]}
+                    onPress={async () => {
+                      const start = new Date();
+                      start.setDate(start.getDate() - 20);
+                      await startPeriod(start);
+                      const end = new Date(start);
+                      end.setDate(end.getDate() + 4);
+                      await endPeriod(end);
+                      loadSettings();
+                      Alert.alert('Dev Mode', 'Luteal phase (Day 21)');
+                    }}
+                  >
+                    <Text style={styles.devPhaseEmoji}>🌙</Text>
+                    <Text style={[styles.devPhaseText, { color: colors.warmNeutral.charcoal }]}>Luteal</Text>
+                  </Pressable>
+                </View>
+
+                {/* Simulate PMS */}
+                <Text style={[styles.subsectionTitle, { color: colors.warmNeutral.charcoal }]}>
+                  Test PMS Mode
+                </Text>
+                <Pressable
+                  style={[styles.devActionButton, { backgroundColor: colors.accent.terracotta + '50' }]}
+                  onPress={async () => {
+                    const start = new Date();
+                    start.setDate(start.getDate() - 24); // Day 25 = PMS window
+                    await startPeriod(start);
+                    const end = new Date(start);
+                    end.setDate(end.getDate() + 4);
+                    await endPeriod(end);
+                    loadSettings();
+                    Alert.alert('Dev Mode', 'PMS mode activated (Day 25 of 28-day cycle)\nSoothing Sparks should now be active.');
+                  }}
+                >
+                  <Text style={[styles.devActionText, { color: colors.warmNeutral.charcoal }]}>
+                    🌸 Trigger PMS Window (Day 25)
+                  </Text>
+                </Pressable>
+
+                {/* Test Reminders */}
+                <Text style={[styles.subsectionTitle, { color: colors.warmNeutral.charcoal }]}>
+                  Test Reminder Alerts
+                </Text>
+                <View style={styles.devButtonRow}>
+                  <Pressable
+                    style={[styles.devActionButton, { backgroundColor: colors.warmNeutral.cream, flex: 1 }]}
+                    onPress={() => {
+                      Alert.alert(
+                        'Period Approaching',
+                        `Your period is expected in ${settings.reminders.daysBeforePeriodAlert} day(s).`,
+                        [{ text: 'OK' }]
+                      );
+                    }}
+                  >
+                    <Text style={[styles.devActionText, { color: colors.warmNeutral.charcoal }]}>
+                      📅 Period Alert
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.devActionButton, { backgroundColor: colors.warmNeutral.cream, flex: 1 }]}
+                    onPress={() => {
+                      Alert.alert(
+                        'PMS Starting',
+                        'Based on your patterns, PMS may be starting. Extra gentleness helps.',
+                        [{ text: 'Got it' }]
+                      );
+                    }}
+                  >
+                    <Text style={[styles.devActionText, { color: colors.warmNeutral.charcoal }]}>
+                      🌙 PMS Alert
+                    </Text>
+                  </Pressable>
+                </View>
+                <Pressable
+                  style={[styles.devActionButton, { backgroundColor: colors.warmNeutral.cream }]}
+                  onPress={() => {
+                    Alert.alert(
+                      'Ovulation Window',
+                      'You may be in your fertile window (days 12-16 of cycle).',
+                      [{ text: 'Thanks' }]
+                    );
+                  }}
+                >
+                  <Text style={[styles.devActionText, { color: colors.warmNeutral.charcoal }]}>
+                    🌸 Ovulation Alert
+                  </Text>
+                </Pressable>
+
+                {/* Reset to Current Date */}
+                <Pressable
+                  style={[styles.devResetButton, { borderColor: colors.warmNeutral.stone }]}
+                  onPress={async () => {
+                    await clearAllCycleData();
+                    loadSettings();
+                    Alert.alert('Dev Mode', 'All cycle data cleared. Ready for fresh testing.');
+                  }}
+                >
+                  <Text style={[styles.devResetText, { color: colors.warmNeutral.stone }]}>
+                    🔄 Reset All Test Data
+                  </Text>
+                </Pressable>
+              </View>
+            )}
           </>
         )}
       </ScrollView>
@@ -1087,5 +1281,61 @@ const styles = StyleSheet.create({
   pregnancyText: {
     fontSize: 14,
     lineHeight: 20,
+  },
+  // Developer Testing styles
+  devButtonRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 8,
+  },
+  devButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    minWidth: 50,
+    alignItems: 'center',
+  },
+  devButtonText: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  devPhaseButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+    alignItems: 'center',
+    minWidth: 70,
+  },
+  devPhaseEmoji: {
+    fontSize: 20,
+    marginBottom: 4,
+  },
+  devPhaseText: {
+    fontSize: 11,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  devActionButton: {
+    padding: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  devActionText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  devResetButton: {
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  devResetText: {
+    fontSize: 14,
+    fontWeight: '500',
   },
 });
