@@ -47,6 +47,7 @@ Currently refining the Simulator Mode to properly validate AI behavior.
 - **`[H]` placeholder appeared in chat:** Claude was inserting `[H]` as a name placeholder. FIXED - added explicit instructions to never use bracket placeholders.
 - **Verification edge cases:** The generic detection (CHECK 7) was flagging responses as generic even when actual data references were found. FIXED but may need more tuning.
 - **Twig time tracking:** AI couldn't answer "what did I log at 5:11 PM?" FIXED - now includes exact timestamps for today's and yesterday's entries.
+- **UTC vs Local Timezone Bug:** Newly logged twigs weren't appearing in AI context. FIXED - timestamps were stored in UTC (ISO format) but filtered using local dates. Added `isoToLocalDate()` helper function to convert UTC timestamps to local dates before comparison. This affected `getTodayEntries`, `getEntriesForLog`, `getDetailedLogsContextForClaude`, and other date-filtering functions in `quickLogsService.ts`.
 
 ---
 
@@ -96,12 +97,14 @@ Currently refining the Simulator Mode to properly validate AI behavior.
 ## 9. HANDOFF NOTES (CONTEXT FOR THE NEXT MIND)
 
 - **Branch has been merged:** Combined `claude/review-mega-prompt-LmMqp` (had this template) with `claude/resume-after-corruption-USBHf` (had all simulator fixes). Kept simulator fixes, added template.
-- **Key files modified today:**
+- **Key files modified:**
   - `moodling-app/app/simulator.tsx` - Challenge persistence, CHECK 7 fix, AI response handler
   - `moodling-app/services/claudeAPIService.ts` - Added "ADDRESSING THE USER" section to prevent [H] placeholders
+  - `moodling-app/services/quickLogsService.ts` - Added `isoToLocalDate()` helper and fixed all date filtering to use local timezone instead of UTC
 - **User cares deeply about:** AI feeling personal, not generic. Every response should demonstrate the AI "remembers" their specific situation.
 - **Don't repeat:** The generic check issue where it flagged as generic even with data refs found
 - **Testing flow:** Simulator > Generate Challenge > Copy to Chat > Paste AI response back > Verify
+- **Timezone fix details:** The bug was that `new Date().toISOString()` stores in UTC, but we compared against local dates like `getToday()`. Example: 11 PM EST on Jan 21 → UTC is 4 AM Jan 22 → filtering for "Jan 21" (local) wouldn't match the "Jan 22" (UTC) timestamp.
 
 ---
 
@@ -112,9 +115,10 @@ Currently refining the Simulator Mode to properly validate AI behavior.
 - [ ] Challenge state reliably persists across navigation
 - [ ] Verification results are accurate (no contradictory positives + generic flags)
 - [ ] All challenge categories produce meaningful tests
+- [ ] Newly logged twigs immediately appear in AI context (timezone fix verified)
 
 ---
 
 ## QUICK STATUS SNAPSHOT
 
-"Simulator Mode verification is functional with challenge persistence; next session should focus on testing AI response quality to ensure specific data referencing works consistently."
+"Fixed UTC vs Local timezone bug in twig timestamp filtering; newly logged twigs should now appear immediately in AI context. Next session should verify the fix works across different timezones."
