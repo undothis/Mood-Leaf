@@ -26,6 +26,7 @@ const STORAGE_KEYS = {
   SKILL_PROGRESS: 'moodleaf_skill_progress',
   SKILL_USAGE_LOG: 'moodleaf_skill_usage_log',
   UNLOCKED_SKILLS: 'moodleaf_unlocked_skills',
+  ENABLED_SKILLS: 'moodleaf_enabled_skills', // Which skills user has enabled
 };
 
 // ============================================
@@ -772,6 +773,96 @@ export function getEncouragementMessage(progress: SkillProgress): string {
   }
 
   return messages[Math.floor(Math.random() * messages.length)];
+}
+
+// ============================================
+// SKILL ENABLE/DISABLE MANAGEMENT
+// ============================================
+
+/**
+ * Get all enabled skills (by default all free skills are enabled)
+ */
+export async function getEnabledSkills(): Promise<Record<string, boolean>> {
+  try {
+    const data = await AsyncStorage.getItem(STORAGE_KEYS.ENABLED_SKILLS);
+    if (data) {
+      return JSON.parse(data);
+    }
+    // Default: all free skills enabled
+    const defaults: Record<string, boolean> = {};
+    SKILLS.forEach((skill) => {
+      defaults[skill.id] = skill.tier === 'free';
+    });
+    return defaults;
+  } catch (error) {
+    console.error('Failed to get enabled skills:', error);
+    const defaults: Record<string, boolean> = {};
+    SKILLS.forEach((skill) => {
+      defaults[skill.id] = skill.tier === 'free';
+    });
+    return defaults;
+  }
+}
+
+/**
+ * Check if a specific skill is enabled
+ */
+export async function isSkillEnabled(skillId: string): Promise<boolean> {
+  const enabled = await getEnabledSkills();
+  return enabled[skillId] ?? false;
+}
+
+/**
+ * Enable or disable a skill
+ */
+export async function setSkillEnabled(skillId: string, enabled: boolean): Promise<void> {
+  try {
+    const current = await getEnabledSkills();
+    current[skillId] = enabled;
+    await AsyncStorage.setItem(STORAGE_KEYS.ENABLED_SKILLS, JSON.stringify(current));
+  } catch (error) {
+    console.error('Failed to set skill enabled:', error);
+    throw error;
+  }
+}
+
+/**
+ * Toggle a skill's enabled state
+ */
+export async function toggleSkillEnabled(skillId: string): Promise<boolean> {
+  const current = await isSkillEnabled(skillId);
+  await setSkillEnabled(skillId, !current);
+  return !current;
+}
+
+/**
+ * Get all skills with their enabled state
+ */
+export async function getSkillsWithEnabledState(isPremium: boolean): Promise<Array<{
+  skill: Skill;
+  progress: SkillProgress;
+  enabled: boolean;
+  isLocked: boolean;
+}>> {
+  const allProgress = await getAllSkillProgress();
+  const enabledSkills = await getEnabledSkills();
+
+  return SKILLS.map((skill) => {
+    const progress = allProgress[skill.id] || {
+      skillId: skill.id,
+      level: 1,
+      currentXP: 0,
+      totalXP: 0,
+      timesUsed: 0,
+    };
+
+    return {
+      skill,
+      progress,
+      enabled: enabledSkills[skill.id] ?? false,
+      isLocked: skill.tier === 'premium' && !isPremium,
+    };
+  });
 }
 
 // ============================================
