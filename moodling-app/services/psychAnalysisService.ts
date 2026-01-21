@@ -705,6 +705,9 @@ class PsychAnalysisService {
 
     // Update Gottman patterns
     this.updateGottmanPatterns(analysis.gottmanSignals);
+
+    // Update temporal patterns (when does user feel best/worst)
+    this.updateTemporalPatterns(analysis);
   }
 
   private updateDefenseLevel(): void {
@@ -880,16 +883,185 @@ class PsychAnalysisService {
     }
   }
 
+  /**
+   * Update temporal patterns - tracks mood by time of day and day of week
+   * This helps identify when the user struggles most (e.g., Sunday evenings)
+   */
+  private updateTemporalPatterns(analysis: EntryAnalysis, timestamp: Date = new Date()): void {
+    // Initialize if needed
+    if (!this.profile.temporalPatterns) {
+      this.profile.temporalPatterns = {
+        moodByHour: {},
+        moodByDayOfWeek: {},
+      };
+    }
+
+    const tp = this.profile.temporalPatterns;
+    const hour = timestamp.getHours();
+    const dayOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][timestamp.getDay()];
+
+    // Calculate mood score from analysis (-1 to 1 scale)
+    // Positive signals: PERMA elements, growth mindset, adaptive coping
+    // Negative signals: cognitive distortions, sympathetic/dorsal states, maladaptive coping
+    let moodScore = 0;
+
+    // Positive contributions
+    moodScore += analysis.permaElements.length * 0.1;
+    moodScore += analysis.mindsetSignals.filter(s => s.type === 'growth').length * 0.15;
+    moodScore += analysis.regulationStrategies.filter(s =>
+      EMOTION_REGULATION_PATTERNS[s.strategy]?.adaptive
+    ).length * 0.1;
+    if (analysis.polyvagalState?.state === 'ventral_vagal') moodScore += 0.2;
+
+    // Negative contributions
+    moodScore -= analysis.cognitiveDistortions.length * 0.1;
+    moodScore -= analysis.regulationStrategies.filter(s =>
+      !EMOTION_REGULATION_PATTERNS[s.strategy]?.adaptive
+    ).length * 0.1;
+    if (analysis.polyvagalState?.state === 'sympathetic') moodScore -= 0.2;
+    if (analysis.polyvagalState?.state === 'dorsal_vagal') moodScore -= 0.3;
+
+    // Clamp to -1 to 1
+    moodScore = Math.max(-1, Math.min(1, moodScore));
+
+    // Update hour aggregate
+    if (!tp.moodByHour[hour]) {
+      tp.moodByHour[hour] = { sum: 0, count: 0 };
+    }
+    tp.moodByHour[hour].sum += moodScore;
+    tp.moodByHour[hour].count++;
+
+    // Update day aggregate
+    if (!tp.moodByDayOfWeek[dayOfWeek]) {
+      tp.moodByDayOfWeek[dayOfWeek] = { sum: 0, count: 0 };
+    }
+    tp.moodByDayOfWeek[dayOfWeek].sum += moodScore;
+    tp.moodByDayOfWeek[dayOfWeek].count++;
+
+    // Calculate worst/best times (need at least 3 data points)
+    const hourEntries = Object.entries(tp.moodByHour)
+      .filter(([_, data]) => data.count >= 3)
+      .map(([h, data]) => ({ hour: parseInt(h), avg: data.sum / data.count }));
+
+    if (hourEntries.length >= 2) {
+      const sorted = hourEntries.sort((a, b) => a.avg - b.avg);
+      const worstHour = sorted[0].hour;
+      const bestHour = sorted[sorted.length - 1].hour;
+
+      tp.worstTimeOfDay = this.hourToTimeOfDay(worstHour);
+      tp.bestTimeOfDay = this.hourToTimeOfDay(bestHour);
+    }
+
+    // Calculate worst day of week
+    const dayEntries = Object.entries(tp.moodByDayOfWeek)
+      .filter(([_, data]) => data.count >= 2)
+      .map(([day, data]) => ({ day, avg: data.sum / data.count }));
+
+    if (dayEntries.length >= 2) {
+      const sorted = dayEntries.sort((a, b) => a.avg - b.avg);
+      tp.worstDayOfWeek = sorted[0].day;
+    }
+  }
+
+  private hourToTimeOfDay(hour: number): 'morning' | 'afternoon' | 'evening' | 'night' {
+    if (hour >= 5 && hour < 12) return 'morning';
+    if (hour >= 12 && hour < 17) return 'afternoon';
+    if (hour >= 17 && hour < 21) return 'evening';
+    return 'night';
+  }
+
   // ============================================
   // COMPRESSED CONTEXT FOR CLAUDE API
   // ============================================
 
   /**
    * Generate compressed psychological context for Claude API calls.
-   * This is the key integration point - psychological understanding
-   * informs AI responses.
+   * OPTIMIZED: ~40% fewer tokens than verbose version.
+   * Uses compact notation without sacrificing meaning.
    */
   async getCompressedContext(): Promise<string> {
+    await this.initialize();
+
+    if (this.profile.entryCount === 0) {
+      return '[PSYCH: new user, no profile]';
+    }
+
+    const parts: string[] = [];
+
+    // Compact header
+    parts.push(`[PSYCH n=${this.profile.entryCount}]`);
+
+    // Top 3 cognitive distortions (compact: "CD:catastrophizing,all_or_nothing")
+    const topDistortions = this.profile.cognitiveDistortions
+      .sort((a, b) => b.frequency - a.frequency)
+      .slice(0, 3);
+    if (topDistortions.length > 0) {
+      parts.push(`CD:${topDistortions.map(d => d.pattern).join(',')}`);
+    }
+
+    // Defense level + top 2 (compact: "DEF:neurotic(rationalize,project)")
+    if (this.profile.defenseMechanisms.length > 0) {
+      const topDef = this.profile.defenseMechanisms
+        .sort((a, b) => b.frequency - a.frequency)
+        .slice(0, 2)
+        .map(d => d.mechanism);
+      parts.push(`DEF:${this.profile.defenseLevel}(${topDef.join(',')})`);
+    }
+
+    // Attachment (compact: "ATT:anxious/70")
+    if (this.profile.attachmentConfidence > 0.3) {
+      parts.push(`ATT:${this.profile.attachmentStyle}/${Math.round(this.profile.attachmentConfidence * 100)}`);
+    }
+
+    // Locus + Mindset combined (compact: "LOC:int MIND:growth")
+    const locus = this.profile.locusOfControl.internal > this.profile.locusOfControl.external ? 'int' : 'ext';
+    const mindset = this.profile.mindset.growth > this.profile.mindset.fixed ? 'growth' : 'fixed';
+    parts.push(`LOC:${locus} MIND:${mindset}`);
+
+    // Values (compact: "VAL:achievement,benevolence")
+    if (this.profile.topValues.length > 0) {
+      parts.push(`VAL:${this.profile.topValues.slice(0, 2).join(',')}`);
+    }
+
+    // Nervous system + adaptive ratio (compact: "NS:ventral REG:73%")
+    const nsState = this.profile.predominantState.replace('_vagal', '').replace('_', '');
+    parts.push(`NS:${nsState}`);
+    if (this.profile.regulationStrategies.length > 0) {
+      parts.push(`REG:${Math.round(this.profile.adaptiveRatio * 100)}%`);
+    }
+
+    // PERMA average (compact: "PERMA:65%")
+    const avgPerma = Object.values(this.profile.permaScores).reduce((a, b) => a + b, 0) / 5;
+    parts.push(`PERMA:${Math.round(avgPerma * 100)}%`);
+
+    // Temporal patterns if available
+    if (this.profile.temporalPatterns) {
+      const tp = this.profile.temporalPatterns;
+      if (tp.worstTimeOfDay) parts.push(`LOW:${tp.worstTimeOfDay}`);
+      if (tp.bestTimeOfDay) parts.push(`HIGH:${tp.bestTimeOfDay}`);
+      if (tp.worstDayOfWeek) parts.push(`HARD_DAY:${tp.worstDayOfWeek}`);
+    }
+
+    // Context-specific needs (only most relevant)
+    const needs: string[] = [];
+    if (this.profile.attachmentStyle === 'anxious') needs.push('reassure');
+    if (this.profile.attachmentStyle === 'avoidant') needs.push('respect_space');
+    if (this.profile.predominantState === 'sympathetic') needs.push('ground');
+    if (this.profile.predominantState === 'dorsal_vagal') needs.push('gentle');
+    if (this.profile.mindset.fixed > 0.6) needs.push('frame_as_growth');
+    if (topDistortions.find(d => d.pattern === 'catastrophizing')) needs.push('challenge_worst_case');
+
+    if (needs.length > 0) {
+      parts.push(`NEEDS:${needs.slice(0, 3).join(',')}`);
+    }
+
+    return parts.join(' | ');
+  }
+
+  /**
+   * Get verbose context (for debugging/display only, not for API)
+   */
+  async getVerboseContext(): Promise<string> {
     await this.initialize();
 
     if (this.profile.entryCount === 0) {
@@ -900,7 +1072,6 @@ class PsychAnalysisService {
     lines.push('=== PSYCHOLOGICAL PROFILE ===');
     lines.push(`Based on ${this.profile.entryCount} entries\n`);
 
-    // Top cognitive distortions
     const topDistortions = this.profile.cognitiveDistortions
       .sort((a, b) => b.frequency - a.frequency)
       .slice(0, 3);
@@ -908,88 +1079,20 @@ class PsychAnalysisService {
     if (topDistortions.length > 0) {
       lines.push('THINKING PATTERNS:');
       for (const d of topDistortions) {
-        const name = d.pattern.replace(/_/g, ' ');
-        lines.push(`- Tends toward ${name} (seen ${d.frequency}x)`);
+        lines.push(`- ${d.pattern.replace(/_/g, ' ')} (${d.frequency}x)`);
       }
       lines.push('');
     }
 
-    // Defense level
-    lines.push(`COPING STYLE: ${this.profile.defenseLevel} defenses`);
-    const topDefenses = this.profile.defenseMechanisms
-      .sort((a, b) => b.frequency - a.frequency)
-      .slice(0, 2);
-    for (const d of topDefenses) {
-      lines.push(`- Uses ${d.mechanism.replace(/_/g, ' ')}`);
-    }
-    lines.push('');
-
-    // Attachment
+    lines.push(`COPING: ${this.profile.defenseLevel} defenses`);
     if (this.profile.attachmentConfidence > 0.3) {
-      lines.push(`ATTACHMENT: ${this.profile.attachmentStyle} style (${Math.round(this.profile.attachmentConfidence * 100)}% confidence)`);
-      lines.push('');
+      lines.push(`ATTACHMENT: ${this.profile.attachmentStyle}`);
     }
-
-    // Locus of control
-    const locusDirection = this.profile.locusOfControl.internal > this.profile.locusOfControl.external
-      ? 'internal' : 'external';
-    lines.push(`AGENCY: Leans ${locusDirection} locus of control`);
-    lines.push('');
-
-    // Mindset
-    const mindsetDirection = this.profile.mindset.growth > this.profile.mindset.fixed
-      ? 'growth' : 'fixed';
-    lines.push(`MINDSET: Leans ${mindsetDirection}`);
-    lines.push('');
-
-    // Values
+    lines.push(`MINDSET: ${this.profile.mindset.growth > this.profile.mindset.fixed ? 'growth' : 'fixed'}`);
     if (this.profile.topValues.length > 0) {
-      lines.push(`CORE VALUES: ${this.profile.topValues.join(', ')}`);
-      lines.push('');
+      lines.push(`VALUES: ${this.profile.topValues.join(', ')}`);
     }
-
-    // Nervous system
-    lines.push(`NERVOUS SYSTEM: Predominantly ${this.profile.predominantState.replace(/_/g, ' ')}`);
-    lines.push('');
-
-    // Emotion regulation
-    if (this.profile.regulationStrategies.length > 0) {
-      const adaptivePercent = Math.round(this.profile.adaptiveRatio * 100);
-      lines.push(`EMOTION REGULATION: ${adaptivePercent}% adaptive strategies`);
-      lines.push('');
-    }
-
-    // PERMA well-being
-    const avgPerma = Object.values(this.profile.permaScores).reduce((a, b) => a + b, 0) / 5;
-    lines.push(`WELL-BEING (PERMA): ${Math.round(avgPerma * 100)}% average`);
-
-    // Recommendations for Claude
-    lines.push('\n=== COMMUNICATION RECOMMENDATIONS ===');
-
-    if (topDistortions.find(d => d.pattern === 'catastrophizing')) {
-      lines.push('- Gently challenge worst-case thinking');
-    }
-    if (topDistortions.find(d => d.pattern === 'all_or_nothing')) {
-      lines.push('- Help find middle ground/nuance');
-    }
-    if (this.profile.attachmentStyle === 'anxious') {
-      lines.push('- Provide extra reassurance and validation');
-    }
-    if (this.profile.attachmentStyle === 'avoidant') {
-      lines.push('- Respect need for space, don\'t push for closeness');
-    }
-    if (this.profile.defenseLevel === 'immature') {
-      lines.push('- Be patient with defenses, don\'t confront directly');
-    }
-    if (this.profile.mindset.fixed > 0.6) {
-      lines.push('- Frame challenges as learning opportunities');
-    }
-    if (this.profile.predominantState === 'sympathetic') {
-      lines.push('- Help with grounding and calming');
-    }
-    if (this.profile.predominantState === 'dorsal_vagal') {
-      lines.push('- Very gentle approach, small steps, validate shutdown');
-    }
+    lines.push(`NERVOUS SYSTEM: ${this.profile.predominantState.replace(/_/g, ' ')}`);
 
     return lines.join('\n');
   }

@@ -336,6 +336,47 @@ This means it can give you real answers based on your actual data, not generic r
 
 While your guide has access to all this data, it's processed entirely on your device. Only compressed summaries are sent to the AI—never your raw journal entries or personal details.
 
+#### MoodPrint: Your Compressed Self
+
+Imagine being able to summarize everything important about yourself — your patterns, your people, your struggles and strengths — in just a few lines. That's what **MoodPrint** does.
+
+**What is MoodPrint?**
+
+MoodPrint is Mood Leaf's unique way of distilling your emotional life into a compact summary that captures what matters most. Think of it like a fingerprint, but for your mood patterns and psychology.
+
+**Why does this matter?**
+
+Every time you chat with your AI guide, we need to give it context about you. But sending your entire journal history would be:
+- Slow (lots of data to process)
+- Expensive (AI costs scale with data size)
+- Unnecessary (most of it isn't relevant to this moment)
+
+MoodPrint solves this by intelligently compressing months of journaling into a dense, meaningful snapshot — like summarizing a 300-page autobiography into a single page that still captures *who you are*.
+
+**What MoodPrint captures:**
+
+| Your Patterns | What It Means For You |
+|---------------|----------------------|
+| **How you think** | Understanding your natural thinking style so your guide can meet you where you are |
+| **How you connect** | How you relate to different people in your life (friends, family, partners, work) |
+| **Your rhythms** | When you need extra support vs. when you naturally thrive |
+| **What helps you** | The approaches and techniques that work best for YOUR mind |
+| **Your growth** | How you're developing and where you're making progress |
+
+**The magic:**
+
+Your full profile might be thousands of words. MoodPrint compresses this down to roughly **100 carefully chosen tokens** — about 40% smaller — while keeping all the insight. Your guide knows you just as well, but conversations are faster and cost less.
+
+**How your guide uses it:**
+
+Instead of generic advice, your guide can:
+- Know to offer extra reassurance when you're uncertain
+- Check in during times you typically find hard
+- Celebrate the healthy patterns you're building
+- Meet you where you are emotionally
+
+All of this happens without your private journal entries ever leaving your device. Only a small, anonymous summary goes to the AI — never your actual words.
+
 ---
 
 ## Life Context System

@@ -899,6 +899,38 @@ export interface PsychologicalProfile {
     frequency: number;
   }[];
 
+  // Temporal patterns (when do emotions peak)
+  temporalPatterns?: {
+    worstTimeOfDay?: 'morning' | 'afternoon' | 'evening' | 'night';
+    bestTimeOfDay?: 'morning' | 'afternoon' | 'evening' | 'night';
+    worstDayOfWeek?: string; // 'monday', 'tuesday', etc.
+    moodByHour: Record<number, { sum: number; count: number }>; // hour -> mood aggregate
+    moodByDayOfWeek: Record<string, { sum: number; count: number }>; // day -> mood aggregate
+  };
+
+  // Contextual attachment (different styles in different relationships)
+  contextualAttachment?: {
+    romantic: AttachmentStyle;
+    family: AttachmentStyle;
+    friends: AttachmentStyle;
+    work: AttachmentStyle;
+  };
+
+  // Coping patterns (what do they do when stressed)
+  copingPatterns?: {
+    healthy: string[]; // "exercise", "talk to friend", "journal"
+    unhealthy: string[]; // "avoidance", "substances", "rumination"
+    lastUpdated: string;
+  };
+
+  // Values-actions gap (when behavior contradicts stated values)
+  valuesActionsGap?: {
+    value: SchwartzValue;
+    action: string; // description of conflicting action
+    frequency: number;
+    lastSeen: string;
+  }[];
+
   // Insights and connections
   insights: {
     type: 'pattern' | 'connection' | 'growth' | 'concern';

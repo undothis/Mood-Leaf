@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   StyleSheet,
   Text,
@@ -47,6 +47,12 @@ import {
   CommandResult,
   initializeSlashCommands,
 } from '@/services/slashCommandService';
+import {
+  getTTSSettings,
+  speakCoachResponse,
+  stopAudio,
+  initializeTTS,
+} from '@/services/textToSpeechService';
 
 // Initialize slash commands on module load
 initializeSlashCommands();
@@ -157,11 +163,23 @@ export default function CoachScreen() {
   const voiceControllerRef = useRef<VoiceChatController | null>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
+  // Ref to hold latest send handler (avoids stale closure in voice callback)
+  const sendHandlerRef = useRef<(text: string) => Promise<void>>();
+
+  // TTS state
+  const [ttsEnabled, setTtsEnabled] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
   // Load coach settings and API key on mount
   useEffect(() => {
     const checkSetup = async () => {
       const keyExists = await hasAPIKey();
       setHasKey(keyExists);
+
+      // Initialize TTS
+      await initializeTTS();
+      const ttsSettings = await getTTSSettings();
+      setTtsEnabled(ttsSettings.enabled && ttsSettings.autoPlay);
 
       const prefs = await getTonePreferences();
       setToneStyles(prefs.selectedStyles);
@@ -186,9 +204,12 @@ export default function CoachScreen() {
             setVoiceTranscript(transcript);
           },
           onMessageReady: (message) => {
-            // Auto-send when pause detected (only if autoSendEnabled)
-            if (message.trim()) {
-              handleSend(message);
+            // Auto-send when pause detected (uses ref to avoid stale closure)
+            if (message.trim() && sendHandlerRef.current) {
+              // Fire and handle errors gracefully
+              sendHandlerRef.current(message).catch((err) => {
+                console.error('Voice send error:', err);
+              });
             }
             setVoiceTranscript('');
           },
@@ -207,16 +228,18 @@ export default function CoachScreen() {
     checkSetup();
 
     return () => {
-      // Cleanup voice controller
+      // Cleanup voice controller and TTS
       voiceControllerRef.current?.destroy();
+      stopAudio();
     };
   }, []);
 
   // Scroll to bottom when messages change
   useEffect(() => {
-    setTimeout(() => {
+    const timeoutId = setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
     }, 100);
+    return () => clearTimeout(timeoutId);
   }, [messages]);
 
   // Pulse animation for voice button when listening
@@ -508,6 +531,13 @@ export default function CoachScreen() {
         ];
       });
 
+      // Speak the response if TTS is enabled
+      if (ttsEnabled && coachSettings?.selectedPersona) {
+        setIsSpeaking(true);
+        speakCoachResponse(response.text, coachSettings.selectedPersona)
+          .finally(() => setIsSpeaking(false));
+      }
+
       // Track turns for anti-dependency
       const newTurnCount = turnCount + 1;
       setTurnCount(newTurnCount);
@@ -546,9 +576,14 @@ export default function CoachScreen() {
     }
   };
 
-  const handleQuickAction = (prompt: string) => {
+  // Keep sendHandlerRef updated with latest handleSend (for voice callback)
+  useEffect(() => {
+    sendHandlerRef.current = handleSend;
+  });
+
+  const handleQuickAction = useCallback((prompt: string) => {
     handleSend(prompt);
-  };
+  }, [handleSend]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>

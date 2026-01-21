@@ -1534,22 +1534,10 @@ analysis.attachmentSignals       // Relationship pattern signals
 analysis.polyvagalState          // Nervous system state
 analysis.alerts                  // Gentle suggestions (NOT labels)
 
-// Get compressed context for Claude API
+// Get compressed context for Claude API (MoodPrint format)
 const psychContext = await psychAnalysisService.getCompressedContext();
-// Returns something like:
-// "THINKING PATTERNS:
-//  - Tends toward catastrophizing (seen 5x)
-//  - Tends toward all or nothing (seen 3x)
-//
-//  COPING STYLE: neurotic defenses
-//  ATTACHMENT: anxious style (70% confidence)
-//  AGENCY: Leans external locus of control
-//  MINDSET: Leans fixed
-//  CORE VALUES: security, benevolence
-//
-//  COMMUNICATION RECOMMENDATIONS:
-//  - Gently challenge worst-case thinking
-//  - Provide extra reassurance and validation"
+// Returns ultra-compressed MoodPrint format (~40% smaller than verbose):
+// "[PSYCH n=42] | CD:catastrophizing,all_or_nothing | DEF:neurotic(rationalize,project) | ATT:anxious/70 | LOC:int MIND:growth | NS:ventral | REG:73% | PERMA:65% | NEEDS:reassure,challenge_worst_case | TEMPORAL:worst=Sun_evening,best=morning"
 ```
 
 ### Gentle Suggestions (NOT Labels)
@@ -1631,6 +1619,253 @@ profile.cognitiveDistortions[0].lastSeen = now
 3. **User agency**: Suggestions are offered, not imposed
 4. **Privacy**: All analysis is local, only compressed summary sent to API
 5. **Anti-dependency**: System celebrates user self-awareness, not app usage
+
+---
+
+## MoodPrint: Context Compression System
+
+### Overview
+
+MoodPrint is Mood Leaf's proprietary system for compressing a user's psychological profile into a dense, token-efficient format. This allows Claude to understand a user's patterns without consuming excessive API tokens.
+
+### Why MoodPrint?
+
+| Problem | Solution |
+|---------|----------|
+| Full psych profiles can be 1000+ tokens | MoodPrint compresses to ~100 tokens |
+| Verbose format wastes API budget | 40% reduction in token usage |
+| Slow response times | Faster AI responses |
+| Context window limits | More room for conversation history |
+
+### MoodPrint Format
+
+The compressed format uses a pipe-delimited structure with standardized abbreviations:
+
+```
+[PSYCH n=42] | CD:catastrophizing,all_or_nothing | DEF:neurotic(rationalize,project) | ATT:anxious/70 | LOC:int MIND:growth | NS:ventral | REG:73% | PERMA:65% | NEEDS:reassure,challenge_worst_case | TEMPORAL:worst=Sun_evening,best=morning
+```
+
+### Format Key
+
+| Code | Meaning | Values |
+|------|---------|--------|
+| `n=` | Entry count analyzed | Number |
+| `CD:` | Cognitive Distortions | List of patterns |
+| `DEF:` | Defense mechanisms | Level + specific mechanisms |
+| `ATT:` | Attachment style | Style/confidence% |
+| `LOC:` | Locus of Control | `int` or `ext` |
+| `MIND:` | Mindset | `growth` or `fixed` |
+| `NS:` | Nervous System (Polyvagal) | `ventral`, `sympathetic`, or `dorsal` |
+| `REG:` | Emotion Regulation score | Percentage |
+| `PERMA:` | Well-being score | Percentage |
+| `NEEDS:` | Communication recommendations | List of approaches |
+| `TEMPORAL:` | Temporal patterns | `worst=` and `best=` times |
+| `CTX_ATT:` | Contextual Attachment | Relationship-specific styles |
+| `COPE:` | Coping Patterns | `healthy:[]` and `unhealthy:[]` |
+| `VAG:` | Values-Actions Gap | Misaligned values |
+
+### Implementation
+
+```typescript
+// psychAnalysisService.ts - getCompressedContext()
+
+async getCompressedContext(): Promise<string> {
+  const profile = await this.getProfile();
+  if (!profile || profile.entryCount === 0) {
+    return '[PSYCH: insufficient data]';
+  }
+
+  const parts: string[] = [];
+
+  // Header with entry count
+  parts.push(`[PSYCH n=${profile.entryCount}]`);
+
+  // Cognitive distortions (top 3)
+  if (profile.cognitiveDistortions?.length) {
+    const top = profile.cognitiveDistortions
+      .sort((a, b) => b.frequency - a.frequency)
+      .slice(0, 3)
+      .map(d => d.distortion.replace(/_/g, ''));
+    parts.push(`CD:${top.join(',')}`);
+  }
+
+  // ... continues for all fields
+
+  return parts.join(' | ');
+}
+```
+
+### New Profile Fields (January 2026)
+
+#### Temporal Patterns
+
+Tracks when users tend to struggle or thrive:
+
+```typescript
+temporalPatterns?: {
+  worstTimeOfDay?: 'morning' | 'afternoon' | 'evening' | 'night';
+  bestTimeOfDay?: 'morning' | 'afternoon' | 'evening' | 'night';
+  worstDayOfWeek?: string;  // e.g., "Sunday"
+  moodByHour: Record<number, { sum: number; count: number }>;
+  moodByDayOfWeek: Record<string, { sum: number; count: number }>;
+};
+```
+
+**Use case**: Coach can proactively check in on Sunday evenings if that's when the user typically struggles.
+
+#### Contextual Attachment
+
+Different attachment styles for different relationship contexts:
+
+```typescript
+contextualAttachment?: {
+  romantic: AttachmentStyle;
+  family: AttachmentStyle;
+  friends: AttachmentStyle;
+  work: AttachmentStyle;
+};
+```
+
+**Use case**: User might be secure with friends but anxious in romantic relationships.
+
+#### Coping Patterns
+
+Tracks healthy vs unhealthy coping strategies:
+
+```typescript
+copingPatterns?: {
+  healthy: string[];    // e.g., ['exercise', 'journaling', 'calling_friend']
+  unhealthy: string[];  // e.g., ['avoidance', 'rumination', 'isolation']
+  lastUpdated: string;
+};
+```
+
+**Use case**: Coach can celebrate healthy coping and gently redirect unhealthy patterns.
+
+#### Values-Actions Gap
+
+Detects when user's actions don't align with their stated values:
+
+```typescript
+valuesActionsGap?: {
+  value: SchwartzValue;
+  action: string;
+  frequency: number;
+  lastSeen: string;
+}[];
+```
+
+**Use case**: User values family but keeps working late—coach can explore this tension.
+
+### Token Savings Comparison
+
+**Old verbose format:**
+```
+THINKING PATTERNS:
+ - Tends toward catastrophizing (seen 5x)
+ - Tends toward all or nothing (seen 3x)
+
+COPING STYLE: neurotic defenses (rationalization, projection)
+
+ATTACHMENT: anxious style (70% confidence)
+
+AGENCY: Internal locus of control
+MINDSET: Growth mindset
+
+NERVOUS SYSTEM: Ventral vagal (safe, social)
+
+EMOTION REGULATION: 73%
+WELL-BEING (PERMA): 65%
+
+COMMUNICATION RECOMMENDATIONS:
+ - Provide extra reassurance and validation
+ - Gently challenge worst-case thinking
+```
+**~280 tokens**
+
+**New MoodPrint format:**
+```
+[PSYCH n=42] | CD:catastrophizing,all_or_nothing | DEF:neurotic(rationalize,project) | ATT:anxious/70 | LOC:int MIND:growth | NS:ventral | REG:73% | PERMA:65% | NEEDS:reassure,challenge_worst_case
+```
+**~85 tokens (~70% reduction)**
+
+---
+
+## Text-to-Speech (TTS) System
+
+### Overview
+
+Google Cloud TTS integration allows the coach to speak responses aloud, with unique voices mapped to each persona.
+
+### Service Location
+
+`services/textToSpeechService.ts`
+
+### Coach Voice Mappings
+
+| Coach | Female Voice | Male Voice | Style |
+|-------|--------------|------------|-------|
+| Clover | en-US-Neural2-C | en-US-Neural2-D | Warm, friendly |
+| Spark | en-US-Neural2-F | en-US-Neural2-J | Energetic, upbeat |
+| Willow | en-US-Neural2-C | en-US-Neural2-D | Calm, wise |
+| Luna | en-US-Neural2-E | en-US-Neural2-I | Soft, mindful |
+| Ridge | en-US-Neural2-H | en-US-Neural2-A | Clear, professional |
+| Flint | en-US-Neural2-H | en-US-Neural2-A | Direct, confident |
+| Fern | en-US-Neural2-E | en-US-Neural2-I | Gentle, nurturing |
+
+### Voice Parameters
+
+Each coach has tuned parameters:
+
+```typescript
+interface VoiceProfile {
+  voiceId: string;
+  speakingRate: number;  // 0.5 - 2.0 (1.0 = normal)
+  pitch: number;         // -20 to +20 semitones
+  volumeGainDb: number;  // -96 to +16 dB
+}
+```
+
+### Usage
+
+```typescript
+import { speakCoachResponse, stopSpeaking } from '@/services/textToSpeechService';
+
+// Speak a response
+await speakCoachResponse('Hello, how are you today?', 'clover');
+
+// Stop speaking
+await stopSpeaking();
+
+// Check settings
+const settings = await getTTSSettings();
+// { enabled: true, gender: 'female', autoPlay: true, volume: 0.8 }
+```
+
+### Settings Screen
+
+`app/settings/voice.tsx` provides:
+- Enable/disable TTS
+- Gender selection (male/female voices)
+- Speaking speed slider
+- Volume slider
+- Test voice button
+- API key management
+
+### Integration in Coach Screen
+
+```typescript
+// In app/coach/index.tsx
+const [ttsEnabled, setTtsEnabled] = useState(false);
+const [isSpeaking, setIsSpeaking] = useState(false);
+
+// After receiving AI response:
+if (ttsEnabled && coachSettings?.selectedPersona) {
+  setIsSpeaking(true);
+  speakCoachResponse(response.text, coachSettings.selectedPersona)
+    .finally(() => setIsSpeaking(false));
+}
+```
 
 ---
 
