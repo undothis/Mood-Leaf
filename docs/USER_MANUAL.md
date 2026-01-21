@@ -646,6 +646,281 @@ You can always:
 
 ---
 
+## Slash Commands
+
+Type commands starting with `/` in the chat to access quick features and switch coaches instantly.
+
+### Quick Reference
+
+| Command | What It Does |
+|---------|--------------|
+| `/help` | Show all available commands |
+| `/skills` | Browse skills and exercises |
+| `/games` | Browse mindful games |
+| `/collection` | View your artifacts and unlocks |
+| `/stats` | See your activity patterns |
+| `/breathe` | Start breathing exercise |
+| `/ground` | Start 5-4-3-2-1 grounding |
+| `/calm` | Auto-pick calming technique |
+| `/flint` | Switch to Flint (direct coach) |
+| `/luna` | Switch to Luna (mindful coach) |
+| `/random` | Switch to a random coach |
+| `/clear` | Clear conversation |
+| `/status` | Show your current status |
+
+### Switching Coaches
+
+Instantly change your coach's personality by typing their name with a `/`:
+
+- `/flint` - 🔥 Flint: Direct, honest, no-fluff
+- `/luna` - 🌙 Luna: Mindful, grounding, calm
+- `/willow` - 🌿 Willow: Wise, reflective
+- `/spark` - ✨ Spark: Energetic, motivating
+- `/clover` - 🍀 Clover: Friendly, casual
+- `/ridge` - ⛰️ Ridge: Action-oriented, practical
+- `/fern` - 🌱 Fern: Gentle, nurturing
+- `/random` - Surprise! Pick one randomly
+
+Example: Type `/flint I need real talk about my job` to switch and start talking.
+
+### Guided Exercises
+
+Start exercises directly from chat:
+
+| Command | Exercise |
+|---------|----------|
+| `/breathe` | Box breathing (4-4-4-4) |
+| `/breathe 478` | 4-7-8 sleep breathing |
+| `/breathe sigh` | Quick physiological sigh |
+| `/ground` | 5-4-3-2-1 grounding |
+| `/body` | Quick body scan |
+| `/prep` | Event preparation |
+| `/calm` | AI picks best technique for you |
+
+---
+
+## Skills & Exercises
+
+Skills are capabilities you can develop through practice. Unlike streaks that punish missed days, skills celebrate every attempt. Each skill has a **type** (Calm, Ground, Focus, Challenge, Connect, Restore) and **rarity** (Common → Legendary), giving the experience a collectible card game feel.
+
+### Skill Categories
+
+| Category | What's Included |
+|----------|-----------------|
+| 🧘 **Mindfulness** | Breathing, grounding, body awareness |
+| 💪 **Coping** | Thought challenging, emotion regulation |
+| 🌱 **Growth** | Values, goals, habit building |
+| 🎭 **Social** | Event prep, conversation skills |
+| 🔮 **Advanced** | Deeper psychological work (Premium) |
+
+### Accessing Skills
+
+1. Type `/skills` in chat
+2. Or tap the **Skills** quick action button
+3. Browse categories and exercises
+4. Tap any exercise to start
+
+### Skill Progress
+
+Each skill has levels (1-5) based on usage:
+- **Level 1**: Just starting out
+- **Level 3**: Building a real practice
+- **Level 5**: Mastery achieved
+
+Progress is tracked without pressure. Miss a day? No problem. Come back when you're ready.
+
+### Exercise Library
+
+**Breathing Exercises:**
+- 📦 Box Breathing - 4-4-4-4 for calm
+- 🌙 4-7-8 Breathing - For sleep
+- 💗 Coherent Breathing - HRV optimization
+- 😮‍💨 Physiological Sigh - Instant calm
+
+**Grounding Exercises:**
+- 🦶 5-4-3-2-1 - Use your senses
+- 👣 Feet on Floor - Simple anchoring
+- 🧊 Ice Cube - Intense grounding
+
+**Body Awareness:**
+- 🔍 Quick Body Scan - 2-minute check-in
+- 💆 Progressive Relaxation - Tense and release
+
+**Thought Work:**
+- 🧠 Thought Record - CBT technique
+- 🎈 Thought Defusion - Create distance from thoughts
+
+**Social Skills:**
+- 🎉 Event Preparation - Pre-event mental prep
+- 💬 Conversation Starters - Practice openers
+
+---
+
+## Mindful Games
+
+Games designed to calm, ground, and build skills — not to addict.
+
+### Game Categories
+
+| Category | Purpose |
+|----------|---------|
+| 🦶 **Grounding** | Anchor to the present |
+| 🌊 **Calming** | Reduce anxiety |
+| 🧠 **Skill Building** | Build capabilities |
+| 🔘 **Fidget** | Quick relief |
+
+### Available Games
+
+**Grounding Games:**
+- 🫧 Breathing Bubble - Pop bubbles by breathing
+- 🔍 Grounding Quest - Find items around you
+- 📷 I Spy AI* - Camera finds objects for scavenger hunt
+- 🎯 Color Finder* - Find 5 blue things, 4 red...
+
+**Calming Games:**
+- 🎨 Color Sort - Sort objects by color
+- 🧩 Calm Puzzles - Jigsaw with nature images
+- 🖍️ Mood Coloring - Color mandalas
+- ✨ Flow Drawing - Draw with flowing particles
+
+**Classic Games (Mindful Versions):**
+- 🐍 Mindful Snake - Slow, with calming music
+- 🧱 Zen Blocks - Tetris with no game over
+- 🔢 Calm Sudoku - Hints and no timer
+- 🏓 Gentle Pong - Slow motion
+
+**Fidget Tools:**
+- 🔘 Fidget Pad - Sliders, switches, dials
+- 🔵 Bubble Wrap - Endless popping
+- 🌀 Fidget Spinner - Watch it spin
+
+*Premium features
+
+### Accessing Games
+
+Type `/games` in chat or tap the **Skills** button and look for the games section.
+
+---
+
+## Collection System
+
+As you use Mood Leaf, you'll naturally discover and unlock collectibles — artifacts, titles, and more. This D&D-inspired system celebrates your journey without any pressure.
+
+### How It Works
+
+Every time you practice a skill, play a game, or explore the app, you're building toward unlocks. The system quietly tracks your patterns and rewards consistency, curiosity, and presence.
+
+**Key principles:**
+- 🎮 **No pressure** — Progress bars never decrease
+- 🚫 **No streaks** — Missing a day doesn't hurt you
+- 🎁 **Surprise rewards** — Unlocks appear when you least expect them
+- 📊 **Your patterns** — The system learns what YOU gravitate toward
+
+### Skill Types & Rarity
+
+Every skill and exercise has a **type** and **rarity**, giving them a collectible card game feel:
+
+**Skill Types:**
+| Type | Focus |
+|------|-------|
+| 🌊 **Calm** | Breathing, relaxation |
+| 🦶 **Ground** | Anchoring, presence |
+| 🎯 **Focus** | Attention, concentration |
+| 💪 **Challenge** | Thought work, CBT |
+| 🤝 **Connect** | Social, relationships |
+| ✨ **Restore** | Recovery, healing |
+
+**Rarity Levels:**
+| Rarity | Description |
+|--------|-------------|
+| ⚪ **Common** | Foundational skills everyone starts with |
+| 🟢 **Uncommon** | Slightly specialized techniques |
+| 🔵 **Rare** | Advanced or unique approaches |
+| 🟣 **Legendary** | Mastery-level or secret unlocks |
+
+### Collectible Types
+
+**🏺 Artifacts** — Symbolic items earned through milestones
+- *Calm Stone* — First breathing session
+- *Breath Feather* — 10 breathing exercises
+- *Starlight Vial* — Practice at 3am
+- *Rainbow Prism* — Try all skill types
+
+**📜 Titles** — Names that reflect your journey
+- *Breath Wanderer* — Practice breathing 5 times
+- *Grounding Guardian* — Master grounding exercises
+- *Night Owl* — Practice after midnight
+- *Dawn Keeper* — Practice before 6am
+
+**🎴 Card Backs** — Customize your skill cards
+- *Mist* (Common) — Starter card back
+- *Forest* (Uncommon) — Try 3 different skills
+- *Sunset* (Rare) — Reach 50 total activities
+- *Aurora* (Legendary) — Unlock 10 artifacts
+
+**🧑‍🏫 Coach Perks** — Special coach interactions unlocked through use
+
+### Viewing Your Collection
+
+Type `/collection` (or `/artifacts`, `/inventory`, `/bag`) to see:
+- All unlocked collectibles
+- Progress toward next unlocks
+- Your collection stats
+
+Type `/stats` to see:
+- Activity breakdown by type
+- Your favorite activities
+- Time-of-day patterns
+- How the app sees your journey
+
+### Smart Unlocks
+
+The system notices what you naturally do:
+- **Breathing a lot?** → Unlock breathing artifacts and titles
+- **Late-night user?** → Earn "Night Owl" title and related rewards
+- **Trying everything?** → Get explorer achievements
+- **Consistent practice?** → Milestone rewards appear
+
+Unlocks happen automatically — just use the app in whatever way helps you.
+
+### Zero Pressure Design
+
+This collection system is intentionally different from typical gamification:
+- **No punishment** — You can't lose progress
+- **No FOMO** — Nothing expires or disappears
+- **No comparisons** — It's your personal journey
+- **Celebrates presence** — Every session counts equally
+
+The goal is to make self-care feel rewarding, not obligatory.
+
+---
+
+## Premium Features
+
+Core Mood Leaf features are always free. Premium unlocks advanced tools for those who want more.
+
+### What's Included
+
+| Tier | Price | Features |
+|------|-------|----------|
+| **Free** | $0 | 7 coaches, basic exercises, journaling, mood tracking |
+| **Skills+** | $4.99/mo | All 15+ exercises, skill progress, advanced breathing |
+| **Pro** | $9.99/mo | Everything + IFS parts work, custom Fireflies |
+| **Lifetime** | $79.99 | Everything forever |
+
+### How to Upgrade
+
+1. Type `/skills` in chat
+2. Tap **Unlock All Skills**
+3. Choose your plan
+4. Complete purchase through App Store / Google Play
+
+### Promo Codes
+
+Have a promo code? Go to **Settings > Subscription > Redeem Code**.
+
+---
+
 ## Troubleshooting
 
 ### Chat Not Working

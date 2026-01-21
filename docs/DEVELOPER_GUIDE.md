@@ -26,7 +26,17 @@ Complete technical documentation for the Mood Leaf codebase.
 18. [AI Data Integration & Learning](#ai-data-integration--learning)
 19. [AI Adaptation Verification System](#ai-adaptation-verification-system)
 20. [Cycle Tracking System](#cycle-tracking-system)
-21. [Future Enhancements](#future-enhancements)
+21. [Slash Commands System](#slash-commands-system)
+22. [Skills System](#skills-system)
+23. [Games System](#games-system)
+24. [Collection System](#collection-system)
+25. [Subscription System](#subscription-system)
+26. [Chat Integration](#chat-integration)
+27. [Voice Chat System](#voice-chat-system)
+28. [Emotion Detection System](#emotion-detection-system)
+29. [Teaching System](#teaching-system)
+30. [Fidget Pad Game](#fidget-pad-game)
+31. [Future Enhancements](#future-enhancements)
 
 ---
 
@@ -417,6 +427,144 @@ getToneInstruction(styles: ToneStyle[]): string
 // Returns combined instruction like:
 // "Warm and nurturing while also being direct and practical"
 ```
+
+---
+
+### collectionService.ts
+
+**Purpose**: D&D-style gamification system that tracks user activity and unlocks collectibles (artifacts, titles, card backs) based on usage patterns. Designed with zero-pressure principles — progress never decreases.
+
+**Key Types**:
+```typescript
+export type CollectibleType = 'artifact' | 'title' | 'card_back' | 'skill' | 'coach_perk';
+export type Rarity = 'common' | 'uncommon' | 'rare' | 'legendary';
+export type SkillType = 'calm' | 'ground' | 'focus' | 'challenge' | 'connect' | 'restore';
+
+export interface Collectible {
+  id: string;
+  type: CollectibleType;
+  name: string;
+  emoji: string;
+  rarity: Rarity;
+  description: string;
+  lore?: string;           // Flavor text for immersion
+  skillType?: SkillType;   // Related skill category
+  unlockedAt?: string;     // ISO date when unlocked
+  isHidden?: boolean;      // Secret collectibles
+}
+
+export interface UnlockTrigger {
+  type: 'milestone' | 'usage_pattern' | 'exploration' | 'random' | 'time_based';
+  condition: string;       // Human-readable condition
+  check: (stats: UsageStats) => boolean;  // Evaluation function
+}
+
+export interface UsageStats {
+  breathingCount: number;
+  groundingCount: number;
+  journalCount: number;
+  bodyScanCount: number;
+  thoughtChallengeCount: number;
+  gameCount: number;
+  lessonCount: number;
+  totalActivities: number;
+  uniqueActivitiesUsed: Set<string>;
+  nightOwlCount: number;      // Activities after midnight
+  earlyBirdCount: number;     // Activities before 6am
+  personasUsed: Set<string>;  // Coaches talked to
+  favoriteActivity?: string;
+  activityDistribution: Record<string, number>;
+}
+```
+
+**Key Exports**:
+```typescript
+// Record user activity (called after any skill/exercise/game)
+recordActivity(activityType: string, activityId: string): Promise<void>
+
+// Get user's collection
+getCollection(): Promise<Collectible[]>
+
+// Unlock a specific collectible
+unlockCollectible(collectibleId: string): Promise<Collectible | null>
+
+// Check for new unlocks (called after recordActivity)
+checkForUnlocks(): Promise<Collectible[]>
+
+// Get usage statistics
+getUsageStats(): Promise<UsageStats>
+
+// Format collection for chat display
+formatCollectionForChat(): Promise<string>
+
+// Format stats for chat display
+formatStatsForChat(): Promise<string>
+```
+
+**Collectible Categories**:
+
+*Artifacts (15+)*:
+- `calm_stone` — First breathing session (common)
+- `breath_feather` — 10 breathing exercises (uncommon)
+- `starlight_vial` — Practice at 3am (rare)
+- `rainbow_prism` — Try all skill types (legendary)
+
+*Titles (10+)*:
+- `breath_wanderer` — Practice breathing 5 times
+- `grounding_guardian` — Master grounding exercises
+- `night_owl` — Practice after midnight
+- `dawn_keeper` — Practice before 6am
+
+*Card Backs (5)*:
+- `mist` — Starter card back (common)
+- `forest` — Try 3 different skills (uncommon)
+- `sunset` — Reach 50 total activities (rare)
+- `aurora` — Unlock 10 artifacts (legendary)
+
+**Unlock Trigger Types**:
+```typescript
+// Milestone - Activity count thresholds
+{ type: 'milestone', check: (s) => s.breathingCount >= 10 }
+
+// Usage Pattern - Detecting user preferences
+{ type: 'usage_pattern', check: (s) => s.favoriteActivity === 'breathing' }
+
+// Exploration - Trying new things
+{ type: 'exploration', check: (s) => s.uniqueActivitiesUsed.size >= 5 }
+
+// Random - Chance-based unlocks (evaluated per session)
+{ type: 'random', check: () => Math.random() < 0.05 }
+
+// Time-based - When activities occur
+{ type: 'time_based', check: (s) => s.nightOwlCount >= 3 }
+```
+
+**Smart Unlock Engine**:
+```typescript
+async function checkForUnlocks(): Promise<Collectible[]> {
+  const stats = await getUsageStats();
+  const collection = await getCollection();
+  const unlockedIds = new Set(collection.map(c => c.id));
+
+  const newUnlocks: Collectible[] = [];
+
+  for (const [collectible, trigger] of UNLOCK_CONDITIONS) {
+    if (!unlockedIds.has(collectible.id) && trigger.check(stats)) {
+      await unlockCollectible(collectible.id);
+      newUnlocks.push(collectible);
+    }
+  }
+
+  return newUnlocks;
+}
+```
+
+**Anti-Pressure Design Principles**:
+- Progress bars never decrease
+- No streaks that punish missed days
+- No time-limited content or FOMO
+- Celebrates presence, not performance
+- Random unlocks add delight without pressure
 
 ---
 
@@ -2956,6 +3104,857 @@ const cycleData = await getCycleData();
 - Raw period dates never sent to API
 - Wearable tokens stored securely in Keychain
 - User can disable cycle tracking anytime
+
+---
+
+## Slash Commands System
+
+The slash command system allows users to interact with Mood Leaf through text commands starting with `/`. This provides power-user access to features, quick persona switching, and guided exercises.
+
+### Architecture
+
+**Files:**
+- `services/slashCommandService.ts` - Command parsing, registry, and handlers
+- `services/skillsService.ts` - Skill definitions, progress tracking
+- `services/subscriptionService.ts` - Premium features and payments
+- `components/skills/SkillsBubbleMenu.tsx` - UI for skill browsing
+- `components/skills/ExercisePlayer.tsx` - Guided exercise UI
+
+### Command Categories
+
+| Category | Examples | Description |
+|----------|----------|-------------|
+| `persona` | `/flint`, `/luna`, `/random` | Switch coach personality |
+| `skill` | `/skills`, `/games` | Browse skills and activities |
+| `exercise` | `/breathe`, `/ground`, `/calm` | Start guided exercises |
+| `power` | `/clear`, `/settings` | Utility commands |
+| `info` | `/help`, `/status`, `/collection`, `/stats` | Information commands |
+| `secret` | `/love`, `/hug`, `/wisdom` | Easter eggs |
+
+### Command Flow
+
+```
+User types "/breathe"
+         ↓
+isSlashCommand() returns true
+         ↓
+parseCommand() extracts:
+  - commandName: "breathe"
+  - args: []
+         ↓
+getCommand("breathe") finds handler
+         ↓
+handler() executes, returns CommandResult
+         ↓
+handleCommandResult() in chat UI
+  - Shows message
+  - Updates persona (if switch)
+  - Opens exercise player (if exercise)
+```
+
+### Adding a New Command
+
+```typescript
+// In slashCommandService.ts
+registerCommand({
+  name: 'mycommand',
+  aliases: ['mc', 'alias'],
+  description: 'What it does',
+  category: 'skill',
+  requiresPremium: false,
+  handler: async (args, context) => {
+    // context.currentPersona - current coach
+    // context.isPremium - subscription status
+    // args - additional arguments
+
+    return {
+      type: 'message', // or 'exercise', 'menu', 'navigation', etc.
+      success: true,
+      message: 'Response to show user',
+    };
+  },
+});
+```
+
+### Persona Commands
+
+All 7 coach personas have slash commands:
+
+| Command | Persona | Style |
+|---------|---------|-------|
+| `/flint` | Flint 🔥 | Direct, honest, no-fluff |
+| `/luna` | Luna 🌙 | Mindful, grounding |
+| `/willow` | Willow 🌿 | Wise, reflective |
+| `/spark` | Spark ✨ | Energetic, motivating |
+| `/clover` | Clover 🍀 | Friendly, casual |
+| `/ridge` | Ridge ⛰️ | Action-oriented |
+| `/fern` | Fern 🌱 | Gentle, nurturing |
+| `/random` | Random | Surprise persona |
+
+Supports temporary switch with `--temp` flag: `/flint --temp`
+
+---
+
+## Skills System
+
+Skills are upgradeable capabilities that enhance how the coach interacts with users. Built for real-world skill transfer, not app dependency.
+
+### Skill Categories
+
+| Category | Emoji | Description |
+|----------|-------|-------------|
+| `mindfulness` | 🧘 | Breathing, grounding, body awareness |
+| `coping` | 💪 | Thought challenging, emotion regulation |
+| `growth` | 🌱 | Values, goals, habits |
+| `social` | 🎭 | Event prep, conversation skills |
+| `advanced` | 🔮 | IFS, shadow work (premium) |
+
+### Skill Progress
+
+```typescript
+interface SkillProgress {
+  skillId: string;
+  level: number;      // 1-5
+  currentXP: number;
+  totalXP: number;
+  timesUsed: number;
+  lastUsed?: string;
+  firstUsed?: string;
+}
+
+// XP awarded per use (partial for incomplete)
+const xpEarned = completed ? skill.xpPerUse : skill.xpPerUse * 0.5;
+```
+
+**Anti-Streak Design:** Progress is tracked without streaks or punishment for gaps. Celebrates milestones (10 uses, 25 uses) rather than consecutive days.
+
+### Exercise Library
+
+Located in `skillsService.ts`, exercises are defined with:
+
+```typescript
+interface Exercise {
+  id: string;
+  name: string;
+  emoji: string;
+  description: string;
+  duration: number;        // seconds
+  tier: 'free' | 'premium';
+  type: ExerciseType;
+  steps: ExerciseStep[];
+  tags: string[];          // ['quick', 'anxiety', 'sleep']
+
+  // D&D-style collectible attributes
+  skillType: SkillType;    // 'calm' | 'ground' | 'focus' | 'challenge' | 'connect' | 'restore'
+  rarity: Rarity;          // 'common' | 'uncommon' | 'rare' | 'legendary'
+  lore?: string;           // Flavor text for collection card view
+}
+
+interface ExerciseStep {
+  instruction: string;
+  duration?: number;       // null = wait for tap
+  visualType: 'circle_expand' | 'circle_shrink' | 'text' | 'timer';
+  audioHint?: string;      // 'inhale', 'exhale', 'hold'
+}
+```
+
+**Included Exercises:**
+- Box Breathing (4-4-4-4)
+- 4-7-8 Breathing (sleep)
+- Coherent Breathing (HRV)
+- Physiological Sigh (quick calm)
+- 5-4-3-2-1 Grounding
+- Feet on Floor
+- Ice Cube Grounding
+- Quick Body Scan
+- Progressive Muscle Relaxation
+- Thought Record (CBT)
+- Thought Defusion (ACT)
+- Event Preparation
+- Conversation Starters
+
+---
+
+## Games System
+
+Mindful games designed to calm, ground, and build skills — not to addict.
+
+### Game Categories
+
+| Category | Purpose | Examples |
+|----------|---------|----------|
+| `grounding` | Anchor to present | I Spy AI, Color Finder |
+| `calming` | Reduce anxiety | Zen Blocks, Color Sort |
+| `skill_building` | Build capabilities | Emotion Match, Gratitude Wheel |
+| `fidget` | Quick relief | Bubble Wrap, Spinner |
+
+### AR/Camera Games (Premium)
+
+Using ML Vision frameworks:
+
+```typescript
+// I Spy AI - ML analyzes room, creates grounding game
+{
+  id: 'i_spy_ai',
+  name: 'I Spy (AI Camera)',
+  description: 'Point camera around — AI spots objects for you to find',
+  purpose: 'Uses ML to create real grounding scavenger hunts',
+  tier: 'premium',
+  category: 'grounding',
+}
+```
+
+**Camera-based Games:**
+- **I Spy AI** - ML identifies objects for scavenger hunt
+- **Color Finder** - Find 5 blue things, 4 red things...
+- **Texture Hunt** - Find smooth, rough, soft textures
+- **Nature Spotter** - Identifies plants and animals
+- **Cloud Shapes** - AI suggests cloud interpretations
+- **Gratitude Lens** - Photo gratitude journal
+
+### Classic Games (Mindful Versions)
+
+Slow, pressure-free versions of classics:
+
+```typescript
+{
+  id: 'zen_tetris',
+  name: 'Zen Blocks',
+  description: 'Tetris with no pressure — blocks fall slowly, no game over',
+  purpose: 'Satisfying pattern completion without stress',
+}
+```
+
+**Available:**
+- Mindful Snake (slow, calming music)
+- Zen Blocks (no game over Tetris)
+- Calm Sudoku (hints, no timer)
+- Gentle Pong (slow motion)
+- Memory Garden (match to grow flowers)
+
+---
+
+## Collection System
+
+A D&D-inspired gamification layer that tracks user activity patterns and unlocks collectibles. Designed with zero-pressure principles for mental health apps.
+
+### Architecture
+
+**Files:**
+- `services/collectionService.ts` - Core collection logic, unlock triggers, usage tracking
+- `services/skillsService.ts` - Skill/exercise definitions with D&D attributes
+- `services/slashCommandService.ts` - `/collection` and `/stats` commands
+
+### Core Concepts
+
+**Collectible Types:**
+| Type | Description |
+|------|-------------|
+| `artifact` | Symbolic items earned through milestones |
+| `title` | Display names reflecting journey |
+| `card_back` | Customize skill card appearances |
+| `skill` | Unlock special skills |
+| `coach_perk` | Special coach interactions |
+
+**Skill Types (D&D Attribute):**
+| Type | Focus Area |
+|------|------------|
+| `calm` | Breathing, relaxation |
+| `ground` | Anchoring, presence |
+| `focus` | Attention, concentration |
+| `challenge` | Thought work, CBT |
+| `connect` | Social, relationships |
+| `restore` | Recovery, healing |
+
+**Rarity Levels:**
+| Rarity | Color | Unlock Difficulty |
+|--------|-------|-------------------|
+| `common` | ⚪ White | Easy/starter |
+| `uncommon` | 🟢 Green | Moderate effort |
+| `rare` | 🔵 Blue | Significant dedication |
+| `legendary` | 🟣 Purple | Mastery/secret |
+
+### Usage Tracking
+
+The system silently tracks activity patterns:
+
+```typescript
+interface UsageStats {
+  // Activity counts by type
+  breathingCount: number;
+  groundingCount: number;
+  journalCount: number;
+  bodyScanCount: number;
+  thoughtChallengeCount: number;
+  gameCount: number;
+  lessonCount: number;
+  totalActivities: number;
+
+  // Exploration tracking
+  uniqueActivitiesUsed: Set<string>;
+  personasUsed: Set<string>;
+
+  // Time patterns
+  nightOwlCount: number;      // After midnight
+  earlyBirdCount: number;     // Before 6am
+
+  // Pattern analysis
+  favoriteActivity?: string;
+  activityDistribution: Record<string, number>;
+}
+```
+
+**Recording Activity:**
+```typescript
+// Called after any skill, exercise, or game completion
+await recordActivity('breathing', 'box_breathing');
+
+// Automatically:
+// 1. Updates usage stats
+// 2. Detects patterns (favorite activity, time preferences)
+// 3. Triggers unlock checks
+// 4. Shows notification for new unlocks
+```
+
+### Unlock Trigger System
+
+Five trigger types evaluate whether to unlock collectibles:
+
+```typescript
+type UnlockTriggerType =
+  | 'milestone'      // Activity count thresholds
+  | 'usage_pattern'  // Detecting user preferences
+  | 'exploration'    // Trying new things
+  | 'random'         // Chance-based surprises
+  | 'time_based';    // When activities occur
+
+interface UnlockTrigger {
+  type: UnlockTriggerType;
+  condition: string;                    // Human-readable
+  check: (stats: UsageStats) => boolean; // Evaluation function
+}
+```
+
+**Example Triggers:**
+```typescript
+// Milestone: First breathing exercise
+{ type: 'milestone', check: (s) => s.breathingCount >= 1 }
+
+// Usage Pattern: Breathing is their favorite
+{ type: 'usage_pattern', check: (s) => s.favoriteActivity === 'breathing' }
+
+// Exploration: Tried 5 different activities
+{ type: 'exploration', check: (s) => s.uniqueActivitiesUsed.size >= 5 }
+
+// Random: 5% chance per session (adds delight)
+{ type: 'random', check: () => Math.random() < 0.05 }
+
+// Time-based: Night owl (3+ activities after midnight)
+{ type: 'time_based', check: (s) => s.nightOwlCount >= 3 }
+```
+
+### Adding New Collectibles
+
+1. Define the collectible:
+```typescript
+const newArtifact: Collectible = {
+  id: 'ancient_scroll',
+  type: 'artifact',
+  name: 'Ancient Scroll',
+  emoji: '📜',
+  rarity: 'rare',
+  description: 'Earned by exploring the depths of mindfulness',
+  lore: 'Said to contain wisdom from a thousand breaths...',
+  skillType: 'calm',
+};
+```
+
+2. Add unlock condition:
+```typescript
+UNLOCK_CONDITIONS.set(newArtifact, {
+  type: 'exploration',
+  condition: 'Complete 10 different exercises',
+  check: (stats) => stats.uniqueActivitiesUsed.size >= 10,
+});
+```
+
+3. The system handles:
+   - Checking eligibility after each activity
+   - Unlocking and persisting
+   - Showing celebration notification
+
+### Slash Commands Integration
+
+```typescript
+// /collection - View all unlocked items
+registerCommand({
+  name: 'collection',
+  aliases: ['artifacts', 'inventory', 'bag'],
+  handler: async () => {
+    const text = await formatCollectionForChat();
+    return { type: 'menu', success: true, message: text };
+  },
+});
+
+// /stats - View activity patterns
+registerCommand({
+  name: 'stats',
+  aliases: ['activity', 'progress'],
+  handler: async () => {
+    const text = await formatStatsForChat();
+    return { type: 'message', success: true, message: text };
+  },
+});
+```
+
+### Anti-Pressure Design Principles
+
+Critical for mental health apps:
+
+| Principle | Implementation |
+|-----------|----------------|
+| **No punishment** | Progress bars never decrease |
+| **No streaks** | Milestones count total, not consecutive |
+| **No FOMO** | Nothing expires or disappears |
+| **No comparisons** | Personal journey only |
+| **Surprise rewards** | Random unlocks add joy without pressure |
+| **Celebrates presence** | Every session counts equally |
+
+### Storage
+
+```typescript
+// Collection data persisted via AsyncStorage
+const STORAGE_KEY = '@mood_leaf_collection';
+const STATS_KEY = '@mood_leaf_usage_stats';
+
+// Structure
+{
+  unlockedCollectibles: Collectible[];
+  usageStats: UsageStats;
+  lastUpdated: string;
+}
+```
+
+---
+
+## Subscription System
+
+Premium features are managed through the subscription service, supporting iOS, Android, and web payments.
+
+### Tiers
+
+| Tier | Price | Features |
+|------|-------|----------|
+| `free` | $0 | 7 personas, basic exercises, journaling |
+| `skills_plus` | $4.99/mo | All exercises, skill tracking |
+| `pro` | $9.99/mo | Advanced skills, custom Fireflies |
+| `lifetime` | $79.99 | Everything forever |
+
+### Platform Detection
+
+```typescript
+function getPaymentPlatform(): 'ios' | 'android' | 'web' {
+  if (Platform.OS === 'ios') return 'ios';
+  if (Platform.OS === 'android') return 'android';
+  return 'web';
+}
+```
+
+### Payment Routing
+
+```typescript
+// Platform-specific product IDs
+const PRODUCT_IDS = {
+  ios: { skills_plus_monthly: 'com.moodleaf.skillsplus.monthly' },
+  android: { skills_plus_monthly: 'skills_plus_monthly' },
+  web: { skills_plus_monthly: 'price_skillsplus_monthly' },
+};
+```
+
+**Integration Points:**
+- iOS: react-native-iap (App Store)
+- Android: react-native-iap (Google Play)
+- Web: Stripe Checkout
+
+### Feature Gating
+
+```typescript
+// Check if user can access a feature
+const canAccess = await hasFeatureAccess('all_breathing');
+
+// Check premium status
+const premium = await isPremium();
+
+// In commands
+if (exercise.tier === 'premium' && !context.isPremium) {
+  return {
+    type: 'error',
+    message: 'This exercise requires premium. Type /skills to upgrade.',
+  };
+}
+```
+
+### Promo Codes
+
+```typescript
+const result = await redeemPromoCode('MOODLEAF2024');
+// Returns { success: true, message: '...', state: SubscriptionState }
+```
+
+---
+
+## Chat Integration
+
+### Slash Command Detection
+
+In `app/coach/index.tsx`:
+
+```typescript
+const handleSend = async (text) => {
+  // Check for slash command FIRST
+  if (isSlashCommand(text)) {
+    const context: CommandContext = {
+      currentPersona: coachSettings?.selectedPersona || 'clover',
+      isPremium: false, // from subscription service
+    };
+
+    const result = await executeCommand(text, context);
+    await handleCommandResult(result);
+    return;
+  }
+
+  // Normal message flow...
+};
+```
+
+### Command Result Handling
+
+```typescript
+const handleCommandResult = async (result: CommandResult) => {
+  switch (result.type) {
+    case 'persona_switch':
+      // Update coach display
+      setCoachEmoji(PERSONAS[result.newPersona].emoji);
+      setCoachName(PERSONAS[result.newPersona].name);
+      break;
+
+    case 'exercise':
+      // Open exercise player
+      setExerciseConfig(result.exerciseConfig);
+      setShowExercisePlayer(true);
+      break;
+
+    case 'menu':
+      // Show skills/games menu
+      if (result.menuType === 'skills') {
+        setShowSkillsMenu(true);
+      }
+      break;
+
+    case 'navigation':
+      router.push(result.navigateTo);
+      break;
+  }
+};
+```
+
+### Quick Actions
+
+Quick action buttons can trigger slash commands:
+
+```typescript
+const QUICK_ACTIONS = [
+  { label: 'Breathing', prompt: '/breathe', icon: 'leaf-outline' },
+  { label: 'Skills', prompt: '/skills', icon: 'sparkles-outline' },
+  { label: 'Commands', prompt: '/help', icon: 'terminal-outline' },
+];
+```
+
+---
+
+## Testing Slash Commands
+
+### Developer Testing
+
+```typescript
+// In debug mode, test commands manually
+const result = await executeCommand('/breathe box', {
+  currentPersona: 'clover',
+  isPremium: true,
+});
+console.log(result);
+```
+
+### Test Scenarios
+
+1. **Persona Switch**: Type `/flint`, verify coach emoji/name changes
+2. **Exercise Start**: Type `/breathe`, verify exercise player opens
+3. **Premium Gate**: With free account, type `/breathe coherent`, verify premium prompt
+4. **Invalid Command**: Type `/asdf`, verify helpful suggestions
+5. **Help Display**: Type `/help`, verify all commands listed
+6. **Skill Progress**: Complete exercise, verify XP awarded
+
+### Promo Code Testing
+
+```typescript
+// Activate premium for testing
+await activateSubscription('skills_plus', 7); // 7 days
+
+// Deactivate
+await deactivateSubscription();
+```
+
+---
+
+## Voice Chat System
+
+### voiceChatService.ts
+
+**Purpose**: Enables hands-free conversation with the coach through voice recognition with pause detection.
+
+**Key Exports**:
+```typescript
+type VoiceChatMode = 'push_to_talk' | 'auto_detect' | 'continuous';
+type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking';
+
+interface VoiceSettings {
+  enabled: boolean;
+  mode: VoiceChatMode;
+  pauseThreshold: number;    // Silence duration to trigger send (ms)
+  language: string;          // BCP-47 language code
+  speakResponses: boolean;   // Use TTS for coach responses
+  speakingRate: number;      // TTS speed (0.5-2.0)
+  autoListen: boolean;       // Re-enable after coach responds
+  confirmBeforeSend: boolean;
+}
+
+// Settings management
+getVoiceSettings(): Promise<VoiceSettings>
+saveVoiceSettings(settings): Promise<VoiceSettings>
+
+// Platform support
+isVoiceChatSupported(): boolean
+isTTSSupported(): boolean
+
+// Controller class
+class VoiceChatController {
+  initialize(): Promise<boolean>
+  startListening(): Promise<void>
+  stopListening(): Promise<string>
+  speak(text: string): Promise<void>
+  stopSpeaking(): void
+  getState(): VoiceChatState
+  updateSettings(settings): Promise<void>
+  destroy(): void
+}
+
+// Singleton
+getVoiceChatController(callbacks?): VoiceChatController
+destroyVoiceChatController(): void
+
+// Supported languages
+SUPPORTED_LANGUAGES: LanguageOption[]
+```
+
+**Pause Detection Flow**:
+```typescript
+// In auto_detect mode:
+// 1. User speaks
+// 2. Silence detected for pauseThreshold ms
+// 3. Message automatically sent
+// 4. Coach responds with TTS
+// 5. Auto-listen resumes (if enabled)
+```
+
+**Platform Implementation**:
+- **Web**: Web Speech API
+- **iOS**: Native Speech Recognition (requires expo-speech)
+- **Android**: Google Speech Services
+
+---
+
+## Emotion Detection System
+
+### emotionDetectionService.ts
+
+**Purpose**: Uses front-facing camera to detect emotional cues during chat, providing real-time feedback to the coach.
+
+**Privacy First**:
+- All processing is local, on-device
+- No images or emotion data leave the device
+- User must explicitly enable this feature
+- Can be turned off at any time
+
+**Key Exports**:
+```typescript
+type EmotionType = 'happy' | 'sad' | 'angry' | 'fearful' | 'disgusted' | 'surprised' | 'neutral' | 'anxious' | 'stressed';
+
+interface EmotionReading {
+  timestamp: string;
+  primaryEmotion: EmotionType;
+  confidence: number;
+  allEmotions: Record<EmotionType, number>;
+  facialCues: FacialCues;
+}
+
+interface FacialCues {
+  browFurrow: number;      // Stress indicator
+  eyeOpenness: number;     // Surprise, alertness
+  mouthTension: number;    // Stress, anger
+  smileIntensity: number;  // Happiness
+  jawClench: number;       // Anxiety, stress
+}
+
+interface EmotionSettings {
+  enabled: boolean;
+  showFeedback: boolean;     // Show emoji indicator
+  notifyOnStress: boolean;   // Alert coach when stress detected
+  sensitivityLevel: 'low' | 'medium' | 'high';
+  privacyMode: boolean;      // Shorter history, no visuals
+}
+
+// Settings
+getEmotionSettings(): Promise<EmotionSettings>
+saveEmotionSettings(settings): Promise<EmotionSettings>
+isEmotionDetectionAvailable(): boolean
+isEmotionDetectionEnabled(): Promise<boolean>
+
+// Session management
+startEmotionDetection(): Promise<boolean>
+stopEmotionDetection(): Promise<EmotionSummary | null>
+analyzeFrame(frameData: string): Promise<EmotionReading | null>
+getCurrentEmotion(): EmotionReading | null
+getEmotionAnalysis(): Promise<EmotionAnalysisResult>
+
+// History
+getEmotionHistory(): Promise<EmotionHistoryEntry[]>
+clearEmotionData(): Promise<void>
+
+// UI helpers
+getEmotionEmoji(emotion): string
+getEmotionDescription(emotion): string
+getSupportiveMessage(emotion): string
+```
+
+**Coach Hints**:
+```typescript
+// The service generates hints for the coach:
+// - "User appears stressed. Consider suggesting a breathing exercise."
+// - "Physical tension detected. A body scan might help."
+// - "Mood is improving! The conversation is helping."
+```
+
+---
+
+## Teaching System
+
+### teachingService.ts
+
+**Purpose**: Enables the coach to teach subjects like languages, mindfulness concepts, psychology basics, and life skills.
+
+**Key Exports**:
+```typescript
+type SubjectCategory = 'language' | 'mindfulness' | 'psychology' | 'wellness' | 'life_skills' | 'creativity';
+
+interface Subject {
+  id: string;
+  name: string;
+  emoji: string;
+  category: SubjectCategory;
+  description: string;
+  tier: 'free' | 'premium';
+  lessons: Lesson[];
+  totalLessons: number;
+}
+
+interface Lesson {
+  id: string;
+  title: string;
+  description: string;
+  type: 'concept' | 'vocabulary' | 'practice' | 'conversation' | 'quiz';
+  content: LessonContent;
+  duration: number;
+  order: number;
+}
+
+// Settings
+getTeachingSettings(): Promise<TeachingSettings>
+saveTeachingSettings(settings): Promise<TeachingSettings>
+
+// Progress
+getAllProgress(): Promise<Record<string, SubjectProgress>>
+getSubjectProgress(subjectId): Promise<SubjectProgress | null>
+saveSubjectProgress(subjectId, progress): Promise<SubjectProgress>
+completLesson(subjectId, lessonId, timeSpent, score?): Promise<SubjectProgress>
+
+// Subject access
+getAllSubjects(): Subject[]
+getSubjectsByCategory(category): Subject[]
+getSubjectById(id): Subject | undefined
+getNextLesson(subjectId): Promise<Lesson | null>
+
+// UI helpers
+getCategoryInfo(category): { name, emoji }
+getProgressPercentage(subject, progress): number
+formatTimeSpent(seconds): string
+```
+
+**Available Subjects**:
+- **Languages**: Spanish 🇪🇸, French 🇫🇷, Japanese 🇯🇵 (premium), Mandarin 🇨🇳 (premium)
+- **Mindfulness**: Meditation Basics 🧘, Breathing Mastery 💨
+- **Psychology**: CBT Fundamentals 🧠, Emotional Intelligence 💝 (premium)
+- **Wellness**: Better Sleep 😴
+- **Life Skills**: Self-Compassion 🤗, Healthy Boundaries 🚧 (premium)
+
+**Slash Command Integration**:
+```typescript
+/teach                    // Browse all subjects
+/teach spanish            // Start/continue Spanish
+/teach meditation_basics  // Start/continue Meditation
+/spanish                  // Shortcut for /teach spanish
+/french                   // Shortcut for /teach french
+```
+
+---
+
+## Fidget Pad Game
+
+### FidgetPad.tsx
+
+**Purpose**: A collection of digital fidget toys for anxiety relief.
+
+**Components**:
+```typescript
+interface FidgetPadProps {
+  onClose?: () => void;
+}
+
+// Three fidget tools:
+// 1. Bubble Wrap - Pop satisfying bubbles
+// 2. Sliders - Colorful sliders with haptic feedback
+// 3. Spinner - Fidget spinner with momentum
+```
+
+**Features**:
+- Haptic feedback on iOS/Android
+- Dark theme matching app design
+- Progress tracking (bubbles popped)
+- Reset functionality
+
+**Usage**:
+```typescript
+import { FidgetPad } from './components/games/FidgetPad';
+
+// In a modal or full-screen view
+<FidgetPad onClose={() => setShowFidget(false)} />
+```
+
+**Slash Command**:
+```typescript
+/fidget    // Opens fidget pad
+/bubble    // Same as /fidget
+/pop       // Same as /fidget
+```
 
 ---
 

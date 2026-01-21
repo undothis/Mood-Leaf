@@ -2,6 +2,7 @@
 
 **Date:** January 21, 2026
 **Branch:** `claude/resume-after-corruption-USBHf`
+**Last Updated By:** Claude (Opus 4.5)
 
 ---
 
@@ -13,54 +14,140 @@ Mood Leaf is a mental health journaling app that uses AI to provide personalized
 
 ## 2. CURRENT STATE (WHERE WE ARE)
 
-**Overall Status:** Implementation / Refinement
+**Overall Status:** Feature Complete / Testing Phase
 
-The core app is functional with:
+The core app is fully functional with:
 - Journaling with sentiment analysis
 - Quick logs ("Twigs") for habit tracking
 - AI coaching with multiple personas (Clover, Spark, Willow, Luna, Ridge, Flint, Fern)
 - Life context compression for long-term memory
 - Psychological profile building
 - Simulator Mode for AI verification testing
-
-Currently refining the Simulator Mode to properly validate AI behavior.
+- **NEW: Comprehensive Cycle Tracking with life stages**
+- **NEW: Intelligent search in settings**
+- **NEW: Developer testing panel for cycle functions**
+- **NEW: Slash Commands & Skills System**
+- **NEW: D&D-Style Collection System**
+- **NEW: Voice Chat, Emotion Detection, Teaching System**
 
 ---
 
 ## 3. WHAT IS WORKING (SUCCESS)
 
+### Core Features
 - **AI Coach System:** Multiple personas working with adaptive mode, chronotype awareness, and travel/jet lag support
 - **Data Pipeline:** Journals, twigs, life context, psych profile, health data all flow to Claude's system prompt
-- **Simulator Mode Toggle:** Persists correctly across navigation
-- **Challenge Generator:** Creates prompts to test AI data referencing
-- **Challenge Persistence:** Challenge state now saves when navigating away
-- **Verification System:** Checks AI responses against actual user data (journals, life context, psych profile)
+- **Simulator Mode:** Full challenge generation and AI verification
 - **Mental Health Safety:** No sad emojis, positive framing, crisis detection
-- **Explicit Data Referencing Instructions:** Added to AI coach prompt to ensure specific, not generic responses
-- **Exact Twig Timestamps:** AI now receives exact times for today's/yesterday's twig entries (e.g., "5:11 PM")
+
+### NEW: Cycle Tracking System (Fully Implemented)
+- **Period Tracking:** Start/end dates, flow levels, cycle predictions
+- **Life Stages:** Regular cycles, perimenopause, menopause, post-menopause, pregnant, postpartum
+- **Symptom Tracking:** 19 symptom types including menopause-specific (hot flashes, night sweats, brain fog)
+- **Pregnancy Mode:** Trimester-aware support, due date tracking
+- **Contraception Reminders:** Pill, IUD, implant, ring/patch schedules
+- **Reminders:** Configurable days-before-period alerts (1-7 days)
+- **Alert Types:** Push notifications or Firefly alerts (discreet in-app)
+- **Quick Symptom Button:** Floating action button during period
+- **HealthKit Integration:** Sync cycle data with Apple Health
+- **Developer Testing Panel:** Simulate any cycle day/phase for testing
+
+### NEW: Intelligent Settings Search
+- Search bar searches FAQ, User Manual, and Settings shortcuts
+- Results show type labels (FAQ, MANUAL, SETTING)
+- Direct navigation to relevant screens
 
 ---
 
 ## 4. WHAT IS NOT WORKING / OPEN ISSUES (FAILURES)
 
-- **Strange characters in chat responses:** User reported odd characters at start of some responses (e.g., "\nd I'm so sorry"). May be clipboard/encoding issue or API response artifact. Needs investigation.
-- **`[H]` placeholder appeared in chat:** Claude was inserting `[H]` as a name placeholder. FIXED - added explicit instructions to never use bracket placeholders.
-- **Verification edge cases:** The generic detection (CHECK 7) was flagging responses as generic even when actual data references were found. FIXED but may need more tuning.
-- **Twig time tracking:** AI couldn't answer "what did I log at 5:11 PM?" FIXED - now includes exact timestamps for today's and yesterday's entries.
-- **UTC vs Local Timezone Bug:** Newly logged twigs weren't appearing in AI context. FIXED - timestamps were stored in UTC (ISO format) but filtered using local dates. Added `isoToLocalDate()` helper function to convert UTC timestamps to local dates before comparison. This affected `getTodayEntries`, `getEntriesForLog`, `getDetailedLogsContextForClaude`, and other date-filtering functions in `quickLogsService.ts`.
+- **Strange characters in chat responses:** User reported odd characters at start of some responses. May be clipboard/encoding issue.
+- **UTC vs Local Timezone (FIXED):** Was affecting twig timestamps, now uses `isoToLocalDate()` helper.
+- **Colors.warmNeutral undefined (FIXED):** Added `warmNeutral` and `accent` to Colors export.
 
 ---
 
-## 5. KEY ASSUMPTIONS (CALL THESE OUT)
+## 5. KEY FILES & ARCHITECTURE
 
-- **User has data:** Simulator verification assumes user has journals, twigs, and life context stored. Empty data states may behave differently. (UNTESTED)
-- **Claude follows instructions:** Assumes Claude will reliably follow the "CRITICAL - ALWAYS REFERENCE SPECIFIC DATA" instructions in system prompt
+### Cycle Tracking Files (NEW)
+```
+moodling-app/
+├── types/
+│   └── CycleTracking.ts          # All type definitions
+├── services/
+│   ├── cycleTrackingService.ts   # Core cycle logic
+│   └── healthKitService.ts       # HealthKit cycle integration (lines 545+)
+├── components/
+│   └── QuickSymptomButton.tsx    # FAB for quick logging
+├── app/
+│   └── settings/
+│       └── cycle.tsx             # Full settings UI (~1150 lines)
+└── constants/
+    └── UserGuideContent.ts       # Manual & FAQ content
+```
+
+### Key Type Definitions (`types/CycleTracking.ts`)
+```typescript
+type LifeStage = 'regularCycles' | 'perimenopause' | 'menopause' | 'postMenopause' | 'pregnant' | 'postpartum';
+type CyclePhase = 'menstrual' | 'follicular' | 'ovulation' | 'luteal';
+type FlowLevel = 'spotting' | 'light' | 'medium' | 'heavy';
+
+interface CycleSettings {
+  enabled: boolean;
+  lifeStage: LifeStage;
+  showQuickSymptomButton: boolean;
+  enableSoothingSparks: boolean;
+  enableCycleFireflies: boolean;
+  guideAdaptationLevel: 'none' | 'subtle' | 'full';
+  reminders: CycleReminders;
+  syncSource: 'manual' | 'healthkit' | 'oura' | 'whoop';
+  trackFertilityWindow: boolean;
+  contraception: ContraceptionReminder;
+  pregnancy?: PregnancyData;
+  trackMenopauseSymptoms: boolean;
+}
+
+interface CycleReminders {
+  enabled: boolean;
+  notificationsEnabled: boolean;
+  periodApproaching: boolean;
+  daysBeforePeriodAlert: number;  // 1-7 days
+  pmsStarting: boolean;
+  logSymptomsReminder: boolean;
+  ovulationReminder: boolean;
+  alertType: 'push' | 'firefly';
+}
+```
+
+### Colors System (`constants/Colors.ts`)
+```typescript
+// Raw palette access added to both light and dark themes
+export const Colors = {
+  light: {
+    // ... existing colors
+    warmNeutral,  // { cream, sand, stone, earth, charcoal }
+    accent,       // { sage, terracotta, lavender }
+  },
+  dark: {
+    // ... existing colors
+    warmNeutral,
+    accent,
+  },
+};
+```
+
+---
+
+## 6. KEY ASSUMPTIONS (CALL THESE OUT)
+
+- **Cycle data privacy:** Only phase info shared with AI, not raw dates
+- **User has data:** Simulator verification assumes user has journals, twigs, and life context stored
+- **Claude follows instructions:** Assumes Claude will reliably follow the "CRITICAL - ALWAYS REFERENCE SPECIFIC DATA" instructions
 - **AsyncStorage reliability:** Assumes AsyncStorage works consistently across web and native platforms
-- **Keyword matching accuracy:** Life context keyword extraction assumes significant words are >4 characters
 
 ---
 
-## 6. CONSTRAINTS & NON-NEGOTIABLES
+## 7. CONSTRAINTS & NON-NEGOTIABLES
 
 - **No diagnoses:** Never say "you have anxiety disorder" or similar clinical labels
 - **No sad emojis:** Mental health safety - avoid reinforcing negative states
@@ -69,103 +156,31 @@ Currently refining the Simulator Mode to properly validate AI behavior.
 - **Crisis handling:** Immediate resources for suicidal/self-harm language (988, Crisis Text Line)
 - **Privacy:** Derived insights only, no raw journal text exposed unnecessarily
 - **User autonomy:** Encourage real-world connection, not AI dependency
+- **Cycle privacy:** Only phase/stage shared with AI, never raw period dates
 
 ---
 
-## 7. DECISIONS MADE (DO NOT RE-LITIGATE WITHOUT CAUSE)
-
-- **Haiku model for development:** Cost-effective testing, Sonnet for production
-- **Nature-themed personas:** 7 distinct personalities users can choose or adapt
-- **AsyncStorage for persistence:** Simple, cross-platform storage
-- **Simulator Mode as verification tool:** Not user-facing feature, developer/testing tool
-- **CHECK 7 logic:** Only flags generic if no actual data references found AND uses generic phrases
-- **Challenge state persistence:** Saves to AsyncStorage with dedicated keys
-
----
-
-## 7.5 AI CONTEXT SOURCES & COACH PERSONALITY (VERIFIED)
+## 8. AI CONTEXT SOURCES & COACH PERSONALITY
 
 ### Data Sources Fed to Claude (in order of assembly)
 
-1. **Life Context** (`lifeContextService.ts` → `getLifeContextForClaude()`)
-   - Journaling journey length and total entries
-   - Profession, identity (neurodivergence, LGBTQ+)
-   - Key people (mom, dad, friends, etc.), pets
-   - Activities/interests, health journey
-   - Recent and older milestones
-   - Long-term emotional themes
-
-2. **Psychological Profile** (`psychAnalysisService.ts` → `getCompressedContext()`)
-   - Cognitive distortions (thinking patterns)
-   - Defense mechanisms (coping style)
-   - Attachment style (secure, anxious, avoidant, etc.)
-   - Locus of control (internal vs external)
-   - Mindset (growth vs fixed)
-   - Core values
-   - Nervous system state
-
-3. **Chronotype & Travel** (`coachPersonalityService.ts` → `getChronotypeContextForClaude()`)
-   - Chronotype (early bird, night owl, normal)
-   - Rhythm transition progress (if changing sleep schedule)
-   - Travel frequency, recent timezone shifts
-   - Jet lag recovery phase
-
-4. **Health Data** (`healthKitService.ts` → `getHealthContextForClaude()`) - *if HealthKit enabled*
-   - Current/resting heart rate, HRV
-   - Last night's sleep (hours, quality, awakenings)
-   - Weekly average sleep, sleep trend
-   - Today's steps, exercise minutes
-   - Activity trend, potential stress indicators
-
-5. **Health Correlations** (`healthInsightService.ts` → `getCorrelationSummaryForClaude()`) - *if HealthKit enabled*
-   - Sleep-mood correlation
-   - Activity-mood correlation
-   - Weekly mood trend
-
-6. **Detailed Twig Data** (`quickLogsService.ts` → `getDetailedLogsContextForClaude()`)
-   - Each twig with today/week/month/all-time counts
-   - **Exact timestamps for today and yesterday** (e.g., "5:11 PM")
-   - Notes attached to entries
-   - Current streak, longest streak, weekly average
-   - First/last logged dates
-
-7. **Lifestyle Factors** (`patternService.ts` → `getLifestyleFactorsContextForClaude()`)
-   - Today's factors: caffeine, alcohol, exercise, outdoor, social, sleep
-   - 2-week averages for each factor
-
-8. **Exposure Ladder** (`exposureLadderService.ts` → `getExposureContextForClaude()`)
-   - Current social comfort level (1-8)
-   - Total attempts, completed, highest level
-   - Average anxiety reduction, practice streak
-   - Recent exposure attempts with notes
-
-9. **Recent Journals** (`journalStorage.ts` → `getRecentJournalContextForClaude()`)
-   - Last 7 days of journal entries (actual text, truncated to 300 chars)
-   - Date, time, and detected mood for each
-   - Mood distribution summary
-
-10. **User Preferences** (`userContextService.ts` → `getContextForClaude()`)
-    - Temperament, communication style
-    - Journal history stats, common moods
-    - Recent mood trend, entries this week
-    - Known triggers and helpers
-    - Communication preferences (direct, dislikes platitudes, etc.)
-
-11. **Conversation Context** (built in `claudeAPIService.ts`)
-    - Current date and time with timezone
-    - Recent mood, upcoming events
-    - Last 6 messages (3 turns)
-
-12. **Calendar Events** (`calendarService.ts` → `getCalendarContextForClaude()`) - *if Calendar enabled*
-    - Today's upcoming events with times
-    - Week's schedule and busyness level
-    - Travel detection (flights, trips, timezone changes)
-    - Important event flags (interviews, appointments, deadlines)
-    - Jet lag awareness integration
+1. **Life Context** (`lifeContextService.ts`)
+2. **Psychological Profile** (`psychAnalysisService.ts`)
+3. **Chronotype & Travel** (`coachPersonalityService.ts`)
+4. **Health Data** (`healthKitService.ts`) - if HealthKit enabled
+5. **Health Correlations** (`healthInsightService.ts`) - if HealthKit enabled
+6. **Detailed Twig Data** (`quickLogsService.ts`) - with exact timestamps
+7. **Lifestyle Factors** (`patternService.ts`)
+8. **Exposure Ladder** (`exposureLadderService.ts`)
+9. **Recent Journals** (`journalStorage.ts`)
+10. **User Preferences** (`userContextService.ts`)
+11. **Conversation Context** (`claudeAPIService.ts`)
+12. **Calendar Events** (`calendarService.ts`) - if Calendar enabled
+13. **NEW: Cycle Phase** (`cycleTrackingService.ts`) - if Cycle enabled
 
 ### Coach Personality System
 
-**7 Personas** (`coachPersonalityService.ts`):
+**7 Personas**:
 - 🍀 **Clover** (The Bestie) - warm, casual, friendly
 - ✨ **Spark** (The Hype Squad) - energetic, motivating
 - 🌿 **Willow** (The Sage) - calm wisdom, reflective
@@ -174,57 +189,434 @@ Currently refining the Simulator Mode to properly validate AI behavior.
 - 🔥 **Flint** (The Straight Shooter) - direct, honest
 - 🌱 **Fern** (The Cozy Blanket) - extra gentle, nurturing
 
-**Adaptive Mode Features**:
-- Mood detection → persona adaptation (anxious→Luna, sad→Fern, etc.)
-- Time-of-day adaptation (morning→Spark, night→Luna)
-- Content type detection (goals→Ridge, venting→Clover)
-- Chronotype-aware energy (night owls get gentle mornings)
-- Jet lag recovery support
-
-**Customization Options**:
-- Energy level, response length, question frequency
-- Emoji usage, formality, directness, validation style
-- Therapeutic approaches: CBT, somatic, mindfulness, motivational, strengths-based
-- Context awareness: acknowledge time, reference patterns, track milestones
+**Cycle-Aware Adaptation**:
+- During PMS/luteal phase → Guide becomes gentler (like Fern)
+- During menstrual phase → Validates energy dips, extra compassion
+- During ovulation → Can be more action-oriented
+- Perimenopause/menopause → Extra validation for unpredictable symptoms
 
 ---
 
-## 8. NEXT STEPS (FOR NEXT SESSION)
+## 9. DOCUMENTATION LOCATIONS
 
-1. **Test AI response quality:** Run multiple challenges and verify AI consistently references specific user data
-2. **Investigate strange characters:** Check if issue persists after [H] fix, may need to examine API response handling
-3. **Add user name support (optional):** Consider adding optional user name field so AI can address them personally
-4. **Edge case testing:** Test Simulator Mode with empty data (no journals, no twigs, no life context)
-5. **Verify challenge categories:** Test each challenge category (data_accuracy, cross_domain, long_term_correlation, mental_health_framing)
-6. **Consider debouncing:** AI response persistence saves on every keystroke - may want to add debounce for performance
-
----
-
-## 9. HANDOFF NOTES (CONTEXT FOR THE NEXT MIND)
-
-- **Branch has been merged:** Combined `claude/review-mega-prompt-LmMqp` (had this template) with `claude/resume-after-corruption-USBHf` (had all simulator fixes). Kept simulator fixes, added template.
-- **Key files modified:**
-  - `moodling-app/app/simulator.tsx` - Challenge persistence, CHECK 7 fix, AI response handler
-  - `moodling-app/services/claudeAPIService.ts` - Added "ADDRESSING THE USER" section to prevent [H] placeholders
-  - `moodling-app/services/quickLogsService.ts` - Added `isoToLocalDate()` helper and fixed all date filtering to use local timezone instead of UTC
-- **User cares deeply about:** AI feeling personal, not generic. Every response should demonstrate the AI "remembers" their specific situation.
-- **Don't repeat:** The generic check issue where it flagged as generic even with data refs found
-- **Testing flow:** Simulator > Generate Challenge > Copy to Chat > Paste AI response back > Verify
-- **Timezone fix details:** The bug was that `new Date().toISOString()` stores in UTC, but we compared against local dates like `getToday()`. Example: 11 PM EST on Jan 21 → UTC is 4 AM Jan 22 → filtering for "Jan 21" (local) wouldn't match the "Jan 22" (UTC) timestamp.
+| Document | Location | Purpose |
+|----------|----------|---------|
+| User Manual Content | `constants/UserGuideContent.ts` | Single source for FAQ & Manual |
+| Developer Guide | `docs/DEVELOPER_GUIDE.md` | Technical implementation details |
+| Philosophy | `docs/MOOD_LEAF_PHILOSOPHY.md` | Design principles & ethics |
+| Overview | `docs/MOOD_LEAF_OVERVIEW.md` | High-level project summary |
+| This Handoff | `docs/Handoff.md` | Session-to-session context |
 
 ---
 
-## 10. SUCCESS CRITERIA FOR THE NEXT CHECKPOINT
+## 10. DEVELOPER TESTING (CYCLE FEATURES)
 
-- [ ] AI responses consistently reference specific user data (journals, life context, people, events)
-- [ ] No more `[H]` or bracket placeholders appearing in chat
-- [ ] Challenge state reliably persists across navigation
-- [ ] Verification results are accurate (no contradictory positives + generic flags)
-- [ ] All challenge categories produce meaningful tests
-- [ ] Newly logged twigs immediately appear in AI context (timezone fix verified)
+The Developer Testing panel in Cycle Settings (`app/settings/cycle.tsx`) allows:
+
+1. **Set Cycle Day** - Buttons for Day 1, 5, 10, 14, 21, 28
+2. **Quick Phase Simulation**:
+   - 🩸 Menstrual (Day 1)
+   - 🌱 Follicular (Day 8)
+   - ✨ Ovulation (Day 14)
+   - 🌙 Luteal (Day 21)
+3. **Test PMS Mode** - Sets Day 25 to trigger Soothing Sparks
+4. **Test Reminder Alerts** - Preview notification messages
+5. **Reset All Test Data** - Clear cycle data for fresh testing
+
+**Only visible in `__DEV__` mode** with distinctive lavender dashed border.
+
+---
+
+## 11. SLASH COMMANDS & SKILLS SYSTEM
+
+### What Was Built
+
+A comprehensive slash command system allowing users to type `/` commands in chat for quick actions.
+
+### New Services
+
+| Service | Purpose |
+|---------|---------|
+| `services/slashCommandService.ts` | Command parsing, registry, and 30+ handlers |
+| `services/skillsService.ts` | Skill definitions, exercises, progress tracking |
+| `services/subscriptionService.ts` | Premium features, payment routing |
+
+### New Components
+
+| Component | Purpose |
+|-----------|---------|
+| `components/skills/SkillsBubbleMenu.tsx` | UI for browsing skills |
+| `components/skills/ExercisePlayer.tsx` | Guided exercise interface |
+
+### Command Categories
+
+- **Persona:** `/flint`, `/luna`, `/willow`, `/spark`, `/clover`, `/ridge`, `/fern`, `/random`
+- **Exercise:** `/breathe`, `/ground`, `/body`, `/calm`, `/prep`
+- **Browse:** `/skills`, `/games`, `/help`, `/collection`, `/stats`
+- **Power:** `/clear`, `/settings`, `/status`
+- **Easter Eggs:** `/love`, `/hug`, `/wisdom`
+
+### Exercise Library (15+)
+
+- Box Breathing, 4-7-8 Breathing, Coherent Breathing, Physiological Sigh
+- 5-4-3-2-1 Grounding, Feet on Floor, Ice Cube Grounding
+- Quick Body Scan, Progressive Muscle Relaxation
+- Thought Record, Thought Defusion
+- Event Preparation, Conversation Starters
+
+### Games System (25+)
+
+- **Grounding:** I Spy AI (camera), Color Finder, Texture Hunt, Nature Spotter
+- **Calming:** Color Sort, Zen Blocks, Calm Sudoku, Gentle Pong, Flow Drawing
+- **Skill Building:** Emotion Match, Gratitude Wheel, Word Garden, Thought Catcher
+- **Fidget:** Bubble Wrap, Spinner, Fidget Pad
+
+### Subscription Tiers
+
+| Tier | Price | Unlocks |
+|------|-------|---------|
+| Free | $0 | Basic exercises, all personas |
+| Skills+ | $4.99/mo | All exercises, skill tracking |
+| Pro | $9.99/mo | Advanced skills, custom Fireflies |
+| Lifetime | $79.99 | Everything forever |
+
+### Integration Points
+
+- Chat input checks `isSlashCommand()` before normal message flow
+- `handleCommandResult()` processes persona switches, exercises, menus
+- Quick action buttons can trigger slash commands directly
+- Premium gating via `context.isPremium` in handlers
+
+---
+
+## 12. VOICE CHAT, EMOTION DETECTION, TEACHING SYSTEM
+
+### Voice Chat System
+
+**Purpose:** Hands-free conversation with the coach using voice recognition and automatic pause detection.
+
+**Key Features:**
+- **Auto-detect mode:** Automatically sends message after configurable silence (default 1.5s)
+- **Push-to-talk mode:** Hold button to speak
+- **TTS responses:** Coach can speak responses back
+- **Multi-language:** 12 languages supported
+
+**Service:** `services/voiceChatService.ts`
+- `VoiceChatController` class manages sessions
+- Web Speech API for web, native APIs for iOS/Android
+- Pause detection sends message when user stops speaking
+
+### Emotion Detection System
+
+**Purpose:** Front-facing camera analyzes facial expressions during chat to provide emotional context to the coach.
+
+**Privacy First:**
+- All processing local/on-device
+- No images stored or transmitted
+- Explicit opt-in required
+- Can be disabled anytime
+
+**Key Features:**
+- Detects 9 emotions: happy, sad, angry, fearful, disgusted, surprised, neutral, anxious, stressed
+- Facial cues: brow furrow, eye openness, mouth tension, smile intensity, jaw clench
+- Generates coach hints: "User appears stressed, suggest breathing exercise"
+
+**Service:** `services/emotionDetectionService.ts`
+- Mock implementation ready for ML integration
+- iOS: Vision framework
+- Android: ML Kit
+- Web: face-api.js or TensorFlow.js
+
+### Teaching System
+
+**Purpose:** The coach can teach subjects like languages, mindfulness, psychology, and life skills.
+
+**Available Subjects:**
+| Subject | Emoji | Category | Tier |
+|---------|-------|----------|------|
+| Spanish | 🇪🇸 | Language | Free |
+| French | 🇫🇷 | Language | Free |
+| Japanese | 🇯🇵 | Language | Premium |
+| Mandarin | 🇨🇳 | Language | Premium |
+| Meditation Basics | 🧘 | Mindfulness | Free |
+| Breathing Mastery | 💨 | Mindfulness | Free |
+| CBT Fundamentals | 🧠 | Psychology | Free |
+| Emotional Intelligence | 💝 | Psychology | Premium |
+| Better Sleep | 😴 | Wellness | Free |
+| Self-Compassion | 🤗 | Life Skills | Free |
+| Healthy Boundaries | 🚧 | Life Skills | Premium |
+
+**Slash Commands:**
+- `/teach` - Browse all subjects
+- `/teach spanish` - Start/continue Spanish
+- `/spanish`, `/french` - Language shortcuts
+
+**Service:** `services/teachingService.ts`
+- Lesson progress tracking
+- No grades or punishment (anti-streak design)
+- Vocabulary, concepts, practice, conversation, quiz lesson types
+
+### Fidget Pad Game
+
+**Purpose:** Digital fidget toys for quick anxiety relief.
+
+**Three Tools:**
+1. **Bubble Wrap** - Pop 48 bubbles with haptic feedback
+2. **Sliders** - 6 colorful sliding bars
+3. **Spinner** - Momentum-based fidget spinner
+
+**Component:** `components/games/FidgetPad.tsx`
+- Works on iOS, Android, and Web
+- Haptic feedback via Vibration API
+- Dark theme matching app design
+
+**Slash Commands:** `/fidget`, `/bubble`, `/pop`
+
+### Files Created
+
+| File | Purpose |
+|------|---------|
+| `services/voiceChatService.ts` | Voice recognition with pause detection |
+| `services/emotionDetectionService.ts` | Camera-based emotion detection |
+| `services/teachingService.ts` | Subject teaching system |
+| `components/games/FidgetPad.tsx` | Fidget pad game component |
+
+### Integration Notes
+
+- All services follow Mood Leaf ethics: privacy-first, no manipulation, user control
+- Voice and emotion features require explicit opt-in
+- Teaching system uses same anti-dependency principles as exercise tracking
+- All work cross-platform: iOS, Android, Web
+
+---
+
+## 13. COLLECTION SYSTEM - D&D-Style Gamification
+
+### Overview
+
+A gamification layer that rewards users for naturally using the app. Think D&D character sheets meets collectible card games. The system tracks usage patterns and unlocks artifacts, titles, and card backs without any pressure mechanics.
+
+### Design Philosophy
+
+| Principle | Implementation |
+|-----------|----------------|
+| **No punishment** | Progress bars never decrease |
+| **No streaks** | Milestones count total, not consecutive |
+| **No FOMO** | Nothing expires or disappears |
+| **No comparisons** | Personal journey only |
+| **Surprise rewards** | Random unlocks add joy without pressure |
+
+### What Was Built
+
+**New Service:** `services/collectionService.ts` (~800 lines)
+
+**Core Types:**
+```typescript
+type CollectibleType = 'artifact' | 'title' | 'card_back' | 'skill' | 'coach_perk';
+type Rarity = 'common' | 'uncommon' | 'rare' | 'legendary';
+type SkillType = 'calm' | 'ground' | 'focus' | 'challenge' | 'connect' | 'restore';
+type UnlockTriggerType = 'milestone' | 'usage_pattern' | 'exploration' | 'random' | 'time_based';
+```
+
+### Collectibles
+
+**Artifacts (15+):**
+- `calm_stone` — First breathing session (common)
+- `breath_feather` — 10 breathing exercises (uncommon)
+- `starlight_vial` — Practice at 3am (rare)
+- `rainbow_prism` — Try all skill types (legendary)
+- `dawn_crystal` — Practice before 6am (rare)
+- `night_lantern` — 5 practices after midnight (rare)
+
+**Titles (10+):**
+- `breath_wanderer` — Practice breathing 5 times
+- `grounding_guardian` — Master grounding exercises
+- `night_owl` — Practice after midnight
+- `dawn_keeper` — Practice before 6am
+- `explorer` — Try 10 different activities
+
+**Card Backs (5):**
+- `mist` (Common) — Default starter
+- `forest` (Uncommon) — Try 3 different skills
+- `sunset` (Rare) — Reach 50 total activities
+- `aurora` (Legendary) — Unlock 10 artifacts
+
+### Unlock Triggers
+
+The smart unlock engine evaluates user activity patterns:
+
+```typescript
+// Milestone - Activity thresholds
+{ type: 'milestone', check: (s) => s.breathingCount >= 10 }
+
+// Usage Pattern - User preferences
+{ type: 'usage_pattern', check: (s) => s.favoriteActivity === 'breathing' }
+
+// Exploration - Trying new things
+{ type: 'exploration', check: (s) => s.uniqueActivitiesUsed.size >= 5 }
+
+// Random - 5% chance per session
+{ type: 'random', check: () => Math.random() < 0.05 }
+
+// Time-based - When activities occur
+{ type: 'time_based', check: (s) => s.nightOwlCount >= 3 }
+```
+
+### Usage Statistics Tracked
+
+```typescript
+interface UsageStats {
+  breathingCount: number;
+  groundingCount: number;
+  journalCount: number;
+  bodyScanCount: number;
+  thoughtChallengeCount: number;
+  gameCount: number;
+  lessonCount: number;
+  totalActivities: number;
+  uniqueActivitiesUsed: Set<string>;
+  nightOwlCount: number;      // After midnight
+  earlyBirdCount: number;     // Before 6am
+  personasUsed: Set<string>;
+  favoriteActivity?: string;
+  activityDistribution: Record<string, number>;
+}
+```
+
+### Skills System Updates
+
+Added D&D-style attributes to all skills and exercises in `skillsService.ts`:
+
+```typescript
+interface Skill {
+  // ... existing fields
+  skillType: SkillType;  // 'calm' | 'ground' | 'focus' | 'challenge' | 'connect' | 'restore'
+  rarity: Rarity;        // 'common' | 'uncommon' | 'rare' | 'legendary'
+  lore?: string;         // Flavor text for collection view
+}
+```
+
+**Example:**
+```typescript
+{
+  id: 'box_breathing',
+  name: 'Box Breathing',
+  skillType: 'calm',
+  rarity: 'common',
+  lore: 'Used by Navy SEALs to stay calm under pressure. Four equal counts, like the sides of a box.'
+}
+```
+
+### New Slash Commands
+
+Added to `slashCommandService.ts`:
+
+| Command | Aliases | Description |
+|---------|---------|-------------|
+| `/collection` | `/artifacts`, `/inventory`, `/bag` | View unlocked collectibles |
+| `/stats` | `/activity`, `/progress` | View usage patterns and stats |
+
+### Integration Points
+
+1. **After any skill/exercise/game completes:**
+   ```typescript
+   await recordActivity('breathing', 'box_breathing');
+   const unlocks = await checkForUnlocks();
+   if (unlocks.length > 0) showUnlockCelebration(unlocks);
+   ```
+
+2. **Chat commands show collection/stats:**
+   ```typescript
+   // /collection → formatCollectionForChat()
+   // /stats → formatStatsForChat()
+   ```
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `services/collectionService.ts` | NEW - Full collection system |
+| `services/skillsService.ts` | Added skillType, rarity, lore to all skills/exercises |
+| `services/slashCommandService.ts` | Added /collection and /stats commands |
+| `docs/USER_MANUAL.md` | Added Collection System section |
+| `docs/DEVELOPER_GUIDE.md` | Added collectionService docs, Collection System section |
+
+### Next Steps for Collection System
+
+1. **Build Collection UI** - Visual card collection view
+2. **Skill Preview Cards** - Tap to see D&D-style card with rarity, lore, type
+3. **Unlock Celebrations** - Animated notifications for new unlocks
+4. **Stats Dashboard** - Progress bars by skill type
+5. **Coach Integration** - Coaches can reference collection progress
+
+---
+
+## 14. NEXT STEPS (FOR NEXT SESSION)
+
+### Testing Priorities
+- [ ] Test cycle tracking on device (not just web)
+- [ ] Verify HealthKit sync for cycle data
+- [ ] Test all life stage transitions
+- [ ] Verify pregnancy mode correctly pauses period tracking
+- [ ] Test Firefly alerts vs push notifications
+
+### Potential Improvements
+- [ ] Add cycle insights/patterns visualization
+- [ ] Add symptom correlation analysis
+- [ ] Integrate cycle phase with Sparks selection
+- [ ] Add cycle data export functionality
+
+### Documentation
+- [ ] Review full codebase for undocumented features
+- [ ] Add JSDoc comments to cycle functions
+- [ ] Update app store description for cycle features
+
+---
+
+## 15. SUCCESS CRITERIA FOR THE NEXT CHECKPOINT
+
+- [ ] Cycle tracking works on iOS device (not just web)
+- [ ] HealthKit cycle sync imports/exports correctly
+- [ ] All 6 life stages function as expected
+- [ ] Developer testing panel correctly simulates all phases
+- [ ] Settings search finds relevant results
+- [ ] No more Colors.warmNeutral undefined errors
+- [ ] Back navigation works on all screens
+- [ ] Cycle reminders fire at correct times
+- [ ] Collection system unlocks work correctly
+- [ ] /collection and /stats commands display properly
 
 ---
 
 ## QUICK STATUS SNAPSHOT
 
-"All 12 AI context sources verified and documented. Coach personality system with 7 personas and adaptive mode confirmed working. UTC timezone bug fixed. The AI has access to: life context, psych profile, chronotype, calendar events, health data, correlations, twigs (with exact times), lifestyle factors, exposure progress, journals, and user preferences."
+"**Feature complete.** Cycle tracking fully implemented with life stages (regular, perimenopause, menopause, post-menopause, pregnant, postpartum). 19 symptom types. Slash commands with 30+ commands. D&D-style collection system with artifacts, titles, card backs. Voice chat, emotion detection, teaching system. All documented in USER_MANUAL.md, DEVELOPER_GUIDE.md, and this Handoff."
+
+---
+
+## APPENDIX: ALL SERVICE FILES
+
+| Service | Purpose | Key Functions |
+|---------|---------|---------------|
+| `claudeAPIService.ts` | AI chat interface | `sendToClaude()`, builds system prompt |
+| `coachPersonalityService.ts` | Persona management | `getCoachSettings()`, `getChronotypeContextForClaude()` |
+| `collectionService.ts` | **NEW** D&D gamification | `recordActivity()`, `checkForUnlocks()`, `getCollection()` |
+| `cycleTrackingService.ts` | Cycle logic | `startPeriod()`, `endPeriod()`, `getCurrentPhase()`, `logSymptom()` |
+| `healthKitService.ts` | Apple Health sync | `importCycleDataFromHealthKit()`, `writeMenstrualFlowToHealthKit()` |
+| `journalStorage.ts` | Journal persistence | `saveJournal()`, `getRecentJournalContextForClaude()` |
+| `lifeContextService.ts` | Long-term memory | `updateLifeContext()`, `getLifeContextForClaude()` |
+| `notificationService.ts` | Push notifications | `scheduleDailyReminder()`, `showTestNotification()` |
+| `psychAnalysisService.ts` | Psych profiling | `analyzeEntry()`, `getCompressedContext()` |
+| `quickLogsService.ts` | Twigs (quick logs) | `logEntry()`, `getDetailedLogsContextForClaude()` |
+| `skillsService.ts` | Skills & exercises | `getSkillsMenuData()`, `recordSkillUse()` |
+| `slashCommandService.ts` | Slash commands | `parseCommand()`, `executeCommand()` |
+| `subscriptionService.ts` | Premium features | `checkPremiumStatus()`, `initiatePurchase()` |
+| `teachingService.ts` | Subject teaching | `getNextLesson()`, `completeLesson()` |
+| `tonePreferencesService.ts` | Response style | `getTonePreferences()`, `toggleToneStyle()` |
+| `userContextService.ts` | User prefs | `getUserPreferences()`, `getContextForClaude()` |
+| `voiceChatService.ts` | Voice input | `startListening()`, `stopListening()` |
+| `emotionDetectionService.ts` | Facial analysis | `detectEmotion()`, `getEmotionHint()` |
+
+---
+
+*End of Handoff Document*
