@@ -3350,6 +3350,258 @@ await deactivateSubscription();
 
 ---
 
+## Voice Chat System
+
+### voiceChatService.ts
+
+**Purpose**: Enables hands-free conversation with the coach through voice recognition with pause detection.
+
+**Key Exports**:
+```typescript
+type VoiceChatMode = 'push_to_talk' | 'auto_detect' | 'continuous';
+type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking';
+
+interface VoiceSettings {
+  enabled: boolean;
+  mode: VoiceChatMode;
+  pauseThreshold: number;    // Silence duration to trigger send (ms)
+  language: string;          // BCP-47 language code
+  speakResponses: boolean;   // Use TTS for coach responses
+  speakingRate: number;      // TTS speed (0.5-2.0)
+  autoListen: boolean;       // Re-enable after coach responds
+  confirmBeforeSend: boolean;
+}
+
+// Settings management
+getVoiceSettings(): Promise<VoiceSettings>
+saveVoiceSettings(settings): Promise<VoiceSettings>
+
+// Platform support
+isVoiceChatSupported(): boolean
+isTTSSupported(): boolean
+
+// Controller class
+class VoiceChatController {
+  initialize(): Promise<boolean>
+  startListening(): Promise<void>
+  stopListening(): Promise<string>
+  speak(text: string): Promise<void>
+  stopSpeaking(): void
+  getState(): VoiceChatState
+  updateSettings(settings): Promise<void>
+  destroy(): void
+}
+
+// Singleton
+getVoiceChatController(callbacks?): VoiceChatController
+destroyVoiceChatController(): void
+
+// Supported languages
+SUPPORTED_LANGUAGES: LanguageOption[]
+```
+
+**Pause Detection Flow**:
+```typescript
+// In auto_detect mode:
+// 1. User speaks
+// 2. Silence detected for pauseThreshold ms
+// 3. Message automatically sent
+// 4. Coach responds with TTS
+// 5. Auto-listen resumes (if enabled)
+```
+
+**Platform Implementation**:
+- **Web**: Web Speech API
+- **iOS**: Native Speech Recognition (requires expo-speech)
+- **Android**: Google Speech Services
+
+---
+
+## Emotion Detection System
+
+### emotionDetectionService.ts
+
+**Purpose**: Uses front-facing camera to detect emotional cues during chat, providing real-time feedback to the coach.
+
+**Privacy First**:
+- All processing is local, on-device
+- No images or emotion data leave the device
+- User must explicitly enable this feature
+- Can be turned off at any time
+
+**Key Exports**:
+```typescript
+type EmotionType = 'happy' | 'sad' | 'angry' | 'fearful' | 'disgusted' | 'surprised' | 'neutral' | 'anxious' | 'stressed';
+
+interface EmotionReading {
+  timestamp: string;
+  primaryEmotion: EmotionType;
+  confidence: number;
+  allEmotions: Record<EmotionType, number>;
+  facialCues: FacialCues;
+}
+
+interface FacialCues {
+  browFurrow: number;      // Stress indicator
+  eyeOpenness: number;     // Surprise, alertness
+  mouthTension: number;    // Stress, anger
+  smileIntensity: number;  // Happiness
+  jawClench: number;       // Anxiety, stress
+}
+
+interface EmotionSettings {
+  enabled: boolean;
+  showFeedback: boolean;     // Show emoji indicator
+  notifyOnStress: boolean;   // Alert coach when stress detected
+  sensitivityLevel: 'low' | 'medium' | 'high';
+  privacyMode: boolean;      // Shorter history, no visuals
+}
+
+// Settings
+getEmotionSettings(): Promise<EmotionSettings>
+saveEmotionSettings(settings): Promise<EmotionSettings>
+isEmotionDetectionAvailable(): boolean
+isEmotionDetectionEnabled(): Promise<boolean>
+
+// Session management
+startEmotionDetection(): Promise<boolean>
+stopEmotionDetection(): Promise<EmotionSummary | null>
+analyzeFrame(frameData: string): Promise<EmotionReading | null>
+getCurrentEmotion(): EmotionReading | null
+getEmotionAnalysis(): Promise<EmotionAnalysisResult>
+
+// History
+getEmotionHistory(): Promise<EmotionHistoryEntry[]>
+clearEmotionData(): Promise<void>
+
+// UI helpers
+getEmotionEmoji(emotion): string
+getEmotionDescription(emotion): string
+getSupportiveMessage(emotion): string
+```
+
+**Coach Hints**:
+```typescript
+// The service generates hints for the coach:
+// - "User appears stressed. Consider suggesting a breathing exercise."
+// - "Physical tension detected. A body scan might help."
+// - "Mood is improving! The conversation is helping."
+```
+
+---
+
+## Teaching System
+
+### teachingService.ts
+
+**Purpose**: Enables the coach to teach subjects like languages, mindfulness concepts, psychology basics, and life skills.
+
+**Key Exports**:
+```typescript
+type SubjectCategory = 'language' | 'mindfulness' | 'psychology' | 'wellness' | 'life_skills' | 'creativity';
+
+interface Subject {
+  id: string;
+  name: string;
+  emoji: string;
+  category: SubjectCategory;
+  description: string;
+  tier: 'free' | 'premium';
+  lessons: Lesson[];
+  totalLessons: number;
+}
+
+interface Lesson {
+  id: string;
+  title: string;
+  description: string;
+  type: 'concept' | 'vocabulary' | 'practice' | 'conversation' | 'quiz';
+  content: LessonContent;
+  duration: number;
+  order: number;
+}
+
+// Settings
+getTeachingSettings(): Promise<TeachingSettings>
+saveTeachingSettings(settings): Promise<TeachingSettings>
+
+// Progress
+getAllProgress(): Promise<Record<string, SubjectProgress>>
+getSubjectProgress(subjectId): Promise<SubjectProgress | null>
+saveSubjectProgress(subjectId, progress): Promise<SubjectProgress>
+completLesson(subjectId, lessonId, timeSpent, score?): Promise<SubjectProgress>
+
+// Subject access
+getAllSubjects(): Subject[]
+getSubjectsByCategory(category): Subject[]
+getSubjectById(id): Subject | undefined
+getNextLesson(subjectId): Promise<Lesson | null>
+
+// UI helpers
+getCategoryInfo(category): { name, emoji }
+getProgressPercentage(subject, progress): number
+formatTimeSpent(seconds): string
+```
+
+**Available Subjects**:
+- **Languages**: Spanish 🇪🇸, French 🇫🇷, Japanese 🇯🇵 (premium), Mandarin 🇨🇳 (premium)
+- **Mindfulness**: Meditation Basics 🧘, Breathing Mastery 💨
+- **Psychology**: CBT Fundamentals 🧠, Emotional Intelligence 💝 (premium)
+- **Wellness**: Better Sleep 😴
+- **Life Skills**: Self-Compassion 🤗, Healthy Boundaries 🚧 (premium)
+
+**Slash Command Integration**:
+```typescript
+/teach                    // Browse all subjects
+/teach spanish            // Start/continue Spanish
+/teach meditation_basics  // Start/continue Meditation
+/spanish                  // Shortcut for /teach spanish
+/french                   // Shortcut for /teach french
+```
+
+---
+
+## Fidget Pad Game
+
+### FidgetPad.tsx
+
+**Purpose**: A collection of digital fidget toys for anxiety relief.
+
+**Components**:
+```typescript
+interface FidgetPadProps {
+  onClose?: () => void;
+}
+
+// Three fidget tools:
+// 1. Bubble Wrap - Pop satisfying bubbles
+// 2. Sliders - Colorful sliders with haptic feedback
+// 3. Spinner - Fidget spinner with momentum
+```
+
+**Features**:
+- Haptic feedback on iOS/Android
+- Dark theme matching app design
+- Progress tracking (bubbles popped)
+- Reset functionality
+
+**Usage**:
+```typescript
+import { FidgetPad } from './components/games/FidgetPad';
+
+// In a modal or full-screen view
+<FidgetPad onClose={() => setShowFidget(false)} />
+```
+
+**Slash Command**:
+```typescript
+/fidget    // Opens fidget pad
+/bubble    // Same as /fidget
+/pop       // Same as /fidget
+```
+
+---
+
 ## Future Enhancements
 
 ### Planned Features

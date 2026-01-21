@@ -309,3 +309,104 @@ A comprehensive slash command system allowing users to type `/` commands in chat
 2. **Build Skills Bubble Menu** - Interactive category browsing
 3. **Camera Games** - ML Vision for I Spy AI
 4. **Payment Integration** - Connect to App Store/Google Play/Stripe
+
+---
+
+## 12. VOICE CHAT, EMOTION DETECTION, TEACHING SYSTEM (January 2026)
+
+### Voice Chat System
+
+**Purpose:** Hands-free conversation with the coach using voice recognition and automatic pause detection.
+
+**Key Features:**
+- **Auto-detect mode:** Automatically sends message after configurable silence (default 1.5s)
+- **Push-to-talk mode:** Hold button to speak
+- **TTS responses:** Coach can speak responses back
+- **Multi-language:** 12 languages supported
+
+**Service:** `services/voiceChatService.ts`
+- `VoiceChatController` class manages sessions
+- Web Speech API for web, native APIs for iOS/Android
+- Pause detection sends message when user stops speaking
+
+### Emotion Detection System
+
+**Purpose:** Front-facing camera analyzes facial expressions during chat to provide emotional context to the coach.
+
+**Privacy First:**
+- All processing local/on-device
+- No images stored or transmitted
+- Explicit opt-in required
+- Can be disabled anytime
+
+**Key Features:**
+- Detects 9 emotions: happy, sad, angry, fearful, disgusted, surprised, neutral, anxious, stressed
+- Facial cues: brow furrow, eye openness, mouth tension, smile intensity, jaw clench
+- Generates coach hints: "User appears stressed, suggest breathing exercise"
+
+**Service:** `services/emotionDetectionService.ts`
+- Mock implementation ready for ML integration
+- iOS: Vision framework
+- Android: ML Kit
+- Web: face-api.js or TensorFlow.js
+
+### Teaching System
+
+**Purpose:** The coach can teach subjects like languages, mindfulness, psychology, and life skills.
+
+**Available Subjects:**
+| Subject | Emoji | Category | Tier |
+|---------|-------|----------|------|
+| Spanish | 🇪🇸 | Language | Free |
+| French | 🇫🇷 | Language | Free |
+| Japanese | 🇯🇵 | Language | Premium |
+| Mandarin | 🇨🇳 | Language | Premium |
+| Meditation Basics | 🧘 | Mindfulness | Free |
+| Breathing Mastery | 💨 | Mindfulness | Free |
+| CBT Fundamentals | 🧠 | Psychology | Free |
+| Emotional Intelligence | 💝 | Psychology | Premium |
+| Better Sleep | 😴 | Wellness | Free |
+| Self-Compassion | 🤗 | Life Skills | Free |
+| Healthy Boundaries | 🚧 | Life Skills | Premium |
+
+**Slash Commands:**
+- `/teach` - Browse all subjects
+- `/teach spanish` - Start/continue Spanish
+- `/spanish`, `/french` - Language shortcuts
+
+**Service:** `services/teachingService.ts`
+- Lesson progress tracking
+- No grades or punishment (anti-streak design)
+- Vocabulary, concepts, practice, conversation, quiz lesson types
+
+### Fidget Pad Game
+
+**Purpose:** Digital fidget toys for quick anxiety relief.
+
+**Three Tools:**
+1. **Bubble Wrap** - Pop 48 bubbles with haptic feedback
+2. **Sliders** - 6 colorful sliding bars
+3. **Spinner** - Momentum-based fidget spinner
+
+**Component:** `components/games/FidgetPad.tsx`
+- Works on iOS, Android, and Web
+- Haptic feedback via Vibration API
+- Dark theme matching app design
+
+**Slash Commands:** `/fidget`, `/bubble`, `/pop`
+
+### Files Created
+
+| File | Purpose |
+|------|---------|
+| `services/voiceChatService.ts` | Voice recognition with pause detection |
+| `services/emotionDetectionService.ts` | Camera-based emotion detection |
+| `services/teachingService.ts` | Subject teaching system |
+| `components/games/FidgetPad.tsx` | Fidget pad game component |
+
+### Integration Notes
+
+- All services follow Mood Leaf ethics: privacy-first, no manipulation, user control
+- Voice and emotion features require explicit opt-in
+- Teaching system uses same anti-dependency principles as exercise tracking
+- All work cross-platform: iOS, Android, Web

@@ -29,6 +29,17 @@ import {
   getAllSkillProgress,
   SkillMenuItem,
 } from './skillsService';
+import {
+  SUBJECTS,
+  getAllSubjects,
+  getSubjectById,
+  getSubjectsByCategory,
+  getNextLesson,
+  getAllProgress,
+  getCategoryInfo,
+  getProgressPercentage,
+  SubjectCategory,
+} from './teachingService';
 
 // ============================================
 // STORAGE KEYS
@@ -58,6 +69,7 @@ export type CommandResultType =
   | 'exercise'          // Start guided exercise
   | 'navigation'        // Navigate to screen
   | 'action'            // Perform action (clear, export, etc.)
+  | 'lesson'            // Start a teaching lesson
   | 'error';            // Error occurred
 
 export interface CommandResult {
@@ -72,8 +84,11 @@ export interface CommandResult {
   isTemporary?: boolean;
 
   // For menus
-  menuType?: 'skills' | 'exercises' | 'help' | 'games';
+  menuType?: 'skills' | 'exercises' | 'help' | 'games' | 'teach';
   menuItems?: MenuItem[];
+
+  // For teaching
+  lessonData?: any;
 
   // For exercises
   exerciseType?: string;
@@ -1043,6 +1058,189 @@ registerCommand({
       data: { gameId: 'fidget_pad' },
     };
   },
+});
+
+// ============================================
+// TEACHING COMMANDS
+// ============================================
+
+registerCommand({
+  name: 'teach',
+  aliases: ['learn', 'study', 'lesson'],
+  description: 'Browse subjects to learn',
+  category: 'skill',
+  requiresPremium: false,
+  usage: '/teach [subject]',
+  examples: ['/teach', '/teach spanish', '/teach cbt'],
+  handler: async (args, context) => {
+    const subjectArg = args[0]?.toLowerCase();
+
+    // If no subject specified, show all subjects
+    if (!subjectArg) {
+      const subjects = getAllSubjects();
+      const progress = await getAllProgress();
+
+      let menuText = `**📚 Learn Something New**\n\n`;
+      menuText += `_Your coach can teach you. No pressure, no grades—just learning._\n\n`;
+
+      // Group by category
+      const categories: SubjectCategory[] = ['language', 'mindfulness', 'psychology', 'wellness', 'life_skills'];
+
+      for (const cat of categories) {
+        const catSubjects = getSubjectsByCategory(cat);
+        if (catSubjects.length === 0) continue;
+
+        const catInfo = getCategoryInfo(cat);
+        menuText += `**${catInfo.emoji} ${catInfo.name}**\n`;
+
+        for (const subject of catSubjects) {
+          const subProgress = progress[subject.id];
+          const pct = getProgressPercentage(subject, subProgress);
+          const lockIcon = subject.tier === 'premium' && !context.isPremium ? ' 🔒' : '';
+          const progressBar = pct > 0 ? ` (${pct}%)` : '';
+
+          menuText += `  ${subject.emoji} **${subject.name}**${lockIcon}${progressBar}\n`;
+          menuText += `     _${subject.description}_\n`;
+          menuText += `     \`/teach ${subject.id}\`\n`;
+        }
+        menuText += '\n';
+      }
+
+      menuText += `_Start learning: \`/teach spanish\` or \`/teach meditation_basics\`_`;
+
+      return {
+        type: 'menu',
+        success: true,
+        message: menuText,
+        menuType: 'teach',
+        data: { subjects, progress },
+      };
+    }
+
+    // Find the subject
+    const subject = getSubjectById(subjectArg);
+    if (!subject) {
+      // Try fuzzy match
+      const allSubjects = getAllSubjects();
+      const matches = allSubjects.filter(
+        (s) => s.id.includes(subjectArg) || s.name.toLowerCase().includes(subjectArg)
+      );
+
+      if (matches.length === 1) {
+        return handleTeachSubject(matches[0], context);
+      }
+
+      if (matches.length > 1) {
+        let suggestions = `Multiple subjects match "${subjectArg}":\n\n`;
+        matches.forEach((m) => {
+          suggestions += `  ${m.emoji} **${m.name}** — \`/teach ${m.id}\`\n`;
+        });
+        return {
+          type: 'message',
+          success: true,
+          message: suggestions,
+        };
+      }
+
+      return {
+        type: 'error',
+        success: false,
+        message: `Subject "${subjectArg}" not found.\n\nType \`/teach\` to see all available subjects.`,
+      };
+    }
+
+    return handleTeachSubject(subject, context);
+  },
+});
+
+async function handleTeachSubject(subject: any, context: CommandContext): Promise<CommandResult> {
+  // Check premium
+  if (subject.tier === 'premium' && !context.isPremium) {
+    return {
+      type: 'error',
+      success: false,
+      message: `${subject.emoji} **${subject.name}** is a premium subject.\n\nUpgrade to unlock all subjects, or try these free alternatives:\n\n  🇪🇸 Spanish — \`/teach spanish\`\n  🇫🇷 French — \`/teach french\`\n  🧘 Meditation — \`/teach meditation_basics\`\n  🧠 CBT — \`/teach cbt_basics\``,
+    };
+  }
+
+  const progress = await getAllProgress();
+  const subProgress = progress[subject.id];
+  const nextLesson = await getNextLesson(subject.id);
+
+  let menuText = `${subject.emoji} **${subject.name}**\n\n`;
+  menuText += `_${subject.description}_\n\n`;
+
+  if (subProgress) {
+    const pct = getProgressPercentage(subject, subProgress);
+    menuText += `**Progress:** ${pct}% (${subProgress.lessonsCompleted}/${subject.totalLessons} lessons)\n`;
+    if (subProgress.lastPracticed) {
+      const lastDate = new Date(subProgress.lastPracticed).toLocaleDateString();
+      menuText += `**Last practiced:** ${lastDate}\n`;
+    }
+    menuText += '\n';
+  }
+
+  if (subject.lessons && subject.lessons.length > 0) {
+    menuText += `**Lessons:**\n`;
+    subject.lessons.slice(0, 5).forEach((lesson: any, i: number) => {
+      const isCompleted = subProgress?.lessons?.[lesson.id]?.completed;
+      const check = isCompleted ? '✓' : '○';
+      const isCurrent = nextLesson?.id === lesson.id;
+      const marker = isCurrent ? '→ ' : '  ';
+      menuText += `${marker}${check} ${lesson.title} (${lesson.duration}min)\n`;
+    });
+
+    if (subject.lessons.length > 5) {
+      menuText += `  _...and ${subject.lessons.length - 5} more lessons_\n`;
+    }
+  }
+
+  if (nextLesson) {
+    menuText += `\n**Next up:** ${nextLesson.title}\n`;
+    menuText += `_${nextLesson.description}_\n\n`;
+    menuText += `Ready to start? Just say "yes" or "let's begin" 🌱`;
+  } else if (subProgress && subProgress.lessonsCompleted === subject.totalLessons) {
+    menuText += `\n🎉 **You've completed all lessons!**\n`;
+    menuText += `Want to review any topic? Just ask!`;
+  }
+
+  return {
+    type: 'lesson',
+    success: true,
+    message: menuText,
+    data: { subject, progress: subProgress, nextLesson },
+    lessonData: { subject, nextLesson },
+  };
+}
+
+// Language-specific shortcuts
+const languageShortcuts = [
+  { name: 'spanish', id: 'spanish', emoji: '🇪🇸' },
+  { name: 'french', id: 'french', emoji: '🇫🇷' },
+  { name: 'japanese', id: 'japanese', emoji: '🇯🇵' },
+  { name: 'mandarin', id: 'mandarin', emoji: '🇨🇳' },
+  { name: 'chinese', id: 'mandarin', emoji: '🇨🇳' },
+];
+
+languageShortcuts.forEach(({ name, id, emoji }) => {
+  registerCommand({
+    name,
+    aliases: [],
+    description: `Learn ${name.charAt(0).toUpperCase() + name.slice(1)}`,
+    category: 'skill',
+    requiresPremium: false,
+    handler: async (args, context) => {
+      const subject = getSubjectById(id);
+      if (!subject) {
+        return {
+          type: 'error',
+          success: false,
+          message: `Subject ${name} not found`,
+        };
+      }
+      return handleTeachSubject(subject, context);
+    },
+  });
 });
 
 // ============================================
