@@ -52,6 +52,7 @@ export default function VoiceSettingsScreen() {
   const [currentPersona, setCurrentPersona] = useState<CoachPersona>('clover');
   const [isTesting, setIsTesting] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     loadSettings();
@@ -59,6 +60,7 @@ export default function VoiceSettingsScreen() {
 
   const loadSettings = async () => {
     try {
+      setLoadError(false);
       const [ttsSettings, keyExists, coachSettings] = await Promise.all([
         getTTSSettings(),
         hasTTSAPIKey(),
@@ -69,6 +71,8 @@ export default function VoiceSettingsScreen() {
       setCurrentPersona(coachSettings.selectedPersona);
     } catch (error) {
       console.error('Failed to load voice settings:', error);
+      setLoadError(true);
+      Alert.alert('Error', 'Failed to load voice settings. Please try again.');
     } finally {
       setLoading(false);
     }

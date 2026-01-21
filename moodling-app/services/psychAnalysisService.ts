@@ -992,7 +992,9 @@ class PsychAnalysisService {
     parts.push(`[PSYCH n=${this.profile.entryCount}]`);
 
     // Top 3 cognitive distortions (compact: "CD:catastrophizing,all_or_nothing")
+    // Use slice() first to avoid mutating the original array
     const topDistortions = this.profile.cognitiveDistortions
+      .slice()
       .sort((a, b) => b.frequency - a.frequency)
       .slice(0, 3);
     if (topDistortions.length > 0) {
@@ -1002,6 +1004,7 @@ class PsychAnalysisService {
     // Defense level + top 2 (compact: "DEF:neurotic(rationalize,project)")
     if (this.profile.defenseMechanisms.length > 0) {
       const topDef = this.profile.defenseMechanisms
+        .slice()
         .sort((a, b) => b.frequency - a.frequency)
         .slice(0, 2)
         .map(d => d.mechanism);
@@ -1073,6 +1076,7 @@ class PsychAnalysisService {
     lines.push(`Based on ${this.profile.entryCount} entries\n`);
 
     const topDistortions = this.profile.cognitiveDistortions
+      .slice()
       .sort((a, b) => b.frequency - a.frequency)
       .slice(0, 3);
 

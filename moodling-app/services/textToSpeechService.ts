@@ -352,6 +352,10 @@ export async function synthesizeSpeech(
   };
 
   try {
+    // Add timeout to prevent hanging if API is slow
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+
     const response = await fetch(
       `https://texttospeech.googleapis.com/v1/text:synthesize?key=${apiKey}`,
       {
@@ -360,8 +364,11 @@ export async function synthesizeSpeech(
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(requestBody),
+        signal: controller.signal,
       }
     );
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -461,13 +468,21 @@ export async function playAudio(audioUri: string, volume?: number): Promise<void
  */
 export async function stopAudio(): Promise<void> {
   if (currentSound) {
+    const sound = currentSound;
+    currentSound = null; // Clear immediately to prevent race conditions
+
+    // Handle errors independently - don't let stopAsync failure prevent unloadAsync
     try {
-      await currentSound.stopAsync();
-      await currentSound.unloadAsync();
+      await sound.stopAsync();
     } catch (error) {
-      console.error('[TTS] Stop failed:', error);
+      // Ignore - may already be stopped
     }
-    currentSound = null;
+
+    try {
+      await sound.unloadAsync();
+    } catch (error) {
+      console.error('[TTS] Unload failed:', error);
+    }
   }
 }
 
