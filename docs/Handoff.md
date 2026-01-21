@@ -83,6 +83,105 @@ Currently refining the Simulator Mode to properly validate AI behavior.
 
 ---
 
+## 7.5 AI CONTEXT SOURCES & COACH PERSONALITY (VERIFIED)
+
+### Data Sources Fed to Claude (in order of assembly)
+
+1. **Life Context** (`lifeContextService.ts` → `getLifeContextForClaude()`)
+   - Journaling journey length and total entries
+   - Profession, identity (neurodivergence, LGBTQ+)
+   - Key people (mom, dad, friends, etc.), pets
+   - Activities/interests, health journey
+   - Recent and older milestones
+   - Long-term emotional themes
+
+2. **Psychological Profile** (`psychAnalysisService.ts` → `getCompressedContext()`)
+   - Cognitive distortions (thinking patterns)
+   - Defense mechanisms (coping style)
+   - Attachment style (secure, anxious, avoidant, etc.)
+   - Locus of control (internal vs external)
+   - Mindset (growth vs fixed)
+   - Core values
+   - Nervous system state
+
+3. **Chronotype & Travel** (`coachPersonalityService.ts` → `getChronotypeContextForClaude()`)
+   - Chronotype (early bird, night owl, normal)
+   - Rhythm transition progress (if changing sleep schedule)
+   - Travel frequency, recent timezone shifts
+   - Jet lag recovery phase
+
+4. **Health Data** (`healthKitService.ts` → `getHealthContextForClaude()`) - *if HealthKit enabled*
+   - Current/resting heart rate, HRV
+   - Last night's sleep (hours, quality, awakenings)
+   - Weekly average sleep, sleep trend
+   - Today's steps, exercise minutes
+   - Activity trend, potential stress indicators
+
+5. **Health Correlations** (`healthInsightService.ts` → `getCorrelationSummaryForClaude()`) - *if HealthKit enabled*
+   - Sleep-mood correlation
+   - Activity-mood correlation
+   - Weekly mood trend
+
+6. **Detailed Twig Data** (`quickLogsService.ts` → `getDetailedLogsContextForClaude()`)
+   - Each twig with today/week/month/all-time counts
+   - **Exact timestamps for today and yesterday** (e.g., "5:11 PM")
+   - Notes attached to entries
+   - Current streak, longest streak, weekly average
+   - First/last logged dates
+
+7. **Lifestyle Factors** (`patternService.ts` → `getLifestyleFactorsContextForClaude()`)
+   - Today's factors: caffeine, alcohol, exercise, outdoor, social, sleep
+   - 2-week averages for each factor
+
+8. **Exposure Ladder** (`exposureLadderService.ts` → `getExposureContextForClaude()`)
+   - Current social comfort level (1-8)
+   - Total attempts, completed, highest level
+   - Average anxiety reduction, practice streak
+   - Recent exposure attempts with notes
+
+9. **Recent Journals** (`journalStorage.ts` → `getRecentJournalContextForClaude()`)
+   - Last 7 days of journal entries (actual text, truncated to 300 chars)
+   - Date, time, and detected mood for each
+   - Mood distribution summary
+
+10. **User Preferences** (`userContextService.ts` → `getContextForClaude()`)
+    - Temperament, communication style
+    - Journal history stats, common moods
+    - Recent mood trend, entries this week
+    - Known triggers and helpers
+    - Communication preferences (direct, dislikes platitudes, etc.)
+
+11. **Conversation Context** (built in `claudeAPIService.ts`)
+    - Current date and time with timezone
+    - Recent mood, upcoming events
+    - Last 6 messages (3 turns)
+
+### Coach Personality System
+
+**7 Personas** (`coachPersonalityService.ts`):
+- 🍀 **Clover** (The Bestie) - warm, casual, friendly
+- ✨ **Spark** (The Hype Squad) - energetic, motivating
+- 🌿 **Willow** (The Sage) - calm wisdom, reflective
+- 🌙 **Luna** (The Spiritual) - mindful, present-moment
+- ⛰️ **Ridge** (The Coach) - action-oriented, structured
+- 🔥 **Flint** (The Straight Shooter) - direct, honest
+- 🌱 **Fern** (The Cozy Blanket) - extra gentle, nurturing
+
+**Adaptive Mode Features**:
+- Mood detection → persona adaptation (anxious→Luna, sad→Fern, etc.)
+- Time-of-day adaptation (morning→Spark, night→Luna)
+- Content type detection (goals→Ridge, venting→Clover)
+- Chronotype-aware energy (night owls get gentle mornings)
+- Jet lag recovery support
+
+**Customization Options**:
+- Energy level, response length, question frequency
+- Emoji usage, formality, directness, validation style
+- Therapeutic approaches: CBT, somatic, mindfulness, motivational, strengths-based
+- Context awareness: acknowledge time, reference patterns, track milestones
+
+---
+
 ## 8. NEXT STEPS (FOR NEXT SESSION)
 
 1. **Test AI response quality:** Run multiple challenges and verify AI consistently references specific user data
@@ -121,4 +220,4 @@ Currently refining the Simulator Mode to properly validate AI behavior.
 
 ## QUICK STATUS SNAPSHOT
 
-"Fixed UTC vs Local timezone bug in twig timestamp filtering; newly logged twigs should now appear immediately in AI context. Next session should verify the fix works across different timezones."
+"All 11 AI context sources verified and documented. Coach personality system with 7 personas and adaptive mode confirmed working. UTC timezone bug fixed. The AI has access to: life context, psych profile, chronotype, health data, correlations, twigs (with exact times), lifestyle factors, exposure progress, journals, and user preferences."
