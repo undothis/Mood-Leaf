@@ -137,6 +137,45 @@ export const FAQ_CONTENT: FAQItem[] = [
     question: 'Is my calendar data private?',
     answer: 'Yes. Calendar data stays on your device. Only brief summaries ("interview tomorrow at 2pm") are included in AI context when you chat. You can disable calendar integration anytime in Settings.',
   },
+
+  // Cycle & PMS Tracking
+  {
+    category: 'features',
+    question: 'How does cycle tracking work?',
+    answer: 'Enable cycle tracking in Settings to log your period and symptoms. The entire app adapts to your cycle—your guide becomes gentler, Sparks shift to soothing prompts, Fireflies offer cycle-aware wisdom, and special Twigs help you track symptoms.',
+  },
+  {
+    category: 'features',
+    question: 'How do Sparks change during PMS?',
+    answer: 'During your premenstrual phase, Sparks shift to gentler, more soothing prompts. Less "push yourself" energy, more "be gentle with yourself" wisdom. The creative prompts become softer, more introspective, and acknowledge that this isn\'t the time for big challenges.',
+  },
+  {
+    category: 'features',
+    question: 'What Fireflies appear during my cycle?',
+    answer: 'Fireflies become cycle-aware—offering insights like "Your anxiety often peaks around day 24, and it always passes" or "Last month you felt this way too, and a warm bath helped." Personal wisdom that connects your mood to your body\'s rhythm.',
+  },
+  {
+    category: 'features',
+    question: 'What Twigs are available for cycle tracking?',
+    answer: 'Special cycle Twigs include: Period start/end, Flow level, Cramps, Bloating, Breast tenderness, Headache, Mood shifts, Cravings, Energy level, and Sleep quality. Track what matters to you and see patterns emerge over months.',
+  },
+  {
+    category: 'features',
+    question: 'Does my guide know where I am in my cycle?',
+    answer: 'Yes! Your guide sees your cycle phase and adapts accordingly. During PMS it\'s gentler and validates physical discomfort. During your period it acknowledges energy dips. It learns YOUR patterns—not generic averages—and meets you where you are.',
+  },
+
+  // Personalization & Onboarding
+  {
+    category: 'guide',
+    question: 'What personal info does onboarding ask?',
+    answer: 'During setup, we ask your first name (so your guide can address you personally), your preferred pronouns (so responses feel right), and whether you experience menstrual cycles (to enable cycle-aware adaptation). All optional, all changeable later.',
+  },
+  {
+    category: 'guide',
+    question: 'Why does the app ask about pronouns?',
+    answer: 'Your guide uses pronouns when reflecting back to you ("You mentioned you were feeling..."). Getting this right makes conversations feel natural and respectful. You can change this anytime in Settings.',
+  },
 ];
 
 // ============================================
@@ -324,6 +363,58 @@ export const USER_MANUAL_CONTENT: ManualSection[] = [
       {
         title: 'Privacy',
         content: 'Only event titles, times, and locations are read. Data stays on your device. We never see or store your calendar. You can disable anytime in Settings.',
+      },
+    ],
+  },
+  {
+    id: 'cycle',
+    emoji: '🌙',
+    title: 'Cycle Tracking',
+    content: 'For those who experience menstrual cycles, the entire app adapts to your rhythm. Your guide becomes gentler during PMS, Sparks shift to soothing prompts, and Fireflies offer cycle-aware personal wisdom.',
+    subsections: [
+      {
+        title: 'How it works',
+        content: 'Log your period start/end dates and the app learns your cycle. It predicts upcoming phases and adapts before you even notice the shift. The longer you track, the more accurate predictions become.',
+      },
+      {
+        title: 'What adapts',
+        content: '• Your Guide - Becomes gentler, validates physical symptoms, avoids pushing productivity\n• Sparks - Shift to soothing, introspective prompts during PMS\n• Fireflies - Generate cycle-aware insights ("Your anxiety usually peaks now—it always passes")\n• Twigs - Special cycle-specific tracking options appear',
+      },
+      {
+        title: 'Cycle phases',
+        content: '• Menstrual (days 1-5) - Acknowledges energy dips, extra gentle\n• Follicular (days 6-13) - Normal energy, open to challenges\n• Ovulation (days 14-16) - Peak energy, action-oriented\n• Luteal/PMS (days 17-28) - Soothing mode, validates discomfort',
+      },
+      {
+        title: 'Cycle Twigs',
+        content: 'Track what matters to you:\n• Period start/end, Flow level\n• Cramps, Bloating, Breast tenderness\n• Headache, Mood shifts, Cravings\n• Energy level, Sleep quality\n\nPatterns emerge over months.',
+      },
+      {
+        title: 'Privacy',
+        content: 'Cycle data stays on your device. Only your current phase is shared with your guide ("luteal phase, day 24"). Raw tracking data is never sent. You can disable cycle tracking anytime.',
+      },
+    ],
+  },
+  {
+    id: 'onboarding',
+    emoji: '👋',
+    title: 'Personalization',
+    content: 'During onboarding, we ask a few questions to personalize your experience. Everything is optional and can be changed later in Settings.',
+    subsections: [
+      {
+        title: 'Your name',
+        content: 'Your first name so your guide can address you personally. "Hey Sarah" feels different than "Hey there." Optional—your guide works fine without it.',
+      },
+      {
+        title: 'Your pronouns',
+        content: 'Your guide uses pronouns when reflecting back to you. Options include she/her, he/him, they/them, or custom. This makes conversations feel natural and respectful.',
+      },
+      {
+        title: 'Cycle tracking',
+        content: 'If you experience menstrual cycles, enabling this unlocks cycle-aware adaptation. The whole app shifts based on your phase—gentler during PMS, more energetic during ovulation.',
+      },
+      {
+        title: 'Changing later',
+        content: 'All personalization settings can be updated in Settings > Profile. Your guide adapts immediately to changes.',
       },
     ],
   },

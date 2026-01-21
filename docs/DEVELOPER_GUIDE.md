@@ -25,7 +25,8 @@ Complete technical documentation for the Mood Leaf codebase.
 17. [AI Coach Adaptive System](#ai-coach-adaptive-system)
 18. [AI Data Integration & Learning](#ai-data-integration--learning)
 19. [AI Adaptation Verification System](#ai-adaptation-verification-system)
-20. [Future Enhancements](#future-enhancements)
+20. [Cycle Tracking System](#cycle-tracking-system)
+21. [Future Enhancements](#future-enhancements)
 
 ---
 
@@ -2407,6 +2408,164 @@ const report = await generateDiagnosticReport();
 - **Diagnostic reports are generated on-demand** - Not stored automatically
 - **Failure logs stay on device** - Can be cleared at any time
 - **User controls everything** - Toggle on/off, clear data anytime
+
+---
+
+## Cycle Tracking System
+
+### Overview
+
+The Cycle Tracking System enables the entire app to adapt based on menstrual cycle phases. When enabled, the guide becomes gentler during PMS, Sparks shift to soothing prompts, and Fireflies generate cycle-aware personal insights.
+
+### Service: cycleService.ts (Planned)
+
+**Purpose**: Track menstrual cycles and provide cycle-aware context to all app features.
+
+**Key Exports**:
+```typescript
+interface CycleData {
+  periodStartDates: string[];        // ISO dates of period starts
+  periodEndDates: string[];          // ISO dates of period ends
+  averageCycleLength: number;        // Calculated from history
+  averagePeriodLength: number;       // Calculated from history
+  currentPhase: CyclePhase;          // Current phase
+  dayOfCycle: number;                // Current day (1-28+)
+  predictedNextPeriod: string;       // Predicted start date
+  predictedPMSStart: string;         // Predicted PMS start
+}
+
+type CyclePhase = 'menstrual' | 'follicular' | 'ovulation' | 'luteal';
+
+// Main functions
+getCycleData(): Promise<CycleData | null>
+logPeriodStart(): Promise<void>
+logPeriodEnd(): Promise<void>
+getCurrentPhase(): Promise<CyclePhase | null>
+getCycleContextForClaude(): Promise<string>
+```
+
+### Cycle Phases & Adaptation
+
+| Phase | Days | Guide Behavior | Sparks | Fireflies |
+|-------|------|----------------|--------|-----------|
+| **Menstrual** | 1-5 | Extra gentle, acknowledges energy dips | Soft, restful prompts | "Rest is productive right now" |
+| **Follicular** | 6-13 | Normal energy, open to challenges | Standard selection | Normal personalization |
+| **Ovulation** | 14-16 | Peak energy, action-oriented | Energetic, creative prompts | Achievement-focused insights |
+| **Luteal/PMS** | 17-28 | Gentler, validates physical symptoms | Soothing, introspective | "Your anxiety peaks now—it passes" |
+
+### Cycle-Specific Twigs
+
+Preset Twigs for cycle tracking:
+
+```typescript
+const CYCLE_TWIGS = [
+  { name: 'Period Start', emoji: '🔴', type: 'symptom' },
+  { name: 'Period End', emoji: '⭕', type: 'symptom' },
+  { name: 'Flow Level', emoji: '💧', type: 'symptom' },
+  { name: 'Cramps', emoji: '😣', type: 'symptom' },
+  { name: 'Bloating', emoji: '🎈', type: 'symptom' },
+  { name: 'Breast Tenderness', emoji: '💔', type: 'symptom' },
+  { name: 'Headache', emoji: '🤕', type: 'symptom' },
+  { name: 'Mood Shift', emoji: '🎭', type: 'symptom' },
+  { name: 'Cravings', emoji: '🍫', type: 'symptom' },
+  { name: 'Energy Level', emoji: '⚡', type: 'symptom' },
+];
+```
+
+### Integration Points
+
+1. **claudeAPIService.ts** - Add cycle context as 14th data source
+2. **sparkService.ts** - Filter to soothing Sparks during luteal phase
+3. **firefliesService.ts** - Generate cycle-aware personal insights
+4. **coachPersonalityService.ts** - Guide becomes gentler during PMS
+
+### Context for Claude
+
+```typescript
+// Example output from getCycleContextForClaude()
+`CYCLE CONTEXT:
+  Phase: luteal (PMS)
+  Day of cycle: 24
+  Predicted period: 4 days
+
+  Recent symptoms logged:
+    - Cramps: today, yesterday
+    - Mood shift: 3 times this week
+    - Energy: low (2 days)
+
+  Historical patterns:
+    - Anxiety typically peaks days 22-26
+    - Cramps usually start day 25
+    - Average cycle: 28 days
+
+  Adaptation: Be extra gentle, validate physical discomfort,
+  avoid pushing productivity, remind her this phase always passes.`
+```
+
+### Onboarding Integration
+
+During onboarding, ask:
+
+```typescript
+const PERSONALIZATION_QUESTIONS = [
+  {
+    id: 'first_name',
+    question: "What's your first name?",
+    type: 'text',
+    placeholder: 'So your guide can address you personally',
+  },
+  {
+    id: 'pronouns',
+    question: 'What are your pronouns?',
+    type: 'select',
+    options: ['she/her', 'he/him', 'they/them', 'custom'],
+  },
+  {
+    id: 'experiences_periods',
+    question: 'Do you experience menstrual cycles?',
+    type: 'boolean',
+    description: 'Enables cycle-aware adaptation across the app',
+  },
+];
+```
+
+### Wearable Integrations
+
+Cycle data can be imported from popular wearables:
+
+| Source | API | Data Available |
+|--------|-----|----------------|
+| **Oura Ring** | Oura API v2 | Period prediction, temperature trends, readiness score |
+| **Apple Watch** | HealthKit | Cycle tracking data, heart rate variability, sleep |
+| **Whoop** | Whoop API | Recovery score, strain, sleep performance, cycle data |
+
+**Implementation Notes**:
+```typescript
+// Check available sources
+const sources = await getAvailableCycleSources();
+// Returns: ['manual', 'healthkit', 'oura', 'whoop']
+
+// Sync from preferred source
+await syncCycleFromSource('oura');
+
+// Fallback hierarchy
+const cycleData = await getCycleData();
+// Tries: Oura → Apple Health → Whoop → Manual
+```
+
+**Benefits of wearable integration**:
+- More accurate phase detection via temperature/HRV
+- Automatic period logging (no manual entry)
+- Recovery scores inform energy expectations
+- Sleep data correlates with cycle phases
+
+### Privacy
+
+- Cycle data stored locally only
+- Only current phase shared with AI ("luteal phase, day 24")
+- Raw period dates never sent to API
+- Wearable tokens stored securely in Keychain
+- User can disable cycle tracking anytime
 
 ---
 
