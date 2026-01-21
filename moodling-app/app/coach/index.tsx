@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   StyleSheet,
   Text,
@@ -10,10 +10,19 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
+import {
+  VoiceChatController,
+  VoiceState,
+  getVoiceStateIcon,
+  getVoiceStateLabel,
+  isVoiceChatSupported,
+  getVoiceSettings,
+} from '@/services/voiceChatService';
 import {
   sendMessage,
   hasAPIKey,
@@ -38,6 +47,12 @@ import {
   CommandResult,
   initializeSlashCommands,
 } from '@/services/slashCommandService';
+import {
+  getTTSSettings,
+  speakCoachResponse,
+  stopAudio,
+  initializeTTS,
+} from '@/services/textToSpeechService';
 
 // Initialize slash commands on module load
 initializeSlashCommands();
@@ -139,11 +154,32 @@ export default function CoachScreen() {
   const [coachEmoji, setCoachEmoji] = useState('🌿');
   const [coachSettings, setCoachSettings] = useState<CoachSettings | null>(null);
 
+  // Voice chat state
+  const [voiceState, setVoiceState] = useState<VoiceState>('idle');
+  const [voiceTranscript, setVoiceTranscript] = useState('');
+  const [voiceSupported, setVoiceSupported] = useState(false);
+  const [silenceProgress, setSilenceProgress] = useState(0);
+  const [autoSendEnabled, setAutoSendEnabled] = useState(true); // Toggle for auto-send on pause
+  const voiceControllerRef = useRef<VoiceChatController | null>(null);
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  // Ref to hold latest send handler (avoids stale closure in voice callback)
+  const sendHandlerRef = useRef<(text: string) => Promise<void>>();
+
+  // TTS state
+  const [ttsEnabled, setTtsEnabled] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
   // Load coach settings and API key on mount
   useEffect(() => {
     const checkSetup = async () => {
       const keyExists = await hasAPIKey();
       setHasKey(keyExists);
+
+      // Initialize TTS
+      await initializeTTS();
+      const ttsSettings = await getTTSSettings();
+      setTtsEnabled(ttsSettings.enabled && ttsSettings.autoPlay);
 
       const prefs = await getTonePreferences();
       setToneStyles(prefs.selectedStyles);
@@ -153,16 +189,115 @@ export default function CoachScreen() {
       setCoachSettings(settings);
       setCoachName(getCoachDisplayName(settings));
       setCoachEmoji(getCoachEmoji(settings));
+
+      // Initialize voice chat
+      const supported = isVoiceChatSupported();
+      setVoiceSupported(supported);
+
+      if (supported) {
+        const voiceSettings = await getVoiceSettings();
+        setAutoSendEnabled(!voiceSettings.confirmBeforeSend);
+
+        // Create voice controller with callbacks
+        voiceControllerRef.current = new VoiceChatController({
+          onTranscriptUpdate: (transcript, isFinal) => {
+            setVoiceTranscript(transcript);
+          },
+          onMessageReady: (message) => {
+            // Auto-send when pause detected (uses ref to avoid stale closure)
+            if (message.trim() && sendHandlerRef.current) {
+              // Fire and handle errors gracefully
+              sendHandlerRef.current(message).catch((err) => {
+                console.error('Voice send error:', err);
+              });
+            }
+            setVoiceTranscript('');
+          },
+          onStateChange: (state) => {
+            setVoiceState(state);
+          },
+          onError: (error) => {
+            console.error('Voice error:', error);
+            setVoiceState('idle');
+          },
+        });
+
+        await voiceControllerRef.current.initialize();
+      }
     };
     checkSetup();
+
+    return () => {
+      // Cleanup voice controller and TTS
+      voiceControllerRef.current?.destroy();
+      stopAudio();
+    };
   }, []);
 
   // Scroll to bottom when messages change
   useEffect(() => {
-    setTimeout(() => {
+    const timeoutId = setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
     }, 100);
+    return () => clearTimeout(timeoutId);
   }, [messages]);
+
+  // Pulse animation for voice button when listening
+  useEffect(() => {
+    if (voiceState === 'listening') {
+      const pulse = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.2,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      pulse.start();
+      return () => pulse.stop();
+    } else {
+      pulseAnim.setValue(1);
+    }
+  }, [voiceState, pulseAnim]);
+
+  // Handle voice button press
+  const handleVoicePress = async () => {
+    if (!voiceControllerRef.current) return;
+
+    if (voiceState === 'idle') {
+      // Update mode based on autoSendEnabled
+      await voiceControllerRef.current.updateSettings({
+        mode: autoSendEnabled ? 'auto_detect' : 'push_to_talk',
+        confirmBeforeSend: !autoSendEnabled,
+      });
+      await voiceControllerRef.current.startListening();
+    } else if (voiceState === 'listening') {
+      const transcript = await voiceControllerRef.current.stopListening();
+      if (transcript.trim() && !autoSendEnabled) {
+        // Manual mode: put transcript in input box for review
+        setInputText(transcript);
+      }
+      setVoiceTranscript('');
+    }
+  };
+
+  // Toggle auto-send mode
+  const toggleAutoSend = async () => {
+    const newValue = !autoSendEnabled;
+    setAutoSendEnabled(newValue);
+    if (voiceControllerRef.current) {
+      await voiceControllerRef.current.updateSettings({
+        mode: newValue ? 'auto_detect' : 'push_to_talk',
+        confirmBeforeSend: !newValue,
+      });
+    }
+  };
 
   const getSourceIcon = (source: MessageSource): string => {
     switch (source) {
@@ -396,6 +531,13 @@ export default function CoachScreen() {
         ];
       });
 
+      // Speak the response if TTS is enabled
+      if (ttsEnabled && coachSettings?.selectedPersona) {
+        setIsSpeaking(true);
+        speakCoachResponse(response.text, coachSettings.selectedPersona)
+          .finally(() => setIsSpeaking(false));
+      }
+
       // Track turns for anti-dependency
       const newTurnCount = turnCount + 1;
       setTurnCount(newTurnCount);
@@ -434,9 +576,14 @@ export default function CoachScreen() {
     }
   };
 
-  const handleQuickAction = (prompt: string) => {
+  // Keep sendHandlerRef updated with latest handleSend (for voice callback)
+  useEffect(() => {
+    sendHandlerRef.current = handleSend;
+  });
+
+  const handleQuickAction = useCallback((prompt: string) => {
     handleSend(prompt);
-  };
+  }, [handleSend]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -552,17 +699,54 @@ export default function CoachScreen() {
           </ScrollView>
         </View>
 
+        {/* Voice Transcript Display */}
+        {voiceState === 'listening' && voiceTranscript && (
+          <View style={[styles.transcriptBar, { backgroundColor: colors.card }]}>
+            <Ionicons name="mic" size={16} color={colors.error} />
+            <Text style={[styles.transcriptText, { color: colors.text }]} numberOfLines={2}>
+              {voiceTranscript}
+            </Text>
+            {autoSendEnabled && (
+              <Text style={[styles.autoSendHint, { color: colors.textMuted }]}>
+                Pause to send...
+              </Text>
+            )}
+          </View>
+        )}
+
         {/* Input Area */}
         <View style={[styles.inputContainer, { backgroundColor: colors.card }]}>
+          {/* Voice Button */}
+          {voiceSupported && (
+            <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+              <TouchableOpacity
+                style={[
+                  styles.voiceButton,
+                  {
+                    backgroundColor: voiceState === 'listening' ? colors.error : colors.border,
+                  },
+                ]}
+                onPress={handleVoicePress}
+                disabled={isLoading}
+              >
+                <Ionicons
+                  name={voiceState === 'listening' ? 'stop' : 'mic'}
+                  size={18}
+                  color={voiceState === 'listening' ? '#FFFFFF' : colors.text}
+                />
+              </TouchableOpacity>
+            </Animated.View>
+          )}
+
           <TextInput
             style={[styles.input, { color: colors.text }]}
-            placeholder="Type a message..."
+            placeholder={voiceState === 'listening' ? 'Listening...' : 'Type a message...'}
             placeholderTextColor={colors.textMuted}
             value={inputText}
             onChangeText={setInputText}
             multiline
             maxLength={1000}
-            editable={!isLoading}
+            editable={!isLoading && voiceState !== 'listening'}
           />
           <TouchableOpacity
             style={[
@@ -581,6 +765,23 @@ export default function CoachScreen() {
             />
           </TouchableOpacity>
         </View>
+
+        {/* Auto-Send Toggle (only when voice is supported) */}
+        {voiceSupported && (
+          <TouchableOpacity
+            style={styles.autoSendToggle}
+            onPress={toggleAutoSend}
+          >
+            <Ionicons
+              name={autoSendEnabled ? 'radio-button-on' : 'radio-button-off'}
+              size={16}
+              color={autoSendEnabled ? colors.tint : colors.textMuted}
+            />
+            <Text style={[styles.autoSendText, { color: colors.textMuted }]}>
+              {autoSendEnabled ? 'Auto-send on pause' : 'Manual send (hold to talk)'}
+            </Text>
+          </TouchableOpacity>
+        )}
 
         {/* Privacy Footer */}
         <View style={styles.privacyFooter}>
@@ -735,6 +936,41 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  voiceButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  transcriptBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginBottom: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    gap: 8,
+  },
+  transcriptText: {
+    flex: 1,
+    fontSize: 14,
+  },
+  autoSendHint: {
+    fontSize: 11,
+    fontStyle: 'italic',
+  },
+  autoSendToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 4,
+    gap: 6,
+  },
+  autoSendText: {
+    fontSize: 11,
   },
   privacyFooter: {
     alignItems: 'center',

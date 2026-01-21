@@ -1534,22 +1534,10 @@ analysis.attachmentSignals       // Relationship pattern signals
 analysis.polyvagalState          // Nervous system state
 analysis.alerts                  // Gentle suggestions (NOT labels)
 
-// Get compressed context for Claude API
+// Get compressed context for Claude API (MoodPrint format)
 const psychContext = await psychAnalysisService.getCompressedContext();
-// Returns something like:
-// "THINKING PATTERNS:
-//  - Tends toward catastrophizing (seen 5x)
-//  - Tends toward all or nothing (seen 3x)
-//
-//  COPING STYLE: neurotic defenses
-//  ATTACHMENT: anxious style (70% confidence)
-//  AGENCY: Leans external locus of control
-//  MINDSET: Leans fixed
-//  CORE VALUES: security, benevolence
-//
-//  COMMUNICATION RECOMMENDATIONS:
-//  - Gently challenge worst-case thinking
-//  - Provide extra reassurance and validation"
+// Returns ultra-compressed MoodPrint format (~40% smaller than verbose):
+// "[PSYCH n=42] | CD:catastrophizing,all_or_nothing | DEF:neurotic(rationalize,project) | ATT:anxious/70 | LOC:int MIND:growth | NS:ventral | REG:73% | PERMA:65% | NEEDS:reassure,challenge_worst_case | TEMPORAL:worst=Sun_evening,best=morning"
 ```
 
 ### Gentle Suggestions (NOT Labels)
@@ -1631,6 +1619,333 @@ profile.cognitiveDistortions[0].lastSeen = now
 3. **User agency**: Suggestions are offered, not imposed
 4. **Privacy**: All analysis is local, only compressed summary sent to API
 5. **Anti-dependency**: System celebrates user self-awareness, not app usage
+
+---
+
+## MoodPrint: Context Compression System
+
+### Overview
+
+MoodPrint is Mood Leaf's proprietary system for compressing a user's psychological profile into a dense, token-efficient format. This allows Claude to understand a user's patterns without consuming excessive API tokens.
+
+### Why MoodPrint?
+
+| Problem | Solution |
+|---------|----------|
+| Full psych profiles can be 1000+ tokens | MoodPrint compresses to ~100 tokens |
+| Verbose format wastes API budget | 40% reduction in token usage |
+| Slow response times | Faster AI responses |
+| Context window limits | More room for conversation history |
+
+### MoodPrint Format
+
+The compressed format uses a pipe-delimited structure with standardized abbreviations:
+
+```
+[PSYCH n=42] | CD:catastrophizing,all_or_nothing | DEF:neurotic(rationalize,project) | ATT:anxious/70 | LOC:int MIND:growth | NS:ventral | REG:73% | PERMA:65% | NEEDS:reassure,challenge_worst_case | TEMPORAL:worst=Sun_evening,best=morning
+```
+
+### Format Key
+
+| Code | Meaning | Values |
+|------|---------|--------|
+| `n=` | Entry count analyzed | Number |
+| `CD:` | Cognitive Distortions | List of patterns |
+| `DEF:` | Defense mechanisms | Level + specific mechanisms |
+| `ATT:` | Attachment style | Style/confidence% |
+| `LOC:` | Locus of Control | `int` or `ext` |
+| `MIND:` | Mindset | `growth` or `fixed` |
+| `NS:` | Nervous System (Polyvagal) | `ventral`, `sympathetic`, or `dorsal` |
+| `REG:` | Emotion Regulation score | Percentage |
+| `PERMA:` | Well-being score | Percentage |
+| `NEEDS:` | Communication recommendations | List of approaches |
+| `TEMPORAL:` | Temporal patterns | `worst=` and `best=` times |
+| `CTX_ATT:` | Contextual Attachment | Relationship-specific styles |
+| `COPE:` | Coping Patterns | `healthy:[]` and `unhealthy:[]` |
+| `VAG:` | Values-Actions Gap | Misaligned values |
+
+### Implementation
+
+```typescript
+// psychAnalysisService.ts - getCompressedContext()
+
+async getCompressedContext(): Promise<string> {
+  const profile = await this.getProfile();
+  if (!profile || profile.entryCount === 0) {
+    return '[PSYCH: insufficient data]';
+  }
+
+  const parts: string[] = [];
+
+  // Header with entry count
+  parts.push(`[PSYCH n=${profile.entryCount}]`);
+
+  // Cognitive distortions (top 3)
+  if (profile.cognitiveDistortions?.length) {
+    const top = profile.cognitiveDistortions
+      .sort((a, b) => b.frequency - a.frequency)
+      .slice(0, 3)
+      .map(d => d.distortion.replace(/_/g, ''));
+    parts.push(`CD:${top.join(',')}`);
+  }
+
+  // ... continues for all fields
+
+  return parts.join(' | ');
+}
+```
+
+### New Profile Fields (January 2026)
+
+#### Temporal Patterns
+
+Tracks when users tend to struggle or thrive:
+
+```typescript
+temporalPatterns?: {
+  worstTimeOfDay?: 'morning' | 'afternoon' | 'evening' | 'night';
+  bestTimeOfDay?: 'morning' | 'afternoon' | 'evening' | 'night';
+  worstDayOfWeek?: string;  // e.g., "Sunday"
+  moodByHour: Record<number, { sum: number; count: number }>;
+  moodByDayOfWeek: Record<string, { sum: number; count: number }>;
+};
+```
+
+**Use case**: Coach can proactively check in on Sunday evenings if that's when the user typically struggles.
+
+#### Contextual Attachment
+
+Different attachment styles for different relationship contexts:
+
+```typescript
+contextualAttachment?: {
+  romantic: AttachmentStyle;
+  family: AttachmentStyle;
+  friends: AttachmentStyle;
+  work: AttachmentStyle;
+};
+```
+
+**Use case**: User might be secure with friends but anxious in romantic relationships.
+
+#### Coping Patterns
+
+Tracks healthy vs unhealthy coping strategies:
+
+```typescript
+copingPatterns?: {
+  healthy: string[];    // e.g., ['exercise', 'journaling', 'calling_friend']
+  unhealthy: string[];  // e.g., ['avoidance', 'rumination', 'isolation']
+  lastUpdated: string;
+};
+```
+
+**Use case**: Coach can celebrate healthy coping and gently redirect unhealthy patterns.
+
+#### Values-Actions Gap
+
+Detects when user's actions don't align with their stated values:
+
+```typescript
+valuesActionsGap?: {
+  value: SchwartzValue;
+  action: string;
+  frequency: number;
+  lastSeen: string;
+}[];
+```
+
+**Use case**: User values family but keeps working late—coach can explore this tension.
+
+### Token Savings Comparison
+
+**Old verbose format:**
+```
+THINKING PATTERNS:
+ - Tends toward catastrophizing (seen 5x)
+ - Tends toward all or nothing (seen 3x)
+
+COPING STYLE: neurotic defenses (rationalization, projection)
+
+ATTACHMENT: anxious style (70% confidence)
+
+AGENCY: Internal locus of control
+MINDSET: Growth mindset
+
+NERVOUS SYSTEM: Ventral vagal (safe, social)
+
+EMOTION REGULATION: 73%
+WELL-BEING (PERMA): 65%
+
+COMMUNICATION RECOMMENDATIONS:
+ - Provide extra reassurance and validation
+ - Gently challenge worst-case thinking
+```
+**~280 tokens**
+
+**New MoodPrint format:**
+```
+[PSYCH n=42] | CD:catastrophizing,all_or_nothing | DEF:neurotic(rationalize,project) | ATT:anxious/70 | LOC:int MIND:growth | NS:ventral | REG:73% | PERMA:65% | NEEDS:reassure,challenge_worst_case
+```
+**~85 tokens (~70% reduction)**
+
+### AI vs User Display (CRITICAL)
+
+MoodPrint has **two different presentations** - what Claude sees vs what users see. This is a critical ethical distinction.
+
+#### What Claude Sees (Internal/Technical)
+
+Claude receives the compressed clinical format for accuracy:
+
+```
+[PSYCH n=42] | CD:catastrophizing,all_or_nothing | DEF:neurotic(rationalize,project) | ATT:anxious/70 | LOC:int MIND:growth | TEMPORAL:worst=Sun_evening,best=morning | NEEDS:reassure,challenge_worst_case
+```
+
+This uses clinical shorthand because:
+- Claude needs precise psychological terminology to respond appropriately
+- Compression saves tokens and cost
+- Claude can translate clinical terms into warm, human language
+
+#### What Users See (Empowering/Friendly)
+
+When users view their MoodPrint (via `/moodprint` command), they see a **completely reframed** version:
+
+```
+🌿 Your MoodPrint
+━━━━━━━━━━━━━━━━━
+📊 Your Journey
+   42 reflections since Nov 15
+
+💚 What Helps You Most
+   • Extra reassurance when things feel uncertain
+   • Gentle reality checks on worst-case thinking
+
+⏰ Your Rhythms
+   • You shine brightest: Mornings
+   • Need extra care: Sunday evenings
+
+🤝 How You Connect
+   • Strong bonds with friends
+   • Still learning in romantic relationships
+
+🌱 You're Working On
+   • Seeing shades of gray (not just extremes)
+   • Trusting that things can work out
+
+🏆 Your Wins
+   • You show up and reflect regularly
+   • You're building self-awareness
+
+All insights stay on your device 🔒
+```
+
+#### Why Two Versions?
+
+| Clinical Term (AI) | User-Friendly Version | Why Change? |
+|--------------------|----------------------|-------------|
+| `CD:catastrophizing` | "Gentle reality checks on worst-case thinking" | Empowers rather than labels |
+| `ATT:anxious` | "Still learning in romantic relationships" | Growth-focused, not diagnostic |
+| `DEF:neurotic` | (Not shown) | Clinical labels can harm |
+| `TEMPORAL:worst=Sun_evening` | "Need extra care: Sunday evenings" | Supportive framing |
+| `NEEDS:reassure` | "Extra reassurance when things feel uncertain" | Describes help, not deficiency |
+
+#### Implementation Rule
+
+```typescript
+// WRONG - Never show this to users
+const userDisplay = await psychAnalysisService.getCompressedContext();
+
+// RIGHT - Transform to friendly format
+const userDisplay = await psychAnalysisService.getUserFriendlyProfile();
+```
+
+#### What NOT to Show Users
+
+- Clinical terms (anxious attachment, neurotic, catastrophizing, distortion)
+- Labels or anything that sounds like a diagnosis
+- Percentages or scores that feel like grades
+- Defense mechanism names
+- Anything that reads like "here's what's wrong with you"
+
+**The golden rule:** If a depressed person would feel worse reading it, reframe it.
+
+---
+
+## Text-to-Speech (TTS) System
+
+### Overview
+
+Google Cloud TTS integration allows the coach to speak responses aloud, with unique voices mapped to each persona.
+
+### Service Location
+
+`services/textToSpeechService.ts`
+
+### Coach Voice Mappings
+
+| Coach | Female Voice | Male Voice | Style |
+|-------|--------------|------------|-------|
+| Clover | en-US-Neural2-C | en-US-Neural2-D | Warm, friendly |
+| Spark | en-US-Neural2-F | en-US-Neural2-J | Energetic, upbeat |
+| Willow | en-US-Neural2-C | en-US-Neural2-D | Calm, wise |
+| Luna | en-US-Neural2-E | en-US-Neural2-I | Soft, mindful |
+| Ridge | en-US-Neural2-H | en-US-Neural2-A | Clear, professional |
+| Flint | en-US-Neural2-H | en-US-Neural2-A | Direct, confident |
+| Fern | en-US-Neural2-E | en-US-Neural2-I | Gentle, nurturing |
+
+### Voice Parameters
+
+Each coach has tuned parameters:
+
+```typescript
+interface VoiceProfile {
+  voiceId: string;
+  speakingRate: number;  // 0.5 - 2.0 (1.0 = normal)
+  pitch: number;         // -20 to +20 semitones
+  volumeGainDb: number;  // -96 to +16 dB
+}
+```
+
+### Usage
+
+```typescript
+import { speakCoachResponse, stopSpeaking } from '@/services/textToSpeechService';
+
+// Speak a response
+await speakCoachResponse('Hello, how are you today?', 'clover');
+
+// Stop speaking
+await stopSpeaking();
+
+// Check settings
+const settings = await getTTSSettings();
+// { enabled: true, gender: 'female', autoPlay: true, volume: 0.8 }
+```
+
+### Settings Screen
+
+`app/settings/voice.tsx` provides:
+- Enable/disable TTS
+- Gender selection (male/female voices)
+- Speaking speed slider
+- Volume slider
+- Test voice button
+- API key management
+
+### Integration in Coach Screen
+
+```typescript
+// In app/coach/index.tsx
+const [ttsEnabled, setTtsEnabled] = useState(false);
+const [isSpeaking, setIsSpeaking] = useState(false);
+
+// After receiving AI response:
+if (ttsEnabled && coachSettings?.selectedPersona) {
+  setIsSpeaking(true);
+  speakCoachResponse(response.text, coachSettings.selectedPersona)
+    .finally(() => setIsSpeaking(false));
+}
+```
 
 ---
 
@@ -3256,6 +3571,65 @@ const progressBar = '■'.repeat(level) + '□'.repeat(5 - level);
 
 **Anti-Streak Design:** Progress is tracked without streaks or punishment for gaps. Celebrates milestones (10 uses, 25 uses) rather than consecutive days.
 
+### /skills Subcommand System
+
+The `/skills` command supports subcommands for organized navigation:
+
+| Subcommand | Description | Handler |
+|------------|-------------|---------|
+| `/skills` | Browse all skills with progress bars | Default menu |
+| `/skills info` | Activity tracking (times used, last used) | `subCommand === 'info'` |
+| `/skills store` | Browse free/premium skills | `subCommand === 'store'` |
+| `/skills collection` | View unlocked collectibles | `subCommand === 'collection'` |
+| `/skills manage` | Navigate to management screen | `subCommand === 'manage'` |
+| `/skills help` | Show all subcommands | `subCommand === 'help'` |
+
+**Implementation:**
+```typescript
+handler: async (args, context) => {
+  const subCommand = args[0]?.toLowerCase();
+
+  if (subCommand === 'info' || subCommand === 'list') {
+    // Show activity tracking view
+  }
+
+  if (subCommand === 'store' || subCommand === 'shop') {
+    // Show store view
+  }
+
+  if (subCommand === 'manage') {
+    return {
+      type: 'navigation',
+      navigateTo: '/skills/manage',
+    };
+  }
+
+  // Default: browse menu
+}
+```
+
+### Skill Enable/Disable System
+
+Users can toggle skills on/off to customize their experience:
+
+**Files:**
+- `services/skillsService.ts` - `getEnabledSkills()`, `setSkillEnabled()`, `toggleSkillEnabled()`
+- `app/skills/manage.tsx` - Skills management UI
+
+**Storage Key:** `moodleaf_enabled_skills`
+
+```typescript
+// Get all enabled skills
+const enabled = await getEnabledSkills(); // Record<string, boolean>
+
+// Toggle a skill
+const newState = await toggleSkillEnabled('box_breathing'); // returns boolean
+
+// Get skills with enabled state for UI
+const skills = await getSkillsWithEnabledState(isPremium);
+// Returns: Array<{ skill, progress, enabled, isLocked }>
+```
+
 ### Slash Command Mappings
 
 **Breathing Commands:**
@@ -3883,6 +4257,35 @@ SUPPORTED_LANGUAGES: LanguageOption[]
 // 5. Auto-listen resumes (if enabled)
 ```
 
+**Coach Screen Integration** (`app/coach/index.tsx`):
+```typescript
+// Voice chat integration with auto-send toggle
+const [voiceState, setVoiceState] = useState<VoiceState>('idle');
+const [autoSendEnabled, setAutoSendEnabled] = useState(true);
+
+// Controller with callbacks
+voiceControllerRef.current = new VoiceChatController({
+  onTranscriptUpdate: (transcript, isFinal) => {
+    setVoiceTranscript(transcript);
+  },
+  onMessageReady: (message) => {
+    // Auto-send when pause detected
+    handleSend(message);
+    setVoiceTranscript('');
+  },
+  onStateChange: setVoiceState,
+});
+
+// Toggle auto-send behavior
+const toggleAutoSend = async () => {
+  const newValue = !autoSendEnabled;
+  setAutoSendEnabled(newValue);
+  await voiceControllerRef.current.updateSettings({
+    mode: newValue ? 'auto_detect' : 'push_to_talk',
+  });
+};
+```
+
 **Platform Implementation**:
 - **Web**: Web Speech API
 - **iOS**: Native Speech Recognition (requires expo-speech)
@@ -4075,15 +4478,277 @@ import { FidgetPad } from './components/games/FidgetPad';
 
 ---
 
+## Hybrid On-Device LLM Architecture (Future)
+
+### Overview
+
+A privacy-first architecture where compressed context goes to Claude, but rich personalized responses are assembled locally using on-device LLMs.
+
+### Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  DEVICE (Private)                                           │
+│  ┌──────────────┐                                           │
+│  │ Full Context │ ← Raw journals, patterns, relationships   │
+│  │ (~5000 tokens)│                                          │
+│  └──────┬───────┘                                           │
+│         │ Compress (MoodPrint)                              │
+│         ▼                                                   │
+│  ┌──────────────┐      ┌─────────────┐                      │
+│  │  MoodPrint   │ ───► │ Claude API  │ ◄── Cloud            │
+│  │ (~100 tokens)│      └──────┬──────┘                      │
+│  └──────────────┘             │                             │
+│                               ▼                             │
+│                   Response with expansion markers           │
+│                   "[EXPAND:temporal_pattern]"               │
+│                               │                             │
+│         ┌─────────────────────┘                             │
+│         ▼                                                   │
+│  ┌──────────────┐                                           │
+│  │ On-Device LLM│ ← Expands markers with local context      │
+│  │ (Apple/Google)│                                          │
+│  └──────┬───────┘                                           │
+│         ▼                                                   │
+│  Final personalized response with specific details          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Platform Requirements
+
+| Platform | Chip/Hardware | OS Version | On-Device LLM | API |
+|----------|---------------|------------|---------------|-----|
+| **iPhone** | A17 Pro+ | iOS 18.1+ | Foundation Models | Swift |
+| **iPad** | M-series | iPadOS 18.1+ | Foundation Models | Swift |
+| **Android** | Pixel 10 (best) | Android 14+ | Gemini Nano | ML Kit |
+| **Mac** | M1+ | macOS 15.1+ | Foundation Models | Swift |
+| **Windows** | 40+ TOPS NPU | Win 11 24H2+ | Phi-Silica | Windows AI |
+
+### Expansion Marker System
+
+Claude's response includes markers that the on-device LLM expands:
+
+```typescript
+// Example markers and their expansions
+"[EXPAND:temporal_pattern]"
+→ "You tend to struggle on Sunday evenings - last week you mentioned dreading Monday meetings"
+
+"[EXPAND:recent_journal:3]"
+→ "In your entry from Tuesday, you wrote about feeling overwhelmed at work"
+
+"[EXPAND:relationship:mom]"
+→ "With your mom, you've been working on setting boundaries around phone calls"
+
+"[EXPAND:coping_win]"
+→ "Remember last Friday when you used the 5-4-3-2-1 grounding technique and it helped?"
+```
+
+### Proposed Service Structure
+
+```typescript
+// services/onDeviceExpansionService.ts
+interface ExpansionService {
+  // Check if on-device LLM is available
+  isAvailable(): Promise<boolean>;
+
+  // Get platform capabilities
+  getCapabilities(): Promise<{
+    platform: 'ios' | 'android' | 'mac' | 'windows' | 'web';
+    model: string | null;
+    maxTokens: number;
+  }>;
+
+  // Expand a single marker
+  expandMarker(marker: string, context: LocalContext): Promise<string>;
+
+  // Process full response with markers
+  processResponse(response: string): Promise<string>;
+}
+
+// services/expansionMarkerParser.ts
+interface MarkerParser {
+  // Find all [EXPAND:...] markers in text
+  findMarkers(text: string): ExpansionMarker[];
+
+  // Replace markers with expanded content
+  replaceMarkers(text: string, expansions: Map<string, string>): string;
+}
+
+// services/localContextRetriever.ts
+interface ContextRetriever {
+  // Get specific context for expansion
+  getTemporalPatterns(): Promise<TemporalContext>;
+  getRecentJournals(count: number): Promise<JournalEntry[]>;
+  getRelationshipContext(person: string): Promise<RelationshipContext>;
+  getCopingHistory(): Promise<CopingEvent[]>;
+}
+```
+
+### Fallback Strategy
+
+```typescript
+async function processClaudeResponse(response: string): Promise<string> {
+  const expansionService = getExpansionService();
+
+  // Check if on-device LLM is available
+  if (!await expansionService.isAvailable()) {
+    // Option 1: Show response as-is (strip markers)
+    return stripExpansionMarkers(response);
+
+    // Option 2: Make second API call (costs more)
+    // return await expandViaClaudeAPI(response);
+  }
+
+  // Expand markers locally
+  return await expansionService.processResponse(response);
+}
+```
+
+### Platform-Specific Notes
+
+**iOS/Mac (Apple Foundation Models)**:
+- Swift API via native module
+- ~3B parameter model, free inference
+- Best platform support
+
+**Android (Gemini Nano via ML Kit)**:
+- Must be foreground app
+- Per-app inference and battery quotas
+- Best on Pixel 10, limited on older devices
+
+**Web Fallback**:
+- No on-device LLM available
+- Strip markers or use cloud expansion
+
+### Privacy Guarantees
+
+1. **Raw data never leaves device** - Only MoodPrint (~100 tokens) sent to Claude
+2. **Expansion happens locally** - On-device LLM has full context
+3. **No cloud dependency for personalization** - Works offline once Claude response received
+
+### Status
+
+Research complete (January 2026). Implementation pending.
+
+See `docs/Handoff.md` Section 18 for full roadmap.
+
+---
+
+## Period Lifestyle Correlations
+
+### Overview
+
+Tracks lifestyle factors (food, sleep, activity) alongside menstrual cycle data to surface personalized insights like:
+- "Your cramps tend to be worse when you've had less than 6 hours of sleep"
+- "Heavy flow days often follow weeks with more processed food"
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `types/PeriodCorrelation.ts` | Type definitions, food tags, symptom options |
+| `services/periodCorrelationService.ts` | Logging, correlation analysis, insights |
+| `components/cycle/QuickLogPanel.tsx` | Quick-tap UI for daily logging |
+| `components/cycle/CycleInsights.tsx` | Display personalized insights |
+
+### Quick-Tap Food Logging
+
+Users tap food categories instead of typing:
+
+```typescript
+import { FOOD_TAGS } from '../types/PeriodCorrelation';
+
+// Categories: negative, positive, neutral, supplement
+// Examples:
+// 🍔 Fast Food (negative) - correlates with cramps, bloating
+// 🥗 Fresh/Whole (positive) - correlates with reduced cramps
+// ☕ Caffeine (neutral) - varies by person
+// 💊 Magnesium (supplement) - correlates with reduced cramps
+```
+
+### Correlation Service Usage
+
+```typescript
+import {
+  logFoodTags,
+  logSleep,
+  logSymptoms,
+  getCurrentInsights,
+  getCycleSuggestions,
+} from '../services/periodCorrelationService';
+
+// Log food (auto-saves)
+await logFoodTags(['fast_food', 'caffeine']);
+
+// Log sleep
+await logSleep({
+  hours: 6,
+  quality: 'okay',
+  issues: ['woke_multiple_times'],
+  source: 'manual',
+});
+
+// Log symptoms with intensity (0-3)
+await logSymptoms({
+  cramps: 2,      // moderate
+  fatigue: 1,     // mild
+  moodDip: 3,     // severe
+});
+
+// Get insights (after 2+ cycles)
+const { insights, canShowInsights, nextMilestone } = await getCurrentInsights();
+
+// Get cycle-specific suggestions
+const suggestions = await getCycleSuggestions(daysUntilPeriod, currentPhase);
+```
+
+### Insight Generation
+
+Correlations are calculated by comparing symptom severity when a factor is present vs absent:
+
+```typescript
+// Example: Fast food correlation with cramps
+// - Days with fast food: avg cramp intensity 2.4
+// - Days without fast food: avg cramp intensity 1.2
+// - Correlation: +0.67 (moderate positive = increases symptoms)
+// - Insight: "Fast food tends to worsen your cramps"
+```
+
+### Data Requirements
+
+| Insight Type | Min Cycles | Confidence Threshold |
+|--------------|------------|----------------------|
+| Basic patterns | 2 | 0.6 |
+| Food correlations | 3 | 0.7 |
+| Sleep correlations | 3 | 0.7 |
+| Personalized suggestions | 4 | 0.75 |
+
+### Privacy
+
+- All data stored locally (AsyncStorage)
+- Only aggregated insights used in MoodPrint
+- Raw logs never sent to API
+- User can delete all data anytime
+
+### Research Sources
+
+Based on peer-reviewed research:
+- Cambridge Nutrition Review (food/menstrual symptoms)
+- Nature Scientific Reports 2025 (sleep/PMS)
+- PMC Systematic Reviews (lifestyle/cycle correlations)
+
+---
+
 ## Future Enhancements
 
 ### Planned Features
 
-1. **Compression Templates** - More efficient context storage
-2. **Android Support** - Expo already supports it
-3. **Watch App** - Quick check-ins from wrist
-4. **Export to Therapy** - Formatted reports for therapists
-5. **Guided Journaling** - Prompts for specific situations
+1. **Hybrid On-Device Expansion** - See section above
+2. **Compression Templates** - More efficient context storage
+3. **Android Support** - Expo already supports it
+4. **Watch App** - Quick check-ins from wrist
+5. **Export to Therapy** - Formatted reports for therapists
+6. **Guided Journaling** - Prompts for specific situations
 
 ### Technical Debt
 

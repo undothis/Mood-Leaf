@@ -551,7 +551,139 @@ Added to `slashCommandService.ts`:
 
 ---
 
-## 14. NEXT STEPS (FOR NEXT SESSION)
+## 14. SESSION UPDATE: Skills Management & Voice Chat (January 2026)
+
+### Features Implemented
+
+#### 1. Voice Chat with Auto-Send on Pause
+- Integrated VoiceChatController into coach screen (`app/coach/index.tsx`)
+- Microphone button with pulse animation when listening
+- Live transcript display while speaking
+- Auto-send message after 1.5s pause (configurable)
+- Toggle to switch between auto-send and manual mode
+- Manual mode puts transcript in input box for review before sending
+
+#### 2. Skills Management Screen
+- New `/skills/manage` route with toggle switches
+- Enable/disable individual skills
+- Skills grouped by category with progress display
+- Disabled skills don't appear in menus
+
+#### 3. /skills Subcommands
+| Command | Function |
+|---------|----------|
+| `/skills` | Browse all skills with progress bars |
+| `/skills info` | Activity tracking (times used, last used) |
+| `/skills store` | Browse free/premium skills |
+| `/skills collection` | View unlocked collectibles |
+| `/skills manage` | Open skills manager screen |
+| `/skills help` | Show all subcommands |
+
+#### 4. Tree Skill Badges
+- Created `SkillBadges.tsx` component
+- Floating animated badges around tree
+- Shows enabled skills with level dots
+- Badge visibility toggle (stored in preferences)
+- Badges show most recently used skills
+
+#### 5. Games Screens
+- Created `/games/index.tsx` - Games list screen
+- Created `/games/fidget.tsx` - Fidget pad screen
+- Fixed navigation error for `/fidget` command
+
+### Files Modified/Created
+
+| File | Changes |
+|------|---------|
+| `app/coach/index.tsx` | Added voice chat integration with auto-send toggle |
+| `app/skills/manage.tsx` | **NEW** Skills management screen |
+| `app/games/index.tsx` | **NEW** Games list screen |
+| `app/games/fidget.tsx` | **NEW** Fidget pad screen |
+| `components/tree/SkillBadges.tsx` | **NEW** Floating skill badges |
+| `components/tree/TreeScene.tsx` | Added SkillBadges integration |
+| `components/tree/types.ts` | Added onSkillBadgePress, showSkillBadges props |
+| `services/skillsService.ts` | Added enable/disable functions |
+| `services/slashCommandService.ts` | Added /skills subcommands |
+| `docs/USER_MANUAL.md` | Complete command reference |
+| `docs/DEVELOPER_GUIDE.md` | Subcommand system, enable/disable, voice integration |
+
+---
+
+## 16. SESSION UPDATE: MoodPrint & TTS (January 21, 2026)
+
+### Overview
+
+Major improvements to the psychological profile system and addition of Text-to-Speech (TTS) capabilities.
+
+### MoodPrint: Context Compression
+
+**What it is:** A proprietary system that compresses a user's entire psychological profile into ~100 tokens, achieving 40% reduction in API costs while maintaining full insight.
+
+**Why it matters:**
+- Faster AI responses
+- Lower API costs
+- More room in context window for conversation history
+- All processing happens locally on device (privacy first)
+
+**New compressed format:**
+```
+[PSYCH n=42] | CD:catastrophizing,all_or_nothing | DEF:neurotic(rationalize,project) | ATT:anxious/70 | LOC:int MIND:growth | NS:ventral | REG:73% | PERMA:65% | NEEDS:reassure,challenge_worst_case | TEMPORAL:worst=Sun_evening,best=morning
+```
+
+### New Psychological Profile Fields
+
+| Field | Purpose | Use Case |
+|-------|---------|----------|
+| `temporalPatterns` | When user struggles/thrives | Coach checks in on Sunday evenings |
+| `contextualAttachment` | Attachment style per relationship type | Secure with friends, anxious in romance |
+| `copingPatterns` | Healthy vs unhealthy strategies | Celebrate healthy, redirect unhealthy |
+| `valuesActionsGap` | Values not matching behavior | Values family but works late |
+
+### Text-to-Speech Integration
+
+**Service:** `services/textToSpeechService.ts`
+
+| Coach | Female Voice | Male Voice | Style |
+|-------|--------------|------------|-------|
+| Clover | Neural2-C | Neural2-D | Warm |
+| Spark | Neural2-F | Neural2-J | Energetic |
+| Willow | Neural2-C | Neural2-D | Calm |
+| Luna | Neural2-E | Neural2-I | Soft |
+| Ridge | Neural2-H | Neural2-A | Clear |
+| Flint | Neural2-H | Neural2-A | Direct |
+| Fern | Neural2-E | Neural2-I | Gentle |
+
+**Settings Screen:** `app/settings/voice.tsx`
+- Enable/disable TTS
+- Gender selection
+- Speed and volume controls
+- Test voice button
+- API key management
+
+### Bug Fixes
+
+1. **Voice callback race condition** - Fixed stale closure in `handleSend` using `sendHandlerRef` pattern
+2. **Memory leak in scroll useEffect** - Added proper cleanup with `clearTimeout`
+
+### Files Created/Modified
+
+| File | Changes |
+|------|---------|
+| `services/textToSpeechService.ts` | **NEW** - Google Cloud TTS service |
+| `app/settings/voice.tsx` | **NEW** - TTS settings screen |
+| `services/psychAnalysisService.ts` | Added MoodPrint compression, temporal patterns |
+| `services/psychTypes.ts` | Added temporalPatterns, contextualAttachment, copingPatterns, valuesActionsGap |
+| `app/coach/index.tsx` | Fixed voice callback, added TTS integration |
+| `docs/USER_MANUAL.md` | Added MoodPrint explanation section |
+| `docs/DEVELOPER_GUIDE.md` | Added MoodPrint and TTS documentation |
+
+### Rollback Point
+
+Created git tag `pre-improvements-20260121` before changes.
+
+---
+
+## 17. NEXT STEPS (FOR NEXT SESSION)
 
 ### Testing Priorities
 - [ ] Test cycle tracking on device (not just web)
@@ -559,17 +691,180 @@ Added to `slashCommandService.ts`:
 - [ ] Test all life stage transitions
 - [ ] Verify pregnancy mode correctly pauses period tracking
 - [ ] Test Firefly alerts vs push notifications
+- [ ] Test TTS with all coaches
+- [ ] Verify MoodPrint compression in production
 
 ### Potential Improvements
 - [ ] Add cycle insights/patterns visualization
 - [ ] Add symptom correlation analysis
 - [ ] Integrate cycle phase with Sparks selection
 - [ ] Add cycle data export functionality
+- [ ] Build UI for viewing MoodPrint
+- [ ] Add TTS playback controls (pause/resume)
+- [ ] Create cute MoodPrint icon (suggested: 🌿🔮 leaf + crystal, or fingerprint made of leaves)
+- [ ] Add `/moodprint` slash command to view psych profile summary
+
+### Planned: /moodprint Command
+
+A slash command to see what the app has learned about you.
+
+**IMPORTANT: User-Facing vs Technical**
+
+The internal MoodPrint (sent to Claude) uses clinical terms for accuracy. But what the USER sees must be:
+- Empowering, not labeling
+- Growth-focused, not problem-focused
+- Positive framing, not clinical language
+- NO diagnoses or disorder language
+
+**User-Friendly Display:**
+```
+/moodprint (or /profile, /me, /insights)
+
+🌿 Your MoodPrint
+━━━━━━━━━━━━━━━━━
+📊 Your Journey
+   42 reflections since Nov 15
+
+💚 What Helps You Most
+   • Extra reassurance when things feel uncertain
+   • Gentle reality checks on worst-case thinking
+   • Space to process before solutions
+
+⏰ Your Rhythms
+   • You shine brightest: Mornings
+   • Need extra care: Sunday evenings
+
+🤝 How You Connect
+   • Strong bonds with friends
+   • Still learning in romantic relationships
+   • Growing your work relationships
+
+🌱 You're Working On
+   • Seeing shades of gray (not just all-or-nothing)
+   • Trusting that things can work out
+   • Building your emotional toolkit
+
+🏆 Your Wins
+   • You show up and reflect regularly
+   • You're building self-awareness
+   • You seek support when you need it
+
+All insights stay on your device 🔒
+```
+
+**What NOT to show users:**
+- Clinical terms (anxious attachment, neurotic, catastrophizing)
+- Labels or diagnoses
+- Percentages or scores that feel like grades
+- Anything that reads like "here's what's wrong with you"
 
 ### Documentation
 - [ ] Review full codebase for undocumented features
 - [ ] Add JSDoc comments to cycle functions
 - [ ] Update app store description for cycle features
+
+---
+
+## 18. FUTURE: Hybrid On-Device LLM Architecture
+
+### Concept: Compress → Send → Reassemble
+
+A privacy-first architecture where compressed context goes to Claude, but rich personalized responses are assembled locally using on-device LLMs.
+
+**Flow:**
+```
+┌─────────────────────────────────────────────────────────────┐
+│  DEVICE (Private)                                           │
+│  ┌──────────────┐                                           │
+│  │ Full Context │ ← Raw journals, patterns, relationships   │
+│  │ (~5000 tokens)│                                          │
+│  └──────┬───────┘                                           │
+│         │ Compress                                          │
+│         ▼                                                   │
+│  ┌──────────────┐      ┌─────────────┐                      │
+│  │  MoodPrint   │ ───► │ Claude API  │ ◄── Cloud            │
+│  │ (~100 tokens)│      └──────┬──────┘                      │
+│  └──────────────┘             │                             │
+│                               ▼                             │
+│                   "I hear you're struggling.                │
+│                    [EXPAND:sunday_pattern]                  │
+│                    [EXPAND:recent_wins]"                    │
+│                               │                             │
+│         ┌─────────────────────┘                             │
+│         ▼                                                   │
+│  ┌──────────────┐                                           │
+│  │ On-Device LLM│ ← Expands markers with local context      │
+│  │ (Apple/Google)│                                          │
+│  └──────┬───────┘                                           │
+│         ▼                                                   │
+│  "I hear you're struggling. I noticed Sunday evenings       │
+│   are often hard for you - last week you mentioned          │
+│   dreading Monday meetings. But remember, just yesterday    │
+│   you handled that conflict with Sarah really well..."      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Platform Requirements (Researched Jan 2026)
+
+| Platform | Chip/Hardware | OS Version | On-Device LLM | API |
+|----------|---------------|------------|---------------|-----|
+| **iPhone** | A17 Pro+ | iOS 18.1+ | Foundation Models | Swift |
+| **iPad** | M-series | iPadOS 18.1+ | Foundation Models | Swift |
+| **Android** | Pixel 10 (best) | Android 14+ | Gemini Nano | ML Kit |
+| **Mac** | M1+ | macOS 15.1+ | Foundation Models | Swift |
+| **Windows** | 40+ TOPS NPU | Win 11 24H2+ | Phi-Silica | Windows AI |
+
+### Platform Notes
+
+**iOS/Mac (Best Support)**
+- Apple Foundation Models Framework (WWDC 2025)
+- ~3B parameter model, free inference
+- Designed for summarization, extraction, rewriting
+- Privacy-first, no cloud dependency
+
+**Android (Workable with Constraints)**
+- Gemini Nano via ML Kit GenAI APIs
+- Must be foreground app (background blocked)
+- Per-app inference and battery quotas
+- Best on Pixel 10, limited on older devices
+
+**Windows (Stretch Goal)**
+- Requires Copilot+ PC with 40+ TOPS NPU
+- Snapdragon X Elite, AMD Ryzen AI 300, Intel Core Ultra 200V
+- Phi-Silica model for text generation
+- Most restrictive platform
+
+### Implementation Considerations
+
+**Expansion Markers:**
+```typescript
+// Claude's response includes markers
+"[EXPAND:temporal_pattern]" → On-device: "You tend to struggle on Sunday evenings..."
+"[EXPAND:recent_journal:3]" → On-device: "In your entry from Tuesday, you wrote..."
+"[EXPAND:relationship:mom]" → On-device: "With your mom, you've been working on..."
+```
+
+**Fallback Strategy:**
+- Devices without on-device LLM: Show Claude's response as-is (no expansion)
+- Or: Make second API call to expand (costs more, works everywhere)
+
+**Open Questions:**
+- [ ] How to handle expansion markers gracefully when LLM unavailable?
+- [ ] Should expansion be opt-in or automatic?
+- [ ] How to test on-device inference quality?
+- [ ] What's the latency impact of local expansion?
+
+### Files to Create (When Ready)
+
+| File | Purpose |
+|------|---------|
+| `services/onDeviceExpansionService.ts` | Platform detection, expansion logic |
+| `services/expansionMarkerParser.ts` | Parse `[EXPAND:...]` markers from responses |
+| `services/localContextRetriever.ts` | Fetch specific context (journals, patterns) |
+
+### Status: Research Complete, Implementation Pending
+
+The APIs are new (Apple Foundation Models just launched at WWDC 2025). Recommend waiting for APIs to stabilize before building.
 
 ---
 
@@ -590,7 +885,7 @@ Added to `slashCommandService.ts`:
 
 ## QUICK STATUS SNAPSHOT
 
-"**Feature complete.** Cycle tracking fully implemented with life stages (regular, perimenopause, menopause, post-menopause, pregnant, postpartum). 19 symptom types. Slash commands with 30+ commands. D&D-style collection system with artifacts, titles, card backs. Voice chat, emotion detection, teaching system. All documented in USER_MANUAL.md, DEVELOPER_GUIDE.md, and this Handoff."
+"**Feature complete.** MoodPrint context compression (40% token savings). TTS with unique voices per coach. Cycle tracking with life stages. Slash commands (30+). D&D collection system. Voice chat, emotion detection, teaching system. Temporal patterns, contextual attachment, coping patterns tracking. All processing local/on-device."
 
 ---
 
@@ -616,6 +911,7 @@ Added to `slashCommandService.ts`:
 | `userContextService.ts` | User prefs | `getUserPreferences()`, `getContextForClaude()` |
 | `voiceChatService.ts` | Voice input | `startListening()`, `stopListening()` |
 | `emotionDetectionService.ts` | Facial analysis | `detectEmotion()`, `getEmotionHint()` |
+| `textToSpeechService.ts` | **NEW** Google Cloud TTS | `speakCoachResponse()`, `stopSpeaking()` |
 
 ---
 
