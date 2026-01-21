@@ -2472,6 +2472,34 @@ const CYCLE_TWIGS = [
 ];
 ```
 
+### Quick Symptom Button (Home Screen)
+
+During menstrual phase, a floating action button appears on the home screen for quick symptom logging:
+
+```typescript
+// Settings toggle
+interface CycleSettings {
+  enabled: boolean;
+  showQuickSymptomButton: boolean;  // Show FAB during period
+  quickSymptomOptions: string[];     // Which symptoms to show
+}
+
+// Component logic
+const showQuickButton =
+  cycleSettings.enabled &&
+  cycleSettings.showQuickSymptomButton &&
+  currentPhase === 'menstrual';
+
+// Quick symptom modal shows:
+// - Flow level (light/medium/heavy)
+// - Cramps (1-5 scale)
+// - Energy (1-5 scale)
+// - Quick notes
+// - One-tap common symptoms (bloating, headache, mood)
+```
+
+**UX Rationale**: When someone is experiencing period symptoms, navigating through menus is extra friction. A prominent, easy-to-tap button removes barriers to tracking.
+
 ### Integration Points
 
 1. **claudeAPIService.ts** - Add cycle context as 14th data source

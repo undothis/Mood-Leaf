@@ -164,6 +164,11 @@ export const FAQ_CONTENT: FAQItem[] = [
     question: 'Does my guide know where I am in my cycle?',
     answer: 'Yes! Your guide sees your cycle phase and adapts accordingly. During PMS it\'s gentler and validates physical discomfort. During your period it acknowledges energy dips. It learns YOUR patterns—not generic averages—and meets you where you are.',
   },
+  {
+    category: 'features',
+    question: 'What is the Quick Symptom button?',
+    answer: 'When cycle tracking is enabled, a quick-access button appears on your home screen during your period. One tap to log cramps, flow, energy, or other symptoms—no navigating through menus. Toggle this in Settings > Cycle Tracking.',
+  },
 
   // Personalization & Onboarding
   {
@@ -387,6 +392,10 @@ export const USER_MANUAL_CONTENT: ManualSection[] = [
       {
         title: 'Cycle Twigs',
         content: 'Track what matters to you:\n• Period start/end, Flow level\n• Cramps, Bloating, Breast tenderness\n• Headache, Mood shifts, Cravings\n• Energy level, Sleep quality\n\nPatterns emerge over months.',
+      },
+      {
+        title: 'Quick Symptom Button',
+        content: 'During your period, a quick-access button appears on your home screen. One tap opens symptom logging—no hunting through menus when you\'re already uncomfortable. Cramps, flow, energy, mood—log and go. Toggle this in Settings > Cycle Tracking.',
       },
       {
         title: 'Privacy',
