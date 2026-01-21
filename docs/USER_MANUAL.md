@@ -668,23 +668,79 @@ You can always:
 
 Type commands starting with `/` in the chat to access quick features and switch coaches instantly.
 
-### Quick Reference
+### Complete Command Reference
 
+#### Info Commands
+| Command | Aliases | What It Does |
+|---------|---------|--------------|
+| `/help` | `/h`, `/?`, `/commands` | Show all available commands |
+| `/status` | `/info`, `/me` | Show current coach and subscription status |
+| `/collection` | `/artifacts`, `/inventory`, `/bag` | View collected artifacts, titles, card backs |
+| `/stats` | `/mystats`, `/progress` | View activity breakdown and patterns |
+
+#### Skills Commands
+| Command | Aliases | What It Does |
+|---------|---------|--------------|
+| `/skills` | `/skill` | Browse all skills with progress bars |
+| `/skills info` | `/skills list` | View activity tracking (times used, last used) |
+| `/skills store` | `/skills shop`, `/skills upgrade` | Browse free/premium skills available |
+| `/skills collection` | `/skills collected` | View unlocked collectibles |
+| `/skills manage` | `/skills settings`, `/skills toggle` | Open skills manager (enable/disable skills) |
+| `/skills help` | — | Show all skills subcommands |
+
+#### Exercise Commands
+| Command | Aliases | What It Does |
+|---------|---------|--------------|
+| `/breathe` | `/breath`, `/breathing` | Start breathing exercise (default: box) |
+| `/breathe box` | `/breathe 4444` | Box breathing (4-4-4-4) |
+| `/breathe 478` | `/breathe sleep` | 4-7-8 sleep breathing |
+| `/breathe sigh` | `/breathe quick` | Quick physiological sigh |
+| `/breathe coherent` | `/breathe hrv` | Coherent breathing for HRV |
+| `/ground` | `/grounding`, `/54321` | 5-4-3-2-1 grounding exercise |
+| `/body` | `/bodyscan`, `/scan` | Quick body scan |
+| `/calm` | `/relax`, `/chill` | Auto-pick a calming technique |
+| `/prep` | `/prepare`, `/event` | Prepare for upcoming social event |
+
+#### Games Commands
+| Command | Aliases | What It Does |
+|---------|---------|--------------|
+| `/games` | `/game`, `/play`, `/fun` | Browse mindful games and activities |
+| `/fidget` | `/bubble`, `/pop` | Open the fidget pad |
+
+#### Coach Commands
+| Command | Aliases | What It Does |
+|---------|---------|--------------|
+| `/flint` | `/f`, `/direct`, `/honest` | Switch to Flint (no-fluff mode) |
+| `/luna` | `/l`, `/calm`, `/mindful` | Switch to Luna (gentle, grounding) |
+| `/willow` | `/w`, `/wise`, `/sage` | Switch to Willow (wise, reflective) |
+| `/spark` | `/s`, `/hype`, `/energy` | Switch to Spark (energetic, motivating) |
+| `/clover` | `/c`, `/friend`, `/bestie` | Switch to Clover (casual, friendly) |
+| `/ridge` | `/r`, `/coach`, `/action` | Switch to Ridge (action-oriented) |
+| `/fern` | `/fe`, `/gentle`, `/soft` | Switch to Fern (nurturing, warm) |
+| `/random` | `/surprise`, `/rng` | Switch to random coach |
+
+#### Teaching Commands
+| Command | Aliases | What It Does |
+|---------|---------|--------------|
+| `/teach` | `/learn`, `/study`, `/lesson` | Browse subjects to learn |
+| `/teach [subject]` | — | Start learning a specific subject |
+| `/spanish` | — | Learn Spanish |
+| `/french` | — | Learn French |
+| `/japanese` | — | Learn Japanese |
+| `/mandarin` | `/chinese` | Learn Mandarin |
+
+#### Utility Commands
+| Command | Aliases | What It Does |
+|---------|---------|--------------|
+| `/clear` | `/cls`, `/reset` | Clear conversation history |
+| `/settings` | `/config`, `/preferences` | Open coach settings |
+
+#### Secret Commands
 | Command | What It Does |
 |---------|--------------|
-| `/help` | Show all available commands |
-| `/skills` | Browse skills and exercises |
-| `/games` | Browse mindful games |
-| `/collection` | View your artifacts and unlocks |
-| `/stats` | See your activity patterns |
-| `/breathe` | Start breathing exercise |
-| `/ground` | Start 5-4-3-2-1 grounding |
-| `/calm` | Auto-pick calming technique |
-| `/flint` | Switch to Flint (direct coach) |
-| `/luna` | Switch to Luna (mindful coach) |
-| `/random` | Switch to a random coach |
-| `/clear` | Clear conversation |
-| `/status` | Show your current status |
+| `/love` | A little reminder that you matter |
+| `/hug` | Virtual hug |
+| `/wisdom` | Random wisdom quote |
 
 ### Switching Coaches
 

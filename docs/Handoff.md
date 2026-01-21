@@ -551,7 +551,65 @@ Added to `slashCommandService.ts`:
 
 ---
 
-## 14. NEXT STEPS (FOR NEXT SESSION)
+## 14. SESSION UPDATE: Skills Management & Voice Chat (January 2026)
+
+### Features Implemented
+
+#### 1. Voice Chat with Auto-Send on Pause
+- Integrated VoiceChatController into coach screen (`app/coach/index.tsx`)
+- Microphone button with pulse animation when listening
+- Live transcript display while speaking
+- Auto-send message after 1.5s pause (configurable)
+- Toggle to switch between auto-send and manual mode
+- Manual mode puts transcript in input box for review before sending
+
+#### 2. Skills Management Screen
+- New `/skills/manage` route with toggle switches
+- Enable/disable individual skills
+- Skills grouped by category with progress display
+- Disabled skills don't appear in menus
+
+#### 3. /skills Subcommands
+| Command | Function |
+|---------|----------|
+| `/skills` | Browse all skills with progress bars |
+| `/skills info` | Activity tracking (times used, last used) |
+| `/skills store` | Browse free/premium skills |
+| `/skills collection` | View unlocked collectibles |
+| `/skills manage` | Open skills manager screen |
+| `/skills help` | Show all subcommands |
+
+#### 4. Tree Skill Badges
+- Created `SkillBadges.tsx` component
+- Floating animated badges around tree
+- Shows enabled skills with level dots
+- Badge visibility toggle (stored in preferences)
+- Badges show most recently used skills
+
+#### 5. Games Screens
+- Created `/games/index.tsx` - Games list screen
+- Created `/games/fidget.tsx` - Fidget pad screen
+- Fixed navigation error for `/fidget` command
+
+### Files Modified/Created
+
+| File | Changes |
+|------|---------|
+| `app/coach/index.tsx` | Added voice chat integration with auto-send toggle |
+| `app/skills/manage.tsx` | **NEW** Skills management screen |
+| `app/games/index.tsx` | **NEW** Games list screen |
+| `app/games/fidget.tsx` | **NEW** Fidget pad screen |
+| `components/tree/SkillBadges.tsx` | **NEW** Floating skill badges |
+| `components/tree/TreeScene.tsx` | Added SkillBadges integration |
+| `components/tree/types.ts` | Added onSkillBadgePress, showSkillBadges props |
+| `services/skillsService.ts` | Added enable/disable functions |
+| `services/slashCommandService.ts` | Added /skills subcommands |
+| `docs/USER_MANUAL.md` | Complete command reference |
+| `docs/DEVELOPER_GUIDE.md` | Subcommand system, enable/disable, voice integration |
+
+---
+
+## 15. NEXT STEPS (FOR NEXT SESSION)
 
 ### Testing Priorities
 - [ ] Test cycle tracking on device (not just web)

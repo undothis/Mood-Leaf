@@ -3256,6 +3256,65 @@ const progressBar = '■'.repeat(level) + '□'.repeat(5 - level);
 
 **Anti-Streak Design:** Progress is tracked without streaks or punishment for gaps. Celebrates milestones (10 uses, 25 uses) rather than consecutive days.
 
+### /skills Subcommand System
+
+The `/skills` command supports subcommands for organized navigation:
+
+| Subcommand | Description | Handler |
+|------------|-------------|---------|
+| `/skills` | Browse all skills with progress bars | Default menu |
+| `/skills info` | Activity tracking (times used, last used) | `subCommand === 'info'` |
+| `/skills store` | Browse free/premium skills | `subCommand === 'store'` |
+| `/skills collection` | View unlocked collectibles | `subCommand === 'collection'` |
+| `/skills manage` | Navigate to management screen | `subCommand === 'manage'` |
+| `/skills help` | Show all subcommands | `subCommand === 'help'` |
+
+**Implementation:**
+```typescript
+handler: async (args, context) => {
+  const subCommand = args[0]?.toLowerCase();
+
+  if (subCommand === 'info' || subCommand === 'list') {
+    // Show activity tracking view
+  }
+
+  if (subCommand === 'store' || subCommand === 'shop') {
+    // Show store view
+  }
+
+  if (subCommand === 'manage') {
+    return {
+      type: 'navigation',
+      navigateTo: '/skills/manage',
+    };
+  }
+
+  // Default: browse menu
+}
+```
+
+### Skill Enable/Disable System
+
+Users can toggle skills on/off to customize their experience:
+
+**Files:**
+- `services/skillsService.ts` - `getEnabledSkills()`, `setSkillEnabled()`, `toggleSkillEnabled()`
+- `app/skills/manage.tsx` - Skills management UI
+
+**Storage Key:** `moodleaf_enabled_skills`
+
+```typescript
+// Get all enabled skills
+const enabled = await getEnabledSkills(); // Record<string, boolean>
+
+// Toggle a skill
+const newState = await toggleSkillEnabled('box_breathing'); // returns boolean
+
+// Get skills with enabled state for UI
+const skills = await getSkillsWithEnabledState(isPremium);
+// Returns: Array<{ skill, progress, enabled, isLocked }>
+```
+
 ### Slash Command Mappings
 
 **Breathing Commands:**
@@ -3881,6 +3940,35 @@ SUPPORTED_LANGUAGES: LanguageOption[]
 // 3. Message automatically sent
 // 4. Coach responds with TTS
 // 5. Auto-listen resumes (if enabled)
+```
+
+**Coach Screen Integration** (`app/coach/index.tsx`):
+```typescript
+// Voice chat integration with auto-send toggle
+const [voiceState, setVoiceState] = useState<VoiceState>('idle');
+const [autoSendEnabled, setAutoSendEnabled] = useState(true);
+
+// Controller with callbacks
+voiceControllerRef.current = new VoiceChatController({
+  onTranscriptUpdate: (transcript, isFinal) => {
+    setVoiceTranscript(transcript);
+  },
+  onMessageReady: (message) => {
+    // Auto-send when pause detected
+    handleSend(message);
+    setVoiceTranscript('');
+  },
+  onStateChange: setVoiceState,
+});
+
+// Toggle auto-send behavior
+const toggleAutoSend = async () => {
+  const newValue = !autoSendEnabled;
+  setAutoSendEnabled(newValue);
+  await voiceControllerRef.current.updateSettings({
+    mode: newValue ? 'auto_detect' : 'push_to_talk',
+  });
+};
 ```
 
 **Platform Implementation**:
