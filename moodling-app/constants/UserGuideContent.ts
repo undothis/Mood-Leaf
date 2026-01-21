@@ -184,6 +184,16 @@ export const FAQ_CONTENT: FAQItem[] = [
     question: 'How do I turn off cycle tracking completely?',
     answer: 'In Settings > Cycle & Period, toggle off "Cycle Tracking" at the top. This disables everything—Quick Symptom button, cycle Twigs, soothing Sparks, Fireflies, and guide adaptation. Your data is kept in case you re-enable later.',
   },
+  {
+    category: 'features',
+    question: 'Can I get cycle reminders?',
+    answer: 'Yes! Enable reminders in Settings > Cycle & Period. Get notified when your period is approaching, when PMS typically starts, or gentle reminders to log symptoms. Choose between push notifications or in-app alerts (Firefly blinks to get your attention).',
+  },
+  {
+    category: 'features',
+    question: 'What is a Firefly alert?',
+    answer: 'Instead of a push notification, a Firefly can gently blink on your home screen to alert you. Tap it for cycle-related wisdom like "Your period is predicted in 2 days" or "PMS usually starts around now for you." Less intrusive than notifications.',
+  },
 
   // Personalization & Onboarding
   {
@@ -415,6 +425,10 @@ export const USER_MANUAL_CONTENT: ManualSection[] = [
       {
         title: 'Customize Everything',
         content: 'In Settings > Cycle & Period, toggle each feature:\n• Quick Symptom Button - Show/hide home screen button\n• Cycle Twigs - Choose which symptoms to track\n• Soothing Sparks - PMS-specific gentle prompts\n• Cycle Fireflies - Personal insights about your patterns\n• Guide Adaptation - How much gentler during PMS\n\nNot everyone has heavy periods. Make it work for you.',
+      },
+      {
+        title: 'Reminders',
+        content: 'Get gentle reminders about your cycle:\n• Period approaching (1-3 days before)\n• PMS starting (based on YOUR patterns)\n• Log symptoms reminder\n\nChoose push notifications or Firefly alerts (a Firefly blinks on your home screen). Less intrusive, still helpful.',
       },
       {
         title: 'Privacy',

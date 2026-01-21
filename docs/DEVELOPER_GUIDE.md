@@ -2505,6 +2505,13 @@ Settings > Cycle & Period
 │   ├── Energy Level
 │   └── Sleep Quality
 │
+├── Reminders
+│   ├── [Toggle] Enable Reminders
+│   ├── [Toggle] Period Approaching (1-3 days before)
+│   ├── [Toggle] PMS Starting (based on user's patterns)
+│   ├── [Toggle] Log Symptoms Reminder
+│   └── [Picker] Alert Type: Push Notification / Firefly Alert
+│
 └── Data Source
     └── [Picker] Manual / HealthKit / Oura / Whoop
 ```
@@ -2592,6 +2599,47 @@ function getSparkForPhase(phase: CyclePhase, settings: CycleSettings): Spark {
 // "Your body is asking for something. What is it?"
 // "Rest is not giving up. Rest is preparation."
 // "What's one small comfort you can give yourself?"
+```
+
+### Cycle Reminders & Firefly Alerts
+
+Two alert types available:
+
+**Push Notifications**:
+- Standard iOS/Android notifications
+- "Your period is predicted in 2 days"
+- "PMS usually starts around now for you"
+
+**Firefly Alerts** (less intrusive):
+- A Firefly on home screen blinks/pulses to get attention
+- Tap to reveal the cycle insight
+- More gentle, in-app experience
+- Great for users who hate notifications
+
+```typescript
+interface CycleReminders {
+  enabled: boolean;
+  periodApproaching: boolean;      // 1-3 days before predicted period
+  pmsStarting: boolean;            // Based on user's historical patterns
+  logSymptomsReminder: boolean;    // Daily during period
+  alertType: 'push' | 'firefly';   // How to deliver alerts
+}
+
+// Firefly alert implementation
+function triggerFireflyAlert(message: string) {
+  // Set special "alert" firefly that blinks
+  await setAlertFirefly({
+    message,
+    type: 'cycle_reminder',
+    blink: true,
+    expiresIn: '24h',
+  });
+}
+
+// Example alerts:
+// "Your period is predicted in 2 days. Prep time?"
+// "PMS usually hits around now. Be extra gentle with yourself."
+// "Day 3 of your period. How are you feeling?"
 ```
 
 ### Cycle Fireflies (Personal Insights)
