@@ -49,6 +49,7 @@ import {
   LeafCanopy,
   RootSystem,
 } from './TreeLayers';
+import { SkillBadges } from './SkillBadges';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -114,6 +115,8 @@ export const TreeScene: React.FC<TreeSceneProps> = ({
   onLeafPress,
   onSproutPress,
   onBranchPress,
+  onSkillBadgePress,
+  showSkillBadges = true,
   mood = 'neutral',
 }) => {
   const colorScheme = useColorScheme();
@@ -194,6 +197,14 @@ export const TreeScene: React.FC<TreeSceneProps> = ({
 
   return (
     <Animated.View style={[styles.container, backgroundStyle]} pointerEvents="box-none">
+      {/* Skill Badges floating around tree */}
+      {showSkillBadges && (
+        <SkillBadges
+          onBadgePress={(skill) => onSkillBadgePress?.(skill.id)}
+          maxBadges={6}
+        />
+      )}
+
       {/* Touch area wrapper - leaves bottom 150px free for floating buttons */}
       <View style={styles.touchAreaWrapper} pointerEvents="box-none">
         <Pressable style={styles.backgroundTouch} onPress={handleBackgroundPress}>

@@ -73,6 +73,8 @@ export interface TreeSceneProps {
   onLeafPress?: () => void;
   onSproutPress?: () => void;
   onBranchPress?: () => void;
+  onSkillBadgePress?: (skillId: string) => void;
+  showSkillBadges?: boolean;
   mood?: MoodSignal;
 }
 

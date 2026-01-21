@@ -451,21 +451,20 @@ registerCommand({
 
 registerCommand({
   name: 'skills',
-  aliases: ['skill', 'upgrade', 'shop', 'store'],
-  description: 'Open the skills menu',
+  aliases: ['skill'],
+  description: 'Open the skills menu (use subcommands: info, store, collection, manage)',
   category: 'skill',
   requiresPremium: false,
-  usage: '/skills [info]',
-  examples: ['/skills', '/skills info'],
+  usage: '/skills [subcommand]',
+  examples: ['/skills', '/skills info', '/skills store', '/skills collection', '/skills manage'],
   handler: async (args, context) => {
     const menuData = await getSkillsMenuData(context.isPremium);
     const allProgress = await getAllSkillProgress();
 
-    // Check if user wants the info/management view
     const subCommand = args[0]?.toLowerCase();
 
-    if (subCommand === 'info' || subCommand === 'manage' || subCommand === 'list') {
-      // Show detailed skill info with status
+    // /skills info - Show activity tracking
+    if (subCommand === 'info' || subCommand === 'list') {
       let infoText = `📋 Your Skills\n`;
       infoText += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
 
@@ -497,7 +496,7 @@ registerCommand({
 
       infoText += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
       infoText += `📊 Summary: ${activeSkills}/${totalSkills} skills practiced\n`;
-      infoText += `\nTip: Type /skills to browse and start exercises`;
+      infoText += `\nOther commands: /skills store, /skills manage`;
 
       return {
         type: 'menu',
@@ -505,6 +504,88 @@ registerCommand({
         message: infoText,
         menuType: 'skills',
         data: menuData,
+      };
+    }
+
+    // /skills store - Show skills available to unlock
+    if (subCommand === 'store' || subCommand === 'shop' || subCommand === 'upgrade') {
+      let storeText = `🛒 Skills Store\n`;
+      storeText += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+      const freeSkills = [];
+      const premiumSkills = [];
+
+      for (const category of menuData.categories) {
+        for (const item of menuData.skillsByCategory[category.id]) {
+          if (item.skill.tier === 'free') {
+            freeSkills.push(item);
+          } else {
+            premiumSkills.push(item);
+          }
+        }
+      }
+
+      storeText += `FREE SKILLS (${freeSkills.length})\n`;
+      for (const item of freeSkills) {
+        const level = item.progress.level;
+        storeText += `   ${item.skill.emoji} ${item.skill.name} — Lv ${level}/${item.skill.maxLevel}\n`;
+      }
+
+      storeText += `\nPREMIUM SKILLS (${premiumSkills.length})\n`;
+      for (const item of premiumSkills) {
+        const lockIcon = item.isLocked ? '🔒 ' : '';
+        storeText += `   ${lockIcon}${item.skill.emoji} ${item.skill.name}\n`;
+      }
+
+      if (!context.isPremium) {
+        storeText += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+        storeText += `⭐ Upgrade to Premium to unlock all skills!\n`;
+      }
+
+      return {
+        type: 'menu',
+        success: true,
+        message: storeText,
+        menuType: 'skills',
+        data: { freeSkills, premiumSkills },
+      };
+    }
+
+    // /skills collection - Show unlocked/discovered items
+    if (subCommand === 'collection' || subCommand === 'collected') {
+      const collectionText = await formatCollectionForChat();
+      return {
+        type: 'menu',
+        success: true,
+        message: collectionText,
+        menuType: 'skills',
+      };
+    }
+
+    // /skills manage - Navigate to management screen
+    if (subCommand === 'manage' || subCommand === 'settings' || subCommand === 'toggle') {
+      return {
+        type: 'navigation',
+        success: true,
+        message: '⚙️ Opening Skills Manager...\n\nEnable or disable skills to customize your menus.',
+        navigateTo: '/skills/manage',
+      };
+    }
+
+    // /skills help - Show available subcommands
+    if (subCommand === 'help') {
+      let helpText = `🎯 Skills Commands\n`;
+      helpText += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+      helpText += `/skills — Browse all skills\n`;
+      helpText += `/skills info — View your activity\n`;
+      helpText += `/skills store — Browse available skills\n`;
+      helpText += `/skills collection — View unlocked items\n`;
+      helpText += `/skills manage — Enable/disable skills\n`;
+
+      return {
+        type: 'message',
+        success: true,
+        message: helpText,
       };
     }
 
@@ -533,12 +614,11 @@ registerCommand({
     menuText += `   /breathe — Breathing exercise\n`;
     menuText += `   /ground — 5-4-3-2-1 grounding\n`;
     menuText += `   /calm — Auto-pick technique\n`;
-    menuText += `\n💡 Tip: Type /skills info to see your activity`;
+    menuText += `\n💡 Type /skills help for more options`;
 
     if (!context.isPremium) {
       menuText += `\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
-      menuText += `⭐ Unlock All Skills\n`;
-      menuText += `   Upgrade to Premium for all exercises.\n`;
+      menuText += `⭐ Unlock All: /skills store\n`;
     }
 
     return {
