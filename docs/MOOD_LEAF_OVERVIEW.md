@@ -479,6 +479,19 @@ Sparks are creative prompts designed to shift your thinking when you're stuck. I
 
 **Spark = Creativity & Play** — short, punchy prompts that reframe your situation.
 
+### Sparks vs Fireflies: Understanding the Difference
+
+| | **Sparks** | **Fireflies** |
+|--|------------|---------------|
+| **Content** | Pre-written, curated library | AI-generated fresh each time |
+| **Adaptation** | *Which* prompt appears | *What* prompt says |
+| **Personalization** | Category matches your mood | Text references your specific life |
+| **Analogy** | Smart playlist (songs exist, selection adapts) | Personal letter (written just for you) |
+
+**Sparks use adaptive selection** — the 210+ prompts never change, but which ones surface depends on your mood, favorites, and history.
+
+**Fireflies use adaptive content** — the actual wisdom text is generated specifically for you, referencing your journal entries, people, and patterns.
+
 ### Categories (210+ Prompts)
 
 | Category | Description |
