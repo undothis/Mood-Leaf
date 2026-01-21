@@ -161,6 +161,11 @@ export const FAQ_CONTENT: FAQItem[] = [
   },
   {
     category: 'features',
+    question: 'How do I add cycle Twigs?',
+    answer: 'In Settings > Cycle & Period, tap "Add Cycle Twigs" to enable all period-related tracking buttons at once. Or pick individual symptoms. They\'ll appear in your Twigs section ready to tap.',
+  },
+  {
+    category: 'features',
     question: 'Does my guide know where I am in my cycle?',
     answer: 'Yes! Your guide sees your cycle phase and adapts accordingly. During PMS it\'s gentler and validates physical discomfort. During your period it acknowledges energy dips. It learns YOUR patterns—not generic averages—and meets you where you are.',
   },
@@ -173,6 +178,11 @@ export const FAQ_CONTENT: FAQItem[] = [
     category: 'features',
     question: 'Can I customize which cycle features are on?',
     answer: 'Yes! In Settings > Cycle & Period, you control everything: Quick Symptom button, which Twigs appear, soothing Sparks during PMS, cycle-aware Fireflies, and how much your guide adapts. Not everyone has heavy periods—customize what\'s helpful for you.',
+  },
+  {
+    category: 'features',
+    question: 'How do I turn off cycle tracking completely?',
+    answer: 'In Settings > Cycle & Period, toggle off "Cycle Tracking" at the top. This disables everything—Quick Symptom button, cycle Twigs, soothing Sparks, Fireflies, and guide adaptation. Your data is kept in case you re-enable later.',
   },
 
   // Personalization & Onboarding

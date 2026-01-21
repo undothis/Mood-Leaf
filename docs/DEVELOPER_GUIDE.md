@@ -2450,7 +2450,7 @@ All cycle features are individually toggleable. Not everyone has heavy periods�
 
 ```typescript
 interface CycleSettings {
-  // Master toggle
+  // Master toggle - turns EVERYTHING off
   enabled: boolean;
 
   // Feature toggles
@@ -2478,9 +2478,40 @@ interface CycleSettings {
 }
 ```
 
-**Settings UI Location**: Settings > Cycle & Period
+**Settings UI Layout**:
+```
+Settings > Cycle & Period
+├── [Toggle] Cycle Tracking (master on/off)
+│
+├── Quick Actions
+│   ├── [Button] Add All Cycle Twigs  → enables all symptom Twigs
+│   └── [Button] Remove Cycle Twigs   → disables all symptom Twigs
+│
+├── Features
+│   ├── [Toggle] Quick Symptom Button
+│   ├── [Toggle] Soothing Sparks (PMS)
+│   ├── [Toggle] Cycle Fireflies
+│   └── [Picker] Guide Adaptation: None / Subtle / Full
+│
+├── Symptom Twigs (individual toggles)
+│   ├── Period Start/End
+│   ├── Flow Level
+│   ├── Cramps
+│   ├── Bloating
+│   ├── Breast Tenderness
+│   ├── Headache
+│   ├── Mood Shift
+│   ├── Cravings
+│   ├── Energy Level
+│   └── Sleep Quality
+│
+└── Data Source
+    └── [Picker] Manual / HealthKit / Oura / Whoop
+```
 
-**Default State**: All features ON when cycle tracking enabled, user can disable any.
+**Master Toggle Behavior**:
+- OFF → Hides all cycle features, removes Quick Symptom button, stops cycle context from being sent to Claude
+- Data is preserved (not deleted) so user can re-enable later
 
 **UX Principle**: Respect that everyone's experience is different. Some have light periods with no symptoms. Some have debilitating cramps. Let users build their own tracking experience.
 
