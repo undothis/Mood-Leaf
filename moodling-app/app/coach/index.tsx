@@ -430,7 +430,7 @@ export default function CoachScreen() {
         <View style={styles.privacyFooter}>
           <Text style={[styles.privacyText, { color: colors.textMuted }]}>
             🔒 Journal entries stay on-device
-            {hasKey && ' • ☁️ Chat uses Claude API'}
+            {hasKey && ' • All AI data is anonymized'}
           </Text>
         </View>
       </KeyboardAvoidingView>
