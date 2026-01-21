@@ -722,6 +722,36 @@ export async function getDetailedLogsContextForClaude(): Promise<string> {
     parts.push(`    - This month (30 days): ${monthEntries.length} time${monthEntries.length !== 1 ? 's' : ''}`);
     parts.push(`    - All time total: ${allEntries.length} time${allEntries.length !== 1 ? 's' : ''}`);
 
+    // Include EXACT TIMES for today's entries
+    const todayDate = getDaysAgo(0);
+    const todayEntries = weekEntries.filter(e => e.timestamp.startsWith(todayDate));
+    if (todayEntries.length > 0) {
+      const times = todayEntries.map(e => {
+        const time = new Date(e.timestamp);
+        return time.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+      });
+      parts.push(`    - Today's exact times: ${times.join(', ')}`);
+      // Include notes for today if any
+      const todayWithNotes = todayEntries.filter(e => e.note);
+      if (todayWithNotes.length > 0) {
+        for (const entry of todayWithNotes) {
+          const time = new Date(entry.timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+          parts.push(`      * ${time}: "${entry.note}"`);
+        }
+      }
+    }
+
+    // Include EXACT TIMES for yesterday's entries
+    const yesterdayDate = getDaysAgo(1);
+    const yesterdayEntries = weekEntries.filter(e => e.timestamp.startsWith(yesterdayDate));
+    if (yesterdayEntries.length > 0) {
+      const times = yesterdayEntries.map(e => {
+        const time = new Date(e.timestamp);
+        return time.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+      });
+      parts.push(`    - Yesterday's exact times: ${times.join(', ')}`);
+    }
+
     if (streak) {
       parts.push(`    - Current streak: ${streak.currentStreak} day${streak.currentStreak !== 1 ? 's' : ''}`);
       parts.push(`    - Longest streak: ${streak.longestStreak} day${streak.longestStreak !== 1 ? 's' : ''}`);
@@ -732,10 +762,10 @@ export async function getDetailedLogsContextForClaude(): Promise<string> {
       parts.push(`    - Recent breakdown: ${dailyBreakdown.join(', ')}`);
     }
 
-    // Include recent notes if any
-    const recentWithNotes = weekEntries.filter(e => e.note).slice(0, 3);
+    // Include recent notes if any (excluding today's which were shown above)
+    const recentWithNotes = weekEntries.filter(e => e.note && !e.timestamp.startsWith(todayDate)).slice(0, 3);
     if (recentWithNotes.length > 0) {
-      parts.push(`    - Recent notes: ${recentWithNotes.map(e => `"${e.note}"`).join(', ')}`);
+      parts.push(`    - Other recent notes: ${recentWithNotes.map(e => `"${e.note}"`).join(', ')}`);
     }
 
     // First and last logged date
