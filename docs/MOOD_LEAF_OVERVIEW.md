@@ -28,12 +28,13 @@ Mood Leaf is a mental health journaling app with an AI companion that truly reme
 7. [How Your Guide Adapts](#how-your-guide-adapts)
 8. [Life Context (The Tree)](#life-context-the-tree)
 9. [Health Integration (Weather)](#health-integration-weather)
-10. [Patterns & Insights](#patterns--insights)
-11. [Sparks (Creative Prompts)](#sparks-creative-prompts)
-12. [Fireflies (Personalized Wisdom)](#fireflies-personalized-wisdom)
-13. [Privacy & Your Data](#privacy--your-data)
-14. [Complete Feature List](#complete-feature-list)
-15. [FAQ](#faq)
+10. [Calendar Integration](#calendar-integration)
+11. [Patterns & Insights](#patterns--insights)
+12. [Sparks (Creative Prompts)](#sparks-creative-prompts)
+13. [Fireflies (Personalized Wisdom)](#fireflies-personalized-wisdom)
+14. [Privacy & Your Data](#privacy--your-data)
+15. [Complete Feature List](#complete-feature-list)
+16. [FAQ](#faq)
 
 ---
 
@@ -435,6 +436,65 @@ Similarly tracks:
 
 ---
 
+## Calendar Integration
+
+### Why Connect Your Calendar?
+
+Your schedule affects your mental state. A packed week feels different than an open one. An important interview tomorrow creates different anxiety than a free weekend. Connecting your iOS Calendar lets your guide:
+
+- Know what's coming up ("I see you have that presentation tomorrow")
+- Acknowledge busy periods ("You have a packed week - be gentle with yourself")
+- Prepare for important events ("Want to talk through your interview prep?")
+- Detect travel and anticipate jet lag
+- Understand context without you having to explain
+
+### What Your Guide Sees
+
+| Data Type | What's Tracked | How It Helps |
+|-----------|----------------|--------------|
+| **Today's Events** | Meetings, appointments, deadlines | Understands your immediate context |
+| **Week Overview** | Schedule density and busyness | Calibrates expectations |
+| **Travel Events** | Flights, trips, timezone changes | Anticipates jet lag and disruption |
+| **Important Events** | Interviews, doctor visits, deadlines | Offers relevant support |
+
+### Travel & Jet Lag Awareness
+
+When your calendar shows travel:
+- Your guide notices potential timezone changes
+- Adjusts expectations during recovery
+- Connects with chronotype awareness
+- Doesn't pressure you when you're adjusting
+
+**Example:**
+> "I see you have a flight to London next week. That's a big timezone shift - want to plan how you'll manage the adjustment?"
+
+### Busy Week Support
+
+When your week is packed:
+- Your guide acknowledges the pressure
+- Suggests smaller, manageable actions
+- Doesn't add to your mental load
+- Celebrates when you make it through
+
+**Example:**
+> "You have 12 events this week - that's a lot. What's the one thing that would help you most right now?"
+
+### How to Enable
+
+1. Go to **Settings** > **Calendar**
+2. Tap **Enable Calendar Access**
+3. Allow Mood Leaf to read your calendar
+4. Your guide now sees your schedule
+
+### Privacy Note
+
+- Only event titles, times, and locations are read
+- Data stays on your device
+- We never see or store your calendar
+- You can disable anytime
+
+---
+
 ## Patterns & Insights
 
 ### What Mood Leaf Tracks
@@ -700,6 +760,16 @@ You can always:
 | **Activity** | Steps, exercise minutes |
 | **Correlations** | 90-day mood pattern analysis |
 | **Notifications** | Check-ins based on biometrics |
+
+### Calendar Integration
+
+| Feature | Description |
+|---------|-------------|
+| **Today's Events** | Upcoming meetings and appointments |
+| **Week Overview** | Schedule density and busyness level |
+| **Travel Detection** | Flights, trips, timezone changes |
+| **Important Events** | Interviews, deadlines, doctor visits |
+| **Jet Lag Awareness** | Connects travel to chronotype support |
 
 ### Advanced AI
 
