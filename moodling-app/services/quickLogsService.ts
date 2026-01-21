@@ -139,6 +139,19 @@ function getDaysAgo(days: number): string {
   return `${year}-${month}-${day}`;
 }
 
+/**
+ * Convert an ISO timestamp to LOCAL date string (YYYY-MM-DD)
+ * This fixes the UTC vs local timezone mismatch bug where entries logged
+ * late at night (local) could have a different UTC date.
+ */
+function isoToLocalDate(isoTimestamp: string): string {
+  const date = new Date(isoTimestamp);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 // ============================================
 // QUICK LOG MANAGEMENT
 // ============================================
@@ -305,7 +318,8 @@ export async function logEntry(
 
   // Keep last 365 days of entries
   const oneYearAgo = getDaysAgo(365);
-  const filtered = entries.filter(e => e.timestamp.split('T')[0] >= oneYearAgo);
+  // Use isoToLocalDate to properly handle UTC vs local timezone
+  const filtered = entries.filter(e => isoToLocalDate(e.timestamp) >= oneYearAgo);
 
   await AsyncStorage.setItem(LOG_ENTRIES_KEY, JSON.stringify(filtered));
 
@@ -348,7 +362,8 @@ export async function getEntriesForLog(logId: string, days?: number): Promise<Lo
 
   if (days) {
     const cutoff = getDaysAgo(days);
-    filtered = filtered.filter(e => e.timestamp.split('T')[0] >= cutoff);
+    // Use isoToLocalDate to properly handle UTC vs local timezone
+    filtered = filtered.filter(e => isoToLocalDate(e.timestamp) >= cutoff);
   }
 
   return filtered.sort((a, b) =>
@@ -362,7 +377,8 @@ export async function getEntriesForLog(logId: string, days?: number): Promise<Lo
 export async function getTodayEntries(logId: string): Promise<LogEntry[]> {
   const entries = await getAllLogEntries();
   const today = getToday();
-  return entries.filter(e => e.logId === logId && e.timestamp.startsWith(today));
+  // Use isoToLocalDate to properly handle UTC vs local timezone
+  return entries.filter(e => e.logId === logId && isoToLocalDate(e.timestamp) === today);
 }
 
 /**
@@ -489,8 +505,8 @@ async function recalculateStreak(logId: string): Promise<void> {
     streak = newStreaks.find(s => s.logId === logId)!;
   }
 
-  // Get unique dates
-  const dates = [...new Set(entries.map(e => e.timestamp.split('T')[0]))].sort().reverse();
+  // Get unique dates - use isoToLocalDate to properly handle UTC vs local timezone
+  const dates = [...new Set(entries.map(e => isoToLocalDate(e.timestamp)))].sort().reverse();
 
   streak.totalLogs = entries.length;
   streak.lastLogDate = dates[0] || '';
@@ -568,8 +584,9 @@ export async function getStreak(logId: string): Promise<LogStreak | null> {
  */
 export async function getDailySummary(logId: string, date: string): Promise<DailySummary> {
   const entries = await getAllLogEntries();
+  // Use isoToLocalDate to properly handle UTC vs local timezone
   const dayEntries = entries.filter(e =>
-    e.logId === logId && e.timestamp.startsWith(date)
+    e.logId === logId && isoToLocalDate(e.timestamp) === date
   );
 
   return {
@@ -593,8 +610,9 @@ export async function getWeeklySummary(): Promise<Record<string, number[]>> {
     result[log.id] = [];
     for (let i = 6; i >= 0; i--) {
       const date = getDaysAgo(i);
+      // Use isoToLocalDate to properly handle UTC vs local timezone
       const count = entries.filter(e =>
-        e.logId === log.id && e.timestamp.startsWith(date)
+        e.logId === log.id && isoToLocalDate(e.timestamp) === date
       ).length;
       result[log.id].push(count);
     }
@@ -644,8 +662,9 @@ export async function getLogsForCorrelation(date: string): Promise<Record<string
   const result: Record<string, number> = {};
 
   for (const log of logs) {
+    // Use isoToLocalDate to properly handle UTC vs local timezone
     const dayEntries = entries.filter(e =>
-      e.logId === log.id && e.timestamp.startsWith(date)
+      e.logId === log.id && isoToLocalDate(e.timestamp) === date
     );
     result[log.name] = dayEntries.length;
   }
@@ -709,7 +728,8 @@ export async function getDetailedLogsContextForClaude(): Promise<string> {
     for (let i = 0; i < 7; i++) {
       const date = getDaysAgo(i);
       const dayLabel = i === 0 ? 'Today' : i === 1 ? 'Yesterday' : date;
-      const dayEntries = weekEntries.filter(e => e.timestamp.startsWith(date));
+      // Use isoToLocalDate to properly handle UTC vs local timezone
+      const dayEntries = weekEntries.filter(e => isoToLocalDate(e.timestamp) === date);
       if (dayEntries.length > 0) {
         dailyBreakdown.push(`${dayLabel}: ${dayEntries.length}`);
       }
@@ -722,6 +742,38 @@ export async function getDetailedLogsContextForClaude(): Promise<string> {
     parts.push(`    - This month (30 days): ${monthEntries.length} time${monthEntries.length !== 1 ? 's' : ''}`);
     parts.push(`    - All time total: ${allEntries.length} time${allEntries.length !== 1 ? 's' : ''}`);
 
+    // Include EXACT TIMES for today's entries
+    const todayDate = getDaysAgo(0);
+    // Use isoToLocalDate to properly handle UTC vs local timezone
+    const todayEntries = weekEntries.filter(e => isoToLocalDate(e.timestamp) === todayDate);
+    if (todayEntries.length > 0) {
+      const times = todayEntries.map(e => {
+        const time = new Date(e.timestamp);
+        return time.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+      });
+      parts.push(`    - Today's exact times: ${times.join(', ')}`);
+      // Include notes for today if any
+      const todayWithNotes = todayEntries.filter(e => e.note);
+      if (todayWithNotes.length > 0) {
+        for (const entry of todayWithNotes) {
+          const time = new Date(entry.timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+          parts.push(`      * ${time}: "${entry.note}"`);
+        }
+      }
+    }
+
+    // Include EXACT TIMES for yesterday's entries
+    const yesterdayDate = getDaysAgo(1);
+    // Use isoToLocalDate to properly handle UTC vs local timezone
+    const yesterdayEntries = weekEntries.filter(e => isoToLocalDate(e.timestamp) === yesterdayDate);
+    if (yesterdayEntries.length > 0) {
+      const times = yesterdayEntries.map(e => {
+        const time = new Date(e.timestamp);
+        return time.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+      });
+      parts.push(`    - Yesterday's exact times: ${times.join(', ')}`);
+    }
+
     if (streak) {
       parts.push(`    - Current streak: ${streak.currentStreak} day${streak.currentStreak !== 1 ? 's' : ''}`);
       parts.push(`    - Longest streak: ${streak.longestStreak} day${streak.longestStreak !== 1 ? 's' : ''}`);
@@ -732,18 +784,20 @@ export async function getDetailedLogsContextForClaude(): Promise<string> {
       parts.push(`    - Recent breakdown: ${dailyBreakdown.join(', ')}`);
     }
 
-    // Include recent notes if any
-    const recentWithNotes = weekEntries.filter(e => e.note).slice(0, 3);
+    // Include recent notes if any (excluding today's which were shown above)
+    // Use isoToLocalDate to properly handle UTC vs local timezone
+    const recentWithNotes = weekEntries.filter(e => e.note && isoToLocalDate(e.timestamp) !== todayDate).slice(0, 3);
     if (recentWithNotes.length > 0) {
-      parts.push(`    - Recent notes: ${recentWithNotes.map(e => `"${e.note}"`).join(', ')}`);
+      parts.push(`    - Other recent notes: ${recentWithNotes.map(e => `"${e.note}"`).join(', ')}`);
     }
 
     // First and last logged date
     if (allEntries.length > 0) {
       const firstEntry = allEntries[allEntries.length - 1];
       const lastEntry = allEntries[0];
-      parts.push(`    - First logged: ${firstEntry.timestamp.split('T')[0]}`);
-      parts.push(`    - Last logged: ${lastEntry.timestamp.split('T')[0]}`);
+      // Use isoToLocalDate to properly handle UTC vs local timezone
+      parts.push(`    - First logged: ${isoToLocalDate(firstEntry.timestamp)}`);
+      parts.push(`    - Last logged: ${isoToLocalDate(lastEntry.timestamp)}`);
     }
   }
 
