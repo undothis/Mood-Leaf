@@ -4478,15 +4478,172 @@ import { FidgetPad } from './components/games/FidgetPad';
 
 ---
 
+## Hybrid On-Device LLM Architecture (Future)
+
+### Overview
+
+A privacy-first architecture where compressed context goes to Claude, but rich personalized responses are assembled locally using on-device LLMs.
+
+### Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  DEVICE (Private)                                           │
+│  ┌──────────────┐                                           │
+│  │ Full Context │ ← Raw journals, patterns, relationships   │
+│  │ (~5000 tokens)│                                          │
+│  └──────┬───────┘                                           │
+│         │ Compress (MoodPrint)                              │
+│         ▼                                                   │
+│  ┌──────────────┐      ┌─────────────┐                      │
+│  │  MoodPrint   │ ───► │ Claude API  │ ◄── Cloud            │
+│  │ (~100 tokens)│      └──────┬──────┘                      │
+│  └──────────────┘             │                             │
+│                               ▼                             │
+│                   Response with expansion markers           │
+│                   "[EXPAND:temporal_pattern]"               │
+│                               │                             │
+│         ┌─────────────────────┘                             │
+│         ▼                                                   │
+│  ┌──────────────┐                                           │
+│  │ On-Device LLM│ ← Expands markers with local context      │
+│  │ (Apple/Google)│                                          │
+│  └──────┬───────┘                                           │
+│         ▼                                                   │
+│  Final personalized response with specific details          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Platform Requirements
+
+| Platform | Chip/Hardware | OS Version | On-Device LLM | API |
+|----------|---------------|------------|---------------|-----|
+| **iPhone** | A17 Pro+ | iOS 18.1+ | Foundation Models | Swift |
+| **iPad** | M-series | iPadOS 18.1+ | Foundation Models | Swift |
+| **Android** | Pixel 10 (best) | Android 14+ | Gemini Nano | ML Kit |
+| **Mac** | M1+ | macOS 15.1+ | Foundation Models | Swift |
+| **Windows** | 40+ TOPS NPU | Win 11 24H2+ | Phi-Silica | Windows AI |
+
+### Expansion Marker System
+
+Claude's response includes markers that the on-device LLM expands:
+
+```typescript
+// Example markers and their expansions
+"[EXPAND:temporal_pattern]"
+→ "You tend to struggle on Sunday evenings - last week you mentioned dreading Monday meetings"
+
+"[EXPAND:recent_journal:3]"
+→ "In your entry from Tuesday, you wrote about feeling overwhelmed at work"
+
+"[EXPAND:relationship:mom]"
+→ "With your mom, you've been working on setting boundaries around phone calls"
+
+"[EXPAND:coping_win]"
+→ "Remember last Friday when you used the 5-4-3-2-1 grounding technique and it helped?"
+```
+
+### Proposed Service Structure
+
+```typescript
+// services/onDeviceExpansionService.ts
+interface ExpansionService {
+  // Check if on-device LLM is available
+  isAvailable(): Promise<boolean>;
+
+  // Get platform capabilities
+  getCapabilities(): Promise<{
+    platform: 'ios' | 'android' | 'mac' | 'windows' | 'web';
+    model: string | null;
+    maxTokens: number;
+  }>;
+
+  // Expand a single marker
+  expandMarker(marker: string, context: LocalContext): Promise<string>;
+
+  // Process full response with markers
+  processResponse(response: string): Promise<string>;
+}
+
+// services/expansionMarkerParser.ts
+interface MarkerParser {
+  // Find all [EXPAND:...] markers in text
+  findMarkers(text: string): ExpansionMarker[];
+
+  // Replace markers with expanded content
+  replaceMarkers(text: string, expansions: Map<string, string>): string;
+}
+
+// services/localContextRetriever.ts
+interface ContextRetriever {
+  // Get specific context for expansion
+  getTemporalPatterns(): Promise<TemporalContext>;
+  getRecentJournals(count: number): Promise<JournalEntry[]>;
+  getRelationshipContext(person: string): Promise<RelationshipContext>;
+  getCopingHistory(): Promise<CopingEvent[]>;
+}
+```
+
+### Fallback Strategy
+
+```typescript
+async function processClaudeResponse(response: string): Promise<string> {
+  const expansionService = getExpansionService();
+
+  // Check if on-device LLM is available
+  if (!await expansionService.isAvailable()) {
+    // Option 1: Show response as-is (strip markers)
+    return stripExpansionMarkers(response);
+
+    // Option 2: Make second API call (costs more)
+    // return await expandViaClaudeAPI(response);
+  }
+
+  // Expand markers locally
+  return await expansionService.processResponse(response);
+}
+```
+
+### Platform-Specific Notes
+
+**iOS/Mac (Apple Foundation Models)**:
+- Swift API via native module
+- ~3B parameter model, free inference
+- Best platform support
+
+**Android (Gemini Nano via ML Kit)**:
+- Must be foreground app
+- Per-app inference and battery quotas
+- Best on Pixel 10, limited on older devices
+
+**Web Fallback**:
+- No on-device LLM available
+- Strip markers or use cloud expansion
+
+### Privacy Guarantees
+
+1. **Raw data never leaves device** - Only MoodPrint (~100 tokens) sent to Claude
+2. **Expansion happens locally** - On-device LLM has full context
+3. **No cloud dependency for personalization** - Works offline once Claude response received
+
+### Status
+
+Research complete (January 2026). Implementation pending.
+
+See `docs/Handoff.md` Section 18 for full roadmap.
+
+---
+
 ## Future Enhancements
 
 ### Planned Features
 
-1. **Compression Templates** - More efficient context storage
-2. **Android Support** - Expo already supports it
-3. **Watch App** - Quick check-ins from wrist
-4. **Export to Therapy** - Formatted reports for therapists
-5. **Guided Journaling** - Prompts for specific situations
+1. **Hybrid On-Device Expansion** - See section above
+2. **Compression Templates** - More efficient context storage
+3. **Android Support** - Expo already supports it
+4. **Watch App** - Quick check-ins from wrist
+5. **Export to Therapy** - Formatted reports for therapists
+6. **Guided Journaling** - Prompts for specific situations
 
 ### Technical Debt
 
