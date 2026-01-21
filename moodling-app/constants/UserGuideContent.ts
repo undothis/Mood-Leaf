@@ -438,7 +438,11 @@ export const USER_MANUAL_CONTENT: ManualSection[] = [
       },
       {
         title: 'Reminders',
-        content: 'Get gentle reminders about your cycle:\n• Period approaching (1-3 days before)\n• PMS starting (based on YOUR patterns)\n• Log symptoms reminder\n• Ovulation/fertility window alerts\n\nChoose push notifications or Firefly alerts (a Firefly blinks on your home screen). Less intrusive, still helpful.\n\nMaster on/off switch: Settings → Cycle Tracking → Notifications. Turn all period notifications off (or back on) with one tap.',
+        content: 'Get gentle reminders about your cycle:\n• Period approaching (1-3 days before)\n• PMS starting (based on YOUR patterns)\n• Log symptoms reminder\n• Ovulation/fertility window alerts\n\nMaster on/off switch: Settings → Cycle Tracking → Notifications. Turn all period notifications off (or back on) with one tap.',
+      },
+      {
+        title: 'Firefly Alerts',
+        content: 'Don\'t like push notifications? Choose Firefly alerts instead—a gentler, more discreet option.\n\nHow it works:\n• A Firefly on your home screen gently blinks/pulses\n• Tap it to see your cycle reminder\n• Messages like "Your period is predicted in 2 days" or "PMS usually starts around now"\n\nWhy Firefly alerts?\n• Less intrusive than push notifications\n• No buzzing or sounds\n• Check when YOU\'re ready\n• Stays visible until you tap it\n• Perfect for those who hate notifications\n\nSet in Settings → Cycle Tracking → Alert Type.',
       },
       {
         title: 'HealthKit Integration',
