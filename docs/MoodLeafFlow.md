@@ -447,16 +447,60 @@ The onboarding flow is a **4-stage journey** that builds the user's initial Mood
 │   • If systems thinker → ask about structure preferences                        │
 │   • If highly sensitive → ask about emotional processing                        │
 │                                                                                  │
-│   DATA COLLECTED:                                                                │
-│   ────────────────                                                               │
-│   • primaryCognitiveMode: conceptual_systems | emotional_relational |           │
-│                           procedural_sequential | embodied_somatic |            │
-│                           associative_divergent | narrative_meaning             │
-│   • mentalImagery: hyperphantasia | typical | low | aphantasia                  │
-│   • innerMonologue: constant | situational | rare | absent                      │
-│   • emotionalProcessing: feeler_first | thinker_first | integrated             │
-│   • sensitivityLevel: highly_sensitive | moderate | low                         │
-│   • communicationStyle: direct | reflective | exploratory                       │
+│   DATA COLLECTED (All Dimensions):                                               │
+│   ────────────────────────────────                                               │
+│                                                                                  │
+│   1. PRIMARY COGNITIVE MODE (how you process):                                   │
+│      • conceptual_systems    - Big picture, patterns, why before how            │
+│      • emotional_relational  - Feelings first, connection-focused               │
+│      • procedural_sequential - Step-by-step, structured                         │
+│      • embodied_somatic      - Body-based, learns by doing                      │
+│      • associative_divergent - Makes leaps, non-linear                          │
+│      • narrative_meaning     - Stories and examples                             │
+│      • visual_spatial        - Thinks in images, spatial models                 │
+│                                                                                  │
+│   2. LEARNING STYLES (how you receive info):                                     │
+│      • visual      - Diagrams, images, written text                             │
+│      • auditory    - Conversation, explanation                                  │
+│      • kinesthetic - Practice, movement, hands-on                               │
+│      • reading     - Text, notes, written form                                  │
+│      • social      - Discussion, dialogue                                       │
+│      • solitary    - Alone time to process                                      │
+│      (Inferred from cognitive mode + explicit questions)                        │
+│                                                                                  │
+│   3. NEUROLOGICAL DIFFERENCES:                                                   │
+│      • mentalImagery: hyperphantasia | typical | hypophantasia | aphantasia     │
+│      • innerMonologue: constant | frequent | situational | rare | none          │
+│      • auditoryImagination: vivid | moderate | weak | none                      │
+│                                                                                  │
+│   4. EMOTIONAL PROCESSING:                                                       │
+│      • feeler_first    - Emotions come first, then logic                        │
+│      • thinker_first   - Logic first, emotions after                            │
+│      • integrated      - Emotions and logic intertwined                         │
+│      • action_oriented - Processes through doing                                │
+│      • delayed         - Emotions surface later                                 │
+│                                                                                  │
+│   5. COMMUNICATION STYLE:                                                        │
+│      • direct        - Get to the point                                         │
+│      • exploratory   - Think out loud, wander                                   │
+│      • reflective    - Need time, prefer writing                                │
+│      • collaborative - Build understanding together                             │
+│      • metaphorical  - Analogies and images                                     │
+│                                                                                  │
+│   6. STRUCTURE PREFERENCE:                                                       │
+│      • loves_structure   - Plans, lists, clear steps                            │
+│      • needs_flexibility - Goes with flow                                       │
+│      • structured_start  - Structure to begin, then flows                       │
+│      • emergent          - Structure emerges from doing                         │
+│                                                                                  │
+│   7. SOCIAL ORIENTATION:                                                         │
+│      • energized_by_people - Connection is fuel                                 │
+│      • drained_by_people   - Needs recovery after                               │
+│      • selective           - Deep > many connections                            │
+│      • situational         - Depends on context                                 │
+│                                                                                  │
+│   8. SENSITIVITY LEVEL:                                                          │
+│      • highly_sensitive | moderate | low_sensitivity                            │
 │                                                                                  │
 │   OUTPUT → Stored as cognitive profile                                           │
 │   NEXT → /cognitive-onboarding/reveal                                            │
