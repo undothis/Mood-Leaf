@@ -15,6 +15,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getCoachAdaptations, CoachAdaptations } from './cognitiveProfileService';
 
 // ============================================
 // TYPES
@@ -72,6 +73,19 @@ export interface ResponseDirectives {
 
   // Opening style
   openingStyle: 'continue' | 'gentle_checkin' | 'energy_match' | 'grounding';
+
+  // Cognitive profile adaptations (from cognitiveProfileService)
+  cognitiveAdaptations: {
+    useMetaphors: boolean;
+    useExamples: boolean;
+    useStepByStep: boolean;
+    showBigPicture: boolean;
+    validateFirst: boolean;
+    allowWandering: boolean;
+    provideStructure: boolean;
+    giveTimeToThink: boolean;
+    questionType: 'open' | 'specific' | 'reflective';
+  };
 }
 
 export interface HeavyTopicIndicators {
@@ -373,7 +387,15 @@ export async function buildConversationContext(
  * Generate response directives based on context
  * This is the core "human-ness" logic
  */
-export function generateResponseDirectives(ctx: ConversationContext): ResponseDirectives {
+export async function generateResponseDirectives(ctx: ConversationContext): Promise<ResponseDirectives> {
+  // Get cognitive profile adaptations (separate service, granular control)
+  let cognitiveAdaptations: CoachAdaptations | null = null;
+  try {
+    cognitiveAdaptations = await getCoachAdaptations();
+  } catch (error) {
+    console.log('[Controller] Could not load cognitive adaptations:', error);
+  }
+
   const directives: ResponseDirectives = {
     artificialDelay: 500, // minimum delay to feel natural
     maxLength: 'moderate',
@@ -387,6 +409,18 @@ export function generateResponseDirectives(ctx: ConversationContext): ResponseDi
     suggestBreak: false,
     avoidPhrases: [...AI_TICK_PHRASES],
     openingStyle: 'continue',
+    // Cognitive adaptations from profile
+    cognitiveAdaptations: {
+      useMetaphors: cognitiveAdaptations?.useMetaphors ?? false,
+      useExamples: cognitiveAdaptations?.useExamples ?? true,
+      useStepByStep: cognitiveAdaptations?.useStepByStep ?? false,
+      showBigPicture: cognitiveAdaptations?.showBigPicture ?? false,
+      validateFirst: cognitiveAdaptations?.validateFirst ?? true,
+      allowWandering: cognitiveAdaptations?.allowWandering ?? true,
+      provideStructure: cognitiveAdaptations?.provideStructure ?? false,
+      giveTimeToThink: cognitiveAdaptations?.giveTimeToThink ?? false,
+      questionType: cognitiveAdaptations?.questionType ?? 'open',
+    },
   };
 
   // ========== TIMING RULES ==========
@@ -561,6 +595,46 @@ export function buildPromptModifiers(directives: ResponseDirectives): string {
   // Avoid phrases
   if (directives.avoidPhrases.length > 0) {
     modifiers.push(`NEVER use these phrases: ${directives.avoidPhrases.slice(0, 5).join(', ')}, etc.`);
+  }
+
+  // Cognitive profile adaptations (how this person thinks/learns)
+  const cog = directives.cognitiveAdaptations;
+  if (cog) {
+    modifiers.push('\nCOGNITIVE STYLE ADAPTATIONS (how this person thinks):');
+
+    if (cog.useMetaphors) {
+      modifiers.push('- Use metaphors and analogies - they help this person understand');
+    }
+    if (cog.useExamples) {
+      modifiers.push('- Give concrete examples and stories');
+    }
+    if (cog.useStepByStep) {
+      modifiers.push('- Be step-by-step and logical in explanations');
+    }
+    if (cog.showBigPicture) {
+      modifiers.push('- Connect things to the bigger picture - show how it fits');
+    }
+    if (cog.validateFirst) {
+      modifiers.push('- Always validate emotions FIRST before anything else');
+    }
+    if (cog.allowWandering) {
+      modifiers.push('- Allow conversation to explore and wander - don\'t force structure');
+    }
+    if (cog.provideStructure) {
+      modifiers.push('- Provide clear structure and organization');
+    }
+    if (cog.giveTimeToThink) {
+      modifiers.push('- Don\'t ask rapid questions - give space to think');
+    }
+
+    // Question type
+    if (cog.questionType === 'reflective') {
+      modifiers.push('- Ask reflective questions that invite introspection');
+    } else if (cog.questionType === 'specific') {
+      modifiers.push('- Ask specific, concrete questions');
+    } else {
+      modifiers.push('- Ask open-ended questions that allow exploration');
+    }
   }
 
   return modifiers.join('\n');

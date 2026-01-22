@@ -46,6 +46,7 @@ import {
   addMessageToSession,
   updateSessionTopics,
 } from './memoryTierService';
+import { getCognitiveProfileContextForLLM } from './cognitiveProfileService';
 
 // Storage keys
 const API_KEY_STORAGE = 'moodling_claude_api_key';
@@ -771,11 +772,20 @@ export async function sendMessage(
     console.log('Could not update session memory:', error);
   }
 
+  // Get cognitive profile context (how this person thinks/learns)
+  let cognitiveProfileContext = '';
+  try {
+    cognitiveProfileContext = await getCognitiveProfileContextForLLM();
+  } catch (error) {
+    console.log('Could not load cognitive profile context:', error);
+  }
+
   // Assemble full context with ALL data sources:
-  // Order: memory context (most important), lifetime overview, psych profile, chronotype/travel,
-  // calendar, health + correlations, detailed tracking logs, lifestyle factors,
+  // Order: cognitive profile (how they think), memory context, lifetime overview, psych profile,
+  // chronotype/travel, calendar, health + correlations, detailed tracking logs, lifestyle factors,
   // exposure progress, recent journals, user preferences, then current conversation
   const contextParts = [
+    cognitiveProfileContext, // How this person thinks/learns (from onboarding)
     memoryContext,       // Tiered memory (what we know about this person)
     lifeContext,         // Lifetime overview (people, events, themes)
     psychContext,        // Psychological profile (cognitive patterns, attachment, values)
@@ -813,7 +823,7 @@ export async function sendMessage(
       messagesForController,
       message
     );
-    controllerDirectives = generateResponseDirectives(controllerCtx);
+    controllerDirectives = await generateResponseDirectives(controllerCtx);
     controllerModifiers = buildPromptModifiers(controllerDirectives);
   } catch (error) {
     console.log('Could not build controller context:', error);
