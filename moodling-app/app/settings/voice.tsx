@@ -38,7 +38,78 @@ import {
   PERSONAS,
   CoachPersona,
 } from '@/services/coachPersonalityService';
-import Slider from '@react-native-community/slider';
+// Simple value control component to replace external Slider dependency
+const ValueControl = ({
+  value,
+  min,
+  max,
+  step,
+  onValueChange,
+  tintColor,
+}: {
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  onValueChange: (value: number) => void;
+  tintColor: string;
+}) => {
+  const decrease = () => {
+    const newValue = Math.max(min, value - step);
+    onValueChange(newValue);
+  };
+  const increase = () => {
+    const newValue = Math.min(max, value + step);
+    onValueChange(newValue);
+  };
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+      <TouchableOpacity
+        onPress={decrease}
+        style={{
+          width: 36,
+          height: 36,
+          borderRadius: 18,
+          backgroundColor: tintColor + '30',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Text style={{ fontSize: 20, color: tintColor }}>-</Text>
+      </TouchableOpacity>
+      <View
+        style={{
+          flex: 1,
+          height: 6,
+          backgroundColor: '#333',
+          borderRadius: 3,
+          overflow: 'hidden',
+        }}
+      >
+        <View
+          style={{
+            width: `${((value - min) / (max - min)) * 100}%`,
+            height: '100%',
+            backgroundColor: tintColor,
+          }}
+        />
+      </View>
+      <TouchableOpacity
+        onPress={increase}
+        style={{
+          width: 36,
+          height: 36,
+          borderRadius: 18,
+          backgroundColor: tintColor + '30',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Text style={{ fontSize: 20, color: tintColor }}>+</Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
 
 export default function VoiceSettingsScreen() {
   const colorScheme = useColorScheme();
@@ -249,14 +320,13 @@ export default function VoiceSettingsScreen() {
               <Text style={[styles.settingLabel, { color: colors.text }]}>
                 Speed: {settings.speakingRateMultiplier.toFixed(1)}x
               </Text>
-              <Slider
-                style={styles.slider}
-                minimumValue={0.5}
-                maximumValue={1.5}
+              <ValueControl
                 value={settings.speakingRateMultiplier}
-                onSlidingComplete={handleSpeedChange}
-                minimumTrackTintColor={colors.tint}
-                maximumTrackTintColor={colors.border}
+                min={0.5}
+                max={1.5}
+                step={0.1}
+                onValueChange={handleSpeedChange}
+                tintColor={colors.tint}
               />
               <View style={styles.sliderLabels}>
                 <Text style={[styles.sliderLabel, { color: colors.textMuted }]}>Slow</Text>
@@ -268,14 +338,13 @@ export default function VoiceSettingsScreen() {
               <Text style={[styles.settingLabel, { color: colors.text }]}>
                 Volume: {Math.round(settings.volume * 100)}%
               </Text>
-              <Slider
-                style={styles.slider}
-                minimumValue={0.1}
-                maximumValue={1}
+              <ValueControl
                 value={settings.volume}
-                onSlidingComplete={handleVolumeChange}
-                minimumTrackTintColor={colors.tint}
-                maximumTrackTintColor={colors.border}
+                min={0.1}
+                max={1}
+                step={0.1}
+                onValueChange={handleVolumeChange}
+                tintColor={colors.tint}
               />
               <View style={styles.sliderLabels}>
                 <Text style={[styles.sliderLabel, { color: colors.textMuted }]}>Quiet</Text>
