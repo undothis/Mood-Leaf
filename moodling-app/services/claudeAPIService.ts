@@ -31,6 +31,22 @@ import { getLifestyleFactorsContextForClaude } from './patternService';
 import { getExposureContextForClaude } from './exposureLadderService';
 import { getCalendarContextForClaude, isCalendarEnabled } from './calendarService';
 import { getRecentJournalContextForClaude } from './journalStorage';
+import {
+  buildConversationContext as buildControllerContext,
+  generateResponseDirectives,
+  buildPromptModifiers,
+  detectUserEnergy,
+  detectUserMood,
+  extractTopics,
+  ResponseDirectives,
+} from './conversationController';
+import { scoreExchange } from './humanScoreService';
+import {
+  getMemoryContextForLLM,
+  addMessageToSession,
+  updateSessionTopics,
+} from './memoryTierService';
+import { getCognitiveProfileContextForLLM } from './cognitiveProfileService';
 
 // Storage keys
 const API_KEY_STORAGE = 'moodling_claude_api_key';
@@ -735,11 +751,42 @@ export async function sendMessage(
     console.log('Could not load calendar context:', error);
   }
 
+  // Get tiered memory context (short/mid/long term)
+  let memoryContext = '';
+  try {
+    memoryContext = await getMemoryContextForLLM();
+  } catch (error) {
+    console.log('Could not load memory context:', error);
+  }
+
+  // Track this user message in session memory
+  const userMood = detectUserMood(message);
+  const userEnergy = detectUserEnergy(message);
+  try {
+    await addMessageToSession('user', message, userMood, userEnergy);
+    const topics = extractTopics(message);
+    if (topics.length > 0) {
+      await updateSessionTopics(topics);
+    }
+  } catch (error) {
+    console.log('Could not update session memory:', error);
+  }
+
+  // Get cognitive profile context (how this person thinks/learns)
+  let cognitiveProfileContext = '';
+  try {
+    cognitiveProfileContext = await getCognitiveProfileContextForLLM();
+  } catch (error) {
+    console.log('Could not load cognitive profile context:', error);
+  }
+
   // Assemble full context with ALL data sources:
-  // Order: lifetime overview, psych profile, chronotype/travel, calendar, health + correlations,
-  // detailed tracking logs, lifestyle factors, exposure progress, recent journals,
-  // user preferences, then current conversation
+  // Order: cognitive profile (how they think), memory context, lifetime overview, psych profile,
+  // chronotype/travel, calendar, health + correlations, detailed tracking logs, lifestyle factors,
+  // exposure progress, recent journals, user preferences, then current conversation
   const contextParts = [
+    cognitiveProfileContext, // How this person thinks/learns (from onboarding)
+    memoryContext,       // Tiered memory (what we know about this person)
     lifeContext,         // Lifetime overview (people, events, themes)
     psychContext,        // Psychological profile (cognitive patterns, attachment, values)
     chronotypeContext,   // Chronotype and travel awareness
@@ -763,11 +810,41 @@ export async function sendMessage(
     console.log('Could not load coach mode additions:', error);
   }
 
-  // Build system prompt with coach personality and skill modes
+  // Build conversation controller context and get human-ness directives
+  let controllerDirectives: ResponseDirectives | null = null;
+  let controllerModifiers = '';
+  try {
+    const messagesForController = context.recentMessages.map(m => ({
+      text: m.content,
+      source: m.role === 'user' ? 'user' : 'ai',
+    }));
+    const controllerCtx = await buildControllerContext(
+      `session_${Date.now()}`,
+      messagesForController,
+      message
+    );
+    controllerDirectives = await generateResponseDirectives(controllerCtx);
+    controllerModifiers = buildPromptModifiers(controllerDirectives);
+  } catch (error) {
+    console.log('Could not build controller context:', error);
+  }
+
+  // Build system prompt with coach personality, skill modes, and controller directives
   const baseSystemPrompt = buildSystemPrompt(fullContext, toneInstruction, personalityPrompt);
-  const systemPrompt = coachModeAdditions
-    ? `${baseSystemPrompt}${coachModeAdditions}`
-    : baseSystemPrompt;
+  let systemPrompt = baseSystemPrompt;
+
+  // Add coach mode additions
+  if (coachModeAdditions) {
+    systemPrompt = `${systemPrompt}${coachModeAdditions}`;
+  }
+
+  // Add conversation controller directives (human-ness rules)
+  if (controllerModifiers) {
+    systemPrompt = `${systemPrompt}
+
+CONVERSATION STYLE DIRECTIVES (for this specific response):
+${controllerModifiers}`;
+  }
 
   const messages = buildMessages(message, context.recentMessages);
 
@@ -811,8 +888,35 @@ export async function sendMessage(
       CLAUDE_CONFIG.model
     );
 
+    const responseText = data.content[0]?.text ?? '';
+
+    // Score the exchange in background (for human-ness training data)
+    // This runs async - doesn't block the response
+    try {
+      scoreExchange(
+        message,
+        responseText,
+        {
+          userEnergy: detectUserEnergy(message),
+          userMood: detectUserMood(message),
+          messageCount: context.recentMessages.length + 1,
+          hourOfDay: new Date().getHours(),
+        },
+        { apiKey, skipClaude: false } // Claude scores in background too
+      ).catch(err => console.log('Scoring error (non-blocking):', err));
+    } catch (err) {
+      console.log('Scoring setup error (non-blocking):', err);
+    }
+
+    // Track assistant response in session memory
+    try {
+      await addMessageToSession('assistant', responseText);
+    } catch (err) {
+      console.log('Memory tracking error (non-blocking):', err);
+    }
+
     return {
-      text: data.content[0]?.text ?? '',
+      text: responseText,
       source: 'claudeAPI',
       cost,
       inputTokens: data.usage.input_tokens,
