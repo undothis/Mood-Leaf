@@ -151,7 +151,6 @@ export default function SkillsScreen() {
 
       {/* Journey Summary - hide when searching */}
       {!isSearching && summary && (
-      {summary && (
         <View style={[styles.summaryCard, { backgroundColor: colors.card }]}>
           <View style={styles.summaryRow}>
             <View style={styles.summaryItem}>
@@ -186,7 +185,7 @@ export default function SkillsScreen() {
 
       {/* Attributes Section - hide when searching */}
       {!isSearching && (
-      <View style={styles.section}>
+        <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>
           Your Attributes
         </Text>
@@ -436,7 +435,7 @@ export default function SkillsScreen() {
 
       {/* How Points Work - hide when searching */}
       {!isSearching && (
-      <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
+        <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
         <Text style={[styles.infoTitle, { color: colors.text }]}>
           How do I earn points?
         </Text>
