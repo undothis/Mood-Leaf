@@ -144,6 +144,76 @@ export type ProspectiveImagination =
   | 'conceptual'           // Understand future but can't "see" it
   | 'limited';             // Difficulty imagining future scenarios
 
+// ============================================
+// COGNITIVE RHYTHMS (How the mind cycles)
+// ============================================
+
+/**
+ * Cognitive Rhythm - How clarity and energy fluctuate over time
+ *
+ * This is CRITICAL for understanding someone's experience.
+ * Cyclical minds often feel broken when they're just in a low phase.
+ * "Low phases are not failure — they are integration and recovery."
+ */
+export type CognitiveRhythm =
+  | 'steady_state'         // Fairly consistent clarity and energy
+  | 'cyclical_mild'        // Some fluctuation, manageable waves
+  | 'cyclical_pronounced'  // Clear high/low phases, significant swings
+  | 'burst_recovery';      // Intense productive bursts followed by crashes
+
+/**
+ * Cycle characteristics for cyclical minds
+ */
+export interface CyclicalPattern {
+  // Typical cycle length
+  typicalCycleLength: 'days' | 'weeks' | 'months' | 'irregular';
+
+  // High phase characteristics
+  highPhase: {
+    description: string;        // What they're like at peak
+    typicalDuration: string;    // "2-3 days", "a week", etc.
+    energyLevel: 'moderate' | 'high' | 'very_high' | 'manic';
+    insights: boolean;          // Do insights come during high phases?
+  };
+
+  // Low phase characteristics
+  lowPhase: {
+    description: string;
+    typicalDuration: string;
+    energyLevel: 'depleted' | 'low' | 'functional_low';
+    needsDuring: string[];      // What helps during low phases
+  };
+
+  // Triggers
+  knownTriggers: {
+    highPhaseTriggers: string[];  // What tends to start a high phase
+    lowPhaseTriggers: string[];   // What tends to start a low phase
+  };
+
+  // Recovery
+  recoveryNeeds: string[];  // What they need after a cycle
+}
+
+/**
+ * Energy pattern throughout the day
+ */
+export type DailyEnergyPattern =
+  | 'morning_person'       // Peak energy in morning, fades by evening
+  | 'night_owl'            // Slow start, peak energy late
+  | 'afternoon_peak'       // Midday is best
+  | 'consistent'           // Relatively even throughout day
+  | 'unpredictable';       // No clear pattern
+
+/**
+ * How someone experiences their productivity
+ */
+export type ProductivityStyle =
+  | 'steady_consistent'    // Same output day to day
+  | 'burst_focused'        // Intense focused sprints
+  | 'slow_build'           // Needs warm-up time, builds momentum
+  | 'deadline_driven'      // Works best under pressure
+  | 'energy_dependent';    // Completely depends on current energy
+
 /**
  * The complete cognitive profile
  */
@@ -193,6 +263,12 @@ export interface CognitiveProfile {
 
   // How traditional education/testing worked for them
   traditionalLearningFit: 'worked_well' | 'struggled' | 'mixed';
+
+  // === COGNITIVE RHYTHMS (How clarity/energy fluctuate) ===
+  cognitiveRhythm: CognitiveRhythm;
+  cyclicalPattern: CyclicalPattern | null;  // Only populated if rhythm is cyclical
+  dailyEnergyPattern: DailyEnergyPattern;
+  productivityStyle: ProductivityStyle;
 
   // Metadata
   completedOnboarding: boolean;
@@ -901,6 +977,232 @@ export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
     ],
     measures: ['secondaryCognitiveMode', 'discoveredStrengths'],
     adaptiveDepth: 'deep'
+  },
+
+  // ========== COGNITIVE RHYTHMS (How clarity/energy fluctuate) ==========
+  // Critical for understanding someone's experience over time
+  // Many cyclical minds feel "broken" when they're just in a low phase
+
+  {
+    id: 'energy_consistency',
+    text: "How consistent is your mental energy and clarity over days or weeks?",
+    subtext: "Not talking about tiredness from lack of sleep - more about natural fluctuations in how your mind feels.",
+    type: 'choice',
+    options: [
+      {
+        value: 'very_steady',
+        label: "Pretty consistent - I'm mostly the same",
+        description: "Day to day, week to week, I feel relatively stable",
+        indicates: { cognitiveRhythm: 'steady_state' }
+      },
+      {
+        value: 'mild_waves',
+        label: "Some waves, but manageable",
+        description: "I notice ups and downs but nothing dramatic",
+        indicates: { cognitiveRhythm: 'cyclical_mild' }
+      },
+      {
+        value: 'significant_swings',
+        label: "Clear highs and lows",
+        description: "I have distinctly good periods and harder periods",
+        indicates: { cognitiveRhythm: 'cyclical_pronounced' }
+      },
+      {
+        value: 'burst_crash',
+        label: "Intense bursts then crashes",
+        description: "I have productive surges followed by needing to recover",
+        indicates: { cognitiveRhythm: 'burst_recovery', discoveredStrengths: ['burst productivity'] }
+      }
+    ],
+    measures: ['cognitiveRhythm', 'discoveredStrengths'],
+    adaptiveDepth: 'basic'
+  },
+
+  {
+    id: 'cyclical_high_phase',
+    text: "What are you like in your 'up' or energized phases?",
+    subtext: "If you experience waves of energy/clarity, what happens during the peaks?",
+    type: 'choice',
+    options: [
+      {
+        value: 'super_productive',
+        label: "Highly productive - I can do so much",
+        description: "Ideas flow, work gets done, everything clicks",
+        indicates: { discoveredStrengths: ['high phase productivity'] }
+      },
+      {
+        value: 'creative_insights',
+        label: "Creative and insightful",
+        description: "Best ideas come during these times",
+        indicates: { discoveredStrengths: ['cyclical insights'] }
+      },
+      {
+        value: 'social_engaged',
+        label: "More social and engaged",
+        description: "I reach out to people, make plans, feel connected",
+        indicates: {}
+      },
+      {
+        value: 'not_applicable',
+        label: "I don't really have distinct 'up' phases",
+        indicates: { cognitiveRhythm: 'steady_state' }
+      }
+    ],
+    measures: ['discoveredStrengths'],
+    adaptiveDepth: 'standard',
+    requiresPrevious: ['energy_consistency']
+  },
+
+  {
+    id: 'cyclical_low_phase',
+    text: "During your harder or lower-energy periods, what do you most need?",
+    subtext: "Low phases are not failure — they are integration and recovery.",
+    type: 'multiselect',
+    options: [
+      {
+        value: 'quiet_time',
+        label: "Quiet time alone",
+        description: "Space to recover without demands",
+        indicates: {}
+      },
+      {
+        value: 'simple_tasks',
+        label: "Simple, manageable tasks only",
+        description: "Nothing complex or demanding",
+        indicates: {}
+      },
+      {
+        value: 'understanding',
+        label: "Understanding that this will pass",
+        description: "Reminder that it's temporary",
+        indicates: {}
+      },
+      {
+        value: 'not_applicable',
+        label: "I don't have significant low phases",
+        indicates: { cognitiveRhythm: 'steady_state' }
+      }
+    ],
+    measures: ['cognitiveRhythm'],
+    adaptiveDepth: 'standard',
+    requiresPrevious: ['energy_consistency']
+  },
+
+  {
+    id: 'daily_energy_pattern',
+    text: "When during the day is your mind sharpest?",
+    type: 'choice',
+    options: [
+      {
+        value: 'morning',
+        label: "Morning - I'm a morning person",
+        description: "Peak energy early, fades by evening",
+        indicates: { dailyEnergyPattern: 'morning_person' }
+      },
+      {
+        value: 'night',
+        label: "Night - I'm a night owl",
+        description: "Slow start, but I come alive late",
+        indicates: { dailyEnergyPattern: 'night_owl' }
+      },
+      {
+        value: 'afternoon',
+        label: "Midday or afternoon",
+        description: "I peak in the middle of the day",
+        indicates: { dailyEnergyPattern: 'afternoon_peak' }
+      },
+      {
+        value: 'consistent',
+        label: "Fairly consistent throughout",
+        description: "No strong pattern",
+        indicates: { dailyEnergyPattern: 'consistent' }
+      },
+      {
+        value: 'unpredictable',
+        label: "Honestly, it's unpredictable",
+        description: "My energy doesn't follow a daily pattern",
+        indicates: { dailyEnergyPattern: 'unpredictable' }
+      }
+    ],
+    measures: ['dailyEnergyPattern'],
+    adaptiveDepth: 'standard'
+  },
+
+  {
+    id: 'productivity_style',
+    text: "How does your productivity typically work?",
+    type: 'choice',
+    options: [
+      {
+        value: 'steady',
+        label: "Steady and consistent",
+        description: "I produce similar amounts day to day",
+        indicates: { productivityStyle: 'steady_consistent' }
+      },
+      {
+        value: 'burst',
+        label: "Intense focused bursts",
+        description: "Deep work sprints, then rest",
+        indicates: { productivityStyle: 'burst_focused', discoveredStrengths: ['deep work'] }
+      },
+      {
+        value: 'slow_build',
+        label: "Slow build-up",
+        description: "I need warm-up time, then build momentum",
+        indicates: { productivityStyle: 'slow_build' }
+      },
+      {
+        value: 'deadline',
+        label: "Deadline-driven",
+        description: "I work best under pressure",
+        indicates: { productivityStyle: 'deadline_driven' }
+      },
+      {
+        value: 'energy_dependent',
+        label: "Completely depends on my energy",
+        description: "When I have it, I use it; when I don't, I can't force it",
+        indicates: { productivityStyle: 'energy_dependent' }
+      }
+    ],
+    measures: ['productivityStyle', 'discoveredStrengths'],
+    adaptiveDepth: 'standard'
+  },
+
+  {
+    id: 'cycle_triggers',
+    text: "Do you know what tends to trigger your energy shifts?",
+    subtext: "Understanding triggers helps predict and work with your rhythms.",
+    type: 'multiselect',
+    options: [
+      {
+        value: 'sleep',
+        label: "Sleep quality",
+        indicates: {}
+      },
+      {
+        value: 'social',
+        label: "Social interaction (draining or energizing)",
+        indicates: {}
+      },
+      {
+        value: 'seasons',
+        label: "Seasons or weather",
+        indicates: {}
+      },
+      {
+        value: 'stress',
+        label: "Stress levels",
+        indicates: {}
+      },
+      {
+        value: 'unknown',
+        label: "I don't know - they seem random",
+        indicates: {}
+      }
+    ],
+    measures: [],
+    adaptiveDepth: 'deep',
+    requiresPrevious: ['energy_consistency']
   }
 ];
 
@@ -937,6 +1239,11 @@ const DEFAULT_PROFILE: CognitiveProfile = {
   selfAwarenessLevel: 'moderate',
   discoveredStrengths: [],
   traditionalLearningFit: 'mixed',
+  // Cognitive rhythms (default to steady, detect via onboarding)
+  cognitiveRhythm: 'steady_state',
+  cyclicalPattern: null,
+  dailyEnergyPattern: 'consistent',
+  productivityStyle: 'steady_consistent',
   completedOnboarding: false,
   onboardingDepth: 'standard',
   lastUpdated: new Date().toISOString(),
@@ -1352,6 +1659,56 @@ export async function generateProfileReveal(): Promise<string> {
     parts.push("**About your vivid inner world:** You have hyperphantasia - extremely vivid mental imagery. This is a gift for creativity and memory, though it might sometimes feel overwhelming. Visual metaphors and imagery-based reflection will work really well for you.");
   }
 
+  // === COGNITIVE RHYTHMS ===
+  // How clarity and energy fluctuate over time
+  if (profile.cognitiveRhythm !== 'steady_state') {
+    parts.push('');
+    parts.push('**About your rhythm:**');
+
+    if (profile.cognitiveRhythm === 'cyclical_mild') {
+      parts.push("You experience some waves in your energy and clarity - not dramatic, but real. This is completely normal. I'll adapt to wherever you are in your cycle.");
+    } else if (profile.cognitiveRhythm === 'cyclical_pronounced') {
+      parts.push("You have clear high and low phases. This is important to understand: **low phases are not failure — they are integration and recovery.** Your brain is processing, consolidating, resting. During high phases, you shine. During low phases, you're rebuilding. Both are necessary.");
+      parts.push('');
+      parts.push("I'll check in on where you are in your cycle and adjust my approach. During low phases, I'll be gentler, suggest simpler tasks, and remind you this will pass. During high phases, I'll help you make the most of your clarity.");
+    } else if (profile.cognitiveRhythm === 'burst_recovery') {
+      parts.push("You work in intense productive bursts followed by crashes. This isn't a flaw - it's how your mind operates. The key is working *with* this pattern, not fighting it. I'll help you capitalize on bursts when they come and honor your recovery needs when they're done.");
+    }
+  }
+
+  // Daily energy pattern (for steady-state folks too)
+  if (profile.dailyEnergyPattern !== 'consistent') {
+    if (profile.cognitiveRhythm === 'steady_state') {
+      parts.push('');
+    }
+    const dailyPatterns: Record<DailyEnergyPattern, string> = {
+      morning_person: "You're sharpest in the morning - that's when to tackle your hardest thinking.",
+      night_owl: "You come alive at night - your best thinking happens late.",
+      afternoon_peak: "Midday is your peak - morning is warm-up, evening is wind-down.",
+      consistent: "",
+      unpredictable: "Your energy doesn't follow a daily pattern - and that's okay. We'll work with wherever you are."
+    };
+    if (dailyPatterns[profile.dailyEnergyPattern]) {
+      parts.push(dailyPatterns[profile.dailyEnergyPattern]);
+    }
+  }
+
+  // Productivity style insight
+  const productivityInsights: Record<ProductivityStyle, string> = {
+    steady_consistent: "",  // Default, no special mention needed
+    burst_focused: "You work in deep, focused bursts. I'll respect that - when you're in flow, I won't interrupt with check-ins.",
+    slow_build: "You need warm-up time before hitting your stride. I won't expect you to dive straight into the deep end.",
+    deadline_driven: "Pressure helps you perform. That's not procrastination - it's how your mind works best.",
+    energy_dependent: "Your output depends entirely on your energy. When you have it, you use it. When you don't, forcing it doesn't help. I'll meet you where you are."
+  };
+
+  if (productivityInsights[profile.productivityStyle]) {
+    if (profile.cognitiveRhythm === 'steady_state' && profile.dailyEnergyPattern === 'consistent') {
+      parts.push('');
+    }
+    parts.push(productivityInsights[profile.productivityStyle]);
+  }
+
   // Traditional learning note
   if (profile.traditionalLearningFit === 'struggled') {
     parts.push('');
@@ -1413,6 +1770,27 @@ export interface CoachAdaptations {
 
   // Future visualization
   canUseFutureVisualization: boolean; // false = don't say "picture yourself in 5 years"
+
+  // === COGNITIVE RHYTHM ADAPTATIONS ===
+  // How to adapt based on their energy/clarity patterns
+
+  // Rhythm type
+  isCyclical: boolean;                // true = has distinct high/low phases
+  rhythmType: CognitiveRhythm;
+
+  // Low phase handling
+  needsLowPhaseSupport: boolean;      // true = may need gentler approach during low phases
+  lowPhaseApproach: 'gentler' | 'maintain_routine' | 'action_oriented' | 'standard';
+
+  // Productivity adaptations
+  productivityStyle: ProductivityStyle;
+  respectBurstPatterns: boolean;      // true = don't interrupt flow states
+  needsWarmUpTime: boolean;           // true = don't expect immediate deep work
+  worksWithDeadlines: boolean;        // true = can use time pressure positively
+
+  // Daily timing
+  peakEnergyTime: DailyEnergyPattern;
+  suggestTimingForHardTasks: boolean; // true = mention optimal timing for difficult work
 }
 
 /**
@@ -1532,7 +1910,49 @@ export async function getCoachAdaptations(): Promise<CoachAdaptations> {
     // Future visualization
     canUseFutureVisualization:
       profile.prospectiveImagination === 'vivid' &&
-      (profile.mentalImagery === 'typical' || profile.mentalImagery === 'hyperphantasia')
+      (profile.mentalImagery === 'typical' || profile.mentalImagery === 'hyperphantasia'),
+
+    // === COGNITIVE RHYTHM ADAPTATIONS ===
+
+    // Rhythm type
+    isCyclical:
+      profile.cognitiveRhythm === 'cyclical_mild' ||
+      profile.cognitiveRhythm === 'cyclical_pronounced' ||
+      profile.cognitiveRhythm === 'burst_recovery',
+
+    rhythmType: profile.cognitiveRhythm,
+
+    // Low phase handling
+    needsLowPhaseSupport:
+      profile.cognitiveRhythm === 'cyclical_pronounced' ||
+      profile.cognitiveRhythm === 'burst_recovery',
+
+    lowPhaseApproach:
+      profile.cognitiveRhythm === 'cyclical_pronounced' ? 'gentler' :
+      profile.cognitiveRhythm === 'burst_recovery' ? 'gentler' :
+      profile.emotionalProcessing === 'action_oriented' ? 'action_oriented' :
+      profile.structurePreference === 'loves_structure' ? 'maintain_routine' :
+      'standard',
+
+    // Productivity adaptations
+    productivityStyle: profile.productivityStyle,
+
+    respectBurstPatterns:
+      profile.productivityStyle === 'burst_focused' ||
+      profile.cognitiveRhythm === 'burst_recovery',
+
+    needsWarmUpTime:
+      profile.productivityStyle === 'slow_build',
+
+    worksWithDeadlines:
+      profile.productivityStyle === 'deadline_driven',
+
+    // Daily timing
+    peakEnergyTime: profile.dailyEnergyPattern,
+
+    suggestTimingForHardTasks:
+      profile.dailyEnergyPattern !== 'consistent' &&
+      profile.dailyEnergyPattern !== 'unpredictable'
   };
 }
 
@@ -1681,6 +2101,58 @@ export async function getCognitiveProfileContextForLLM(): Promise<string> {
     parts.push('- Cannot visualize future scenarios - use conceptual future planning instead');
     parts.push('  - DON\'T say: "picture yourself in 5 years"');
     parts.push('  - DO say: "what would you want to be true in 5 years"');
+  }
+
+  // === COGNITIVE RHYTHM ADAPTATIONS ===
+  // How to adapt based on their energy/clarity patterns
+
+  if (adaptations.isCyclical) {
+    parts.push('\nCOGNITIVE RHYTHM AWARENESS:');
+    parts.push(`- This person has ${adaptations.rhythmType.replace('_', ' ')} cognitive rhythms`);
+
+    if (adaptations.rhythmType === 'cyclical_pronounced') {
+      parts.push('- Has clear HIGH and LOW phases - this is NOT a disorder, it\'s their pattern');
+      parts.push('- During LOW phases: Be gentler, suggest simpler tasks, remind them it will pass');
+      parts.push('- During HIGH phases: Help them capitalize on clarity, support their productivity');
+      parts.push('- KEY REFRAME: "Low phases are not failure — they are integration and recovery"');
+    } else if (adaptations.rhythmType === 'burst_recovery') {
+      parts.push('- Works in intense productive BURSTS followed by CRASHES');
+      parts.push('- Don\'t interrupt flow states when they\'re in a burst');
+      parts.push('- After crashes, don\'t push - they need genuine recovery time');
+      parts.push('- Help them work WITH this pattern, not fight against it');
+    } else if (adaptations.rhythmType === 'cyclical_mild') {
+      parts.push('- Has some energy waves but nothing dramatic');
+      parts.push('- Adapt intensity based on where they seem to be');
+    }
+
+    if (adaptations.needsLowPhaseSupport) {
+      parts.push('- May need check-ins about current energy level before suggesting demanding tasks');
+    }
+  }
+
+  // Productivity style
+  if (adaptations.respectBurstPatterns) {
+    parts.push('- Respect burst work patterns - don\'t interrupt deep focus with check-ins');
+  }
+  if (adaptations.needsWarmUpTime) {
+    parts.push('- Needs warm-up time - don\'t expect immediate deep work');
+  }
+  if (adaptations.worksWithDeadlines) {
+    parts.push('- Works well with deadlines - time pressure can be motivating, not stressful');
+  }
+
+  // Daily energy
+  if (adaptations.suggestTimingForHardTasks) {
+    const timingAdvice: Record<DailyEnergyPattern, string> = {
+      morning_person: 'morning',
+      night_owl: 'evening/night',
+      afternoon_peak: 'midday',
+      consistent: '',
+      unpredictable: ''
+    };
+    if (timingAdvice[adaptations.peakEnergyTime]) {
+      parts.push(`- Peak mental energy: ${timingAdvice[adaptations.peakEnergyTime]} - suggest hard tasks for this time`);
+    }
   }
 
   // Strengths
