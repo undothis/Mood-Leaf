@@ -47,6 +47,7 @@ import {
   updateSessionTopics,
 } from './memoryTierService';
 import { getCognitiveProfileContextForLLM } from './cognitiveProfileService';
+import { getConnectionContextForLLM } from './socialConnectionHealthService';
 
 // Storage keys
 const API_KEY_STORAGE = 'moodling_claude_api_key';
@@ -237,6 +238,18 @@ CORRELATION INSIGHTS:
 - Point out patterns: "You've mentioned feeling better on days you walk - your body might be telling you something"
 - Build their self-knowledge so they eventually don't need you
 - Celebrate when they notice their own patterns
+
+WHEN USER ASKS ABOUT THEIR PROFILE/PERSONALITY/HOW THEY THINK:
+If the user asks things like "tell me about my personality", "how do I think", "what's my profile", "what did you learn about me from onboarding":
+1. Reference their COGNITIVE PROFILE from the context below (not journal entries)
+2. Explain their cognitive mode (how they process information)
+3. Mention their learning style, communication preferences
+4. Note any neurological differences (aphantasia, inner monologue presence)
+5. Explain how you'll adapt your responses based on their profile
+6. Use the profile reveal style: empowering, not labeling ("You're a natural systems thinker" not "You scored high on X")
+
+Example good response:
+"Based on what I learned from your onboarding, you're a conceptual systems thinker - you see patterns and need to understand the 'why' before the 'how'. You also mentioned that visualization doesn't work for you (aphantasia), so I'll never ask you to 'picture' something. Instead, I'll use conceptual descriptions. You process emotions first, so I'll always validate before suggesting solutions."
 
 CRITICAL - ALWAYS REFERENCE SPECIFIC DATA:
 This is essential for making the user feel truly heard and understood.
@@ -780,12 +793,22 @@ export async function sendMessage(
     console.log('Could not load cognitive profile context:', error);
   }
 
+  // Get social connection health context (isolation risk, connection quality)
+  let socialConnectionContext = '';
+  try {
+    socialConnectionContext = await getConnectionContextForLLM();
+  } catch (error) {
+    console.log('Could not load social connection context:', error);
+  }
+
   // Assemble full context with ALL data sources:
-  // Order: cognitive profile (how they think), memory context, lifetime overview, psych profile,
-  // chronotype/travel, calendar, health + correlations, detailed tracking logs, lifestyle factors,
-  // exposure progress, recent journals, user preferences, then current conversation
+  // Order: cognitive profile (how they think), social connection health, memory context,
+  // lifetime overview, psych profile, chronotype/travel, calendar, health + correlations,
+  // detailed tracking logs, lifestyle factors, exposure progress, recent journals,
+  // user preferences, then current conversation
   const contextParts = [
     cognitiveProfileContext, // How this person thinks/learns (from onboarding)
+    socialConnectionContext, // Social connection health (isolation risk, connection quality)
     memoryContext,       // Tiered memory (what we know about this person)
     lifeContext,         // Lifetime overview (people, events, themes)
     psychContext,        // Psychological profile (cognitive patterns, attachment, values)
