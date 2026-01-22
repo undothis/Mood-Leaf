@@ -34,7 +34,9 @@ export type SkillCategory =
   | 'self_care'
   | 'relationships'
   | 'mindfulness'
-  | 'games';
+  | 'games'
+  | 'crisis'
+  | 'body';
 
 export interface Skill {
   id: string;
@@ -728,6 +730,158 @@ export const AVAILABLE_SKILLS: Skill[] = [
     isUnlocked: true,
   },
 
+  // ==================== CRISIS TOOLS ====================
+  {
+    id: 'safety_plan',
+    name: 'Safety Plan Builder',
+    description: 'Create your personal crisis roadmap with coping strategies and contacts',
+    category: 'crisis',
+    emoji: '🛡️',
+    isPremium: false,
+    isUnlocked: true,
+  },
+  {
+    id: 'grounding_ladder',
+    name: 'Grounding Ladder',
+    description: 'Escalating grounding techniques - move up when one level isn\'t enough',
+    category: 'crisis',
+    emoji: '🪜',
+    isPremium: false,
+    isUnlocked: true,
+  },
+  {
+    id: 'tipp_skills',
+    name: 'TIPP Skills',
+    description: 'DBT crisis protocol: Temperature, Intense exercise, Paced breathing, Paired relaxation',
+    category: 'crisis',
+    emoji: '⚡',
+    isPremium: false,
+    isUnlocked: true,
+  },
+  {
+    id: 'window_tolerance',
+    name: 'Window of Tolerance',
+    description: 'Check where you are on the arousal spectrum and find your way back',
+    category: 'crisis',
+    emoji: '🌿',
+    isPremium: false,
+    isUnlocked: true,
+  },
+
+  // ==================== BODY-BASED ====================
+  {
+    id: 'vagal_tone',
+    name: 'Vagal Tone Exercises',
+    description: 'Exercises that stimulate your vagus nerve to activate calm',
+    category: 'body',
+    emoji: '🫀',
+    isPremium: false,
+    isUnlocked: true,
+  },
+  {
+    id: 'somatic_tracking',
+    name: 'Somatic Tracking',
+    description: 'Notice and describe body sensations to build mind-body connection',
+    category: 'body',
+    emoji: '🔍',
+    isPremium: false,
+    isUnlocked: false,
+    requiredAttribute: 'clarity',
+    requiredLevel: 2,
+  },
+  {
+    id: 'shake_it_out',
+    name: 'Shake It Out',
+    description: 'Physical shaking to release stored tension and stress',
+    category: 'body',
+    emoji: '🌊',
+    isPremium: false,
+    isUnlocked: true,
+  },
+
+  // ==================== ADVANCED CBT ====================
+  {
+    id: 'thought_record',
+    name: 'Thought Record',
+    description: 'Examine and reframe thoughts using the CBT approach',
+    category: 'anxiety',
+    emoji: '📝',
+    isPremium: false,
+    isUnlocked: false,
+    requiredAttribute: 'clarity',
+    requiredLevel: 2,
+  },
+  {
+    id: 'cognitive_distortions',
+    name: 'Thinking Traps',
+    description: 'Learn to recognize common cognitive distortions',
+    category: 'anxiety',
+    emoji: '🪤',
+    isPremium: false,
+    isUnlocked: false,
+    requiredAttribute: 'clarity',
+    requiredLevel: 3,
+  },
+  {
+    id: 'behavioral_activation',
+    name: 'Behavioral Activation',
+    description: 'Plan activities that bring meaning or pleasure, even when you don\'t feel like it',
+    category: 'self_care',
+    emoji: '📅',
+    isPremium: false,
+    isUnlocked: false,
+    requiredAttribute: 'resilience',
+    requiredLevel: 2,
+  },
+
+  // ==================== RELATIONSHIP TOOLS ====================
+  {
+    id: 'dear_man',
+    name: 'DEAR MAN Script',
+    description: 'Build a script for asking for what you need or saying no',
+    category: 'relationships',
+    emoji: '📜',
+    isPremium: false,
+    isUnlocked: false,
+    requiredAttribute: 'resilience',
+    requiredLevel: 3,
+  },
+  {
+    id: 'validation_levels',
+    name: 'Validation Levels',
+    description: 'Learn 6 levels of validation for others and yourself',
+    category: 'relationships',
+    emoji: '💬',
+    isPremium: false,
+    isUnlocked: false,
+    requiredAttribute: 'compassion',
+    requiredLevel: 2,
+  },
+
+  // ==================== HABIT BUILDING ====================
+  {
+    id: 'habit_stacking',
+    name: 'Habit Stacking',
+    description: 'Attach new habits to existing routines to make them stick',
+    category: 'focus',
+    emoji: '🔗',
+    isPremium: false,
+    isUnlocked: false,
+    requiredAttribute: 'wisdom',
+    requiredLevel: 2,
+  },
+  {
+    id: 'implementation_intentions',
+    name: 'Implementation Intentions',
+    description: '"When X happens, I will Y" planning that doubles follow-through',
+    category: 'focus',
+    emoji: '🎯',
+    isPremium: false,
+    isUnlocked: false,
+    requiredAttribute: 'clarity',
+    requiredLevel: 3,
+  },
+
   // ==================== MINDFUL GAMES ====================
   {
     id: 'asteroids',
@@ -1086,4 +1240,6 @@ export const SKILL_CATEGORIES: Record<SkillCategory, { name: string; emoji: stri
   relationships: { name: 'Relationships', emoji: '🤝', color: '#F7CAC9' },
   mindfulness: { name: 'Mindfulness', emoji: '🧘', color: '#92A8D1' },
   games: { name: 'Mindful Games', emoji: '🎮', color: '#6366F1' },
+  crisis: { name: 'Crisis Tools', emoji: '🆘', color: '#EF4444' },
+  body: { name: 'Body-Based', emoji: '🫀', color: '#EC4899' },
 };
