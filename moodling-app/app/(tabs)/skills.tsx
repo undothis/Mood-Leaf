@@ -76,8 +76,8 @@ const SKILL_ROUTES: Record<string, string> = {
   astrology_basics: '/skills/astrology',
 };
 
-function getSkillRoute(skillId: string): string {
-  return SKILL_ROUTES[skillId] || `/skills/${skillId.replace(/_/g, '-')}`;
+function getSkillRoute(skillId: string): string | null {
+  return SKILL_ROUTES[skillId] || null;
 }
 
 export default function SkillsScreen() {
@@ -344,7 +344,11 @@ export default function SkillsScreen() {
               ]}
               onPress={() => {
                 if (skill.isUnlocked) {
-                  router.push(getSkillRoute(skill.id) as any);
+                  const route = getSkillRoute(skill.id);
+                  if (route) {
+                    router.push(route as any);
+                  }
+                  // Skills without routes are info-only (no navigation needed)
                 }
               }}
               disabled={!skill.isUnlocked}
