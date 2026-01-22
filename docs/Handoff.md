@@ -1114,17 +1114,73 @@ Added classic retro games as Easter eggs and skills, plus a playback resume serv
 | **Snake** | `/snake` Easter egg | Nokia green/black LCD | Easter Egg |
 | **Pong** | `/pong` Easter egg | CRT phosphor green glow | Easter Egg |
 | **Asteroids** | Skills > Games | Vector graphics arcade | Skill |
+| **Space Invaders** | `/invaders` Easter egg | Classic arcade green CRT | Easter Egg |
+| **Breakout** | `/breakout` Easter egg | CRT brick-breaking | Easter Egg |
+| **Frogger** | `/frogger` Easter egg | Classic road-crossing | Easter Egg |
+
+### Mindful Games Created
+
+| Game | Access | Description | Category |
+|------|--------|-------------|----------|
+| **Breathing Orb** | Skills > Games | Guided breathing visualization with animated orb | Mindfulness |
+| **2048** | Skills > Games | Classic sliding number puzzle | Puzzle |
+| **Memory Match** | Skills > Games | Card matching with calming themes | Cognitive |
+| **Bubble Wrap** | Skills > Games | Satisfying virtual bubble popping | Sensory |
+| **Water Ripples** | Skills > Games | Calming water surface touch simulation | Sensory |
+| **Sand Flow** | Skills > Games | Relaxing falling sand particle simulation | Sensory |
+| **Kinetic Sand** | Skills > Games | Digital kinetic sand you can push around | Sensory |
+| **Rain on Window** | Skills > Games | Soothing rain drops on glass simulation | Sensory |
+| **Kaleidoscope** | Skills > Games | Symmetrical drawing with rainbow colors | Creative |
+| **Maze Walker** | Skills > Games | Relaxing maze navigation at your own pace | Puzzle |
+| **Untangle** | Skills > Games | Drag nodes to eliminate crossing lines | Puzzle |
 
 ### Files Created
 
+**Game Components:**
 | File | Purpose |
 |------|---------|
 | `components/games/RetroSnake.tsx` | Nokia-style Snake with D-pad controls |
 | `components/games/RetroPong.tsx` | Classic Pong with CRT scanlines |
 | `components/games/RetroAsteroids.tsx` | Vector graphics Asteroids |
-| `app/games/snake.tsx` | Snake game screen route |
-| `app/games/pong.tsx` | Pong game screen route |
-| `app/games/asteroids.tsx` | Asteroids game screen route |
+| `components/games/SpaceInvaders.tsx` | Classic arcade shooter |
+| `components/games/RetroBreakout.tsx` | Brick-breaking arcade game |
+| `components/games/Frogger.tsx` | Road-crossing classic |
+| `components/games/BreathingOrb.tsx` | Guided breathing visualization |
+| `components/games/Game2048.tsx` | Sliding number puzzle |
+| `components/games/MemoryMatch.tsx` | Card matching memory game |
+| `components/games/BubbleWrap.tsx` | Virtual bubble popping |
+| `components/games/WaterRipples.tsx` | Calming water surface |
+| `components/games/SandFlow.tsx` | Falling sand simulation |
+| `components/games/KineticSand.tsx` | Interactive kinetic sand |
+| `components/games/RainOnWindow.tsx` | Rain on glass simulation |
+| `components/games/Kaleidoscope.tsx` | Symmetrical drawing |
+| `components/games/MazeWalker.tsx` | Relaxing maze navigation |
+| `components/games/Untangle.tsx` | Node untangling puzzle |
+
+**Game Routes:**
+| File | Purpose |
+|------|---------|
+| `app/games/snake.tsx` | Snake game screen |
+| `app/games/pong.tsx` | Pong game screen |
+| `app/games/asteroids.tsx` | Asteroids game screen |
+| `app/games/space-invaders.tsx` | Space Invaders screen |
+| `app/games/breakout.tsx` | Breakout game screen |
+| `app/games/frogger.tsx` | Frogger game screen |
+| `app/games/breathing-orb.tsx` | Breathing Orb screen |
+| `app/games/2048.tsx` | 2048 game screen |
+| `app/games/memory-match.tsx` | Memory Match screen |
+| `app/games/bubble-wrap.tsx` | Bubble Wrap screen |
+| `app/games/water-ripples.tsx` | Water Ripples screen |
+| `app/games/sand-flow.tsx` | Sand Flow screen |
+| `app/games/kinetic-sand.tsx` | Kinetic Sand screen |
+| `app/games/rain-on-window.tsx` | Rain on Window screen |
+| `app/games/kaleidoscope.tsx` | Kaleidoscope screen |
+| `app/games/maze-walker.tsx` | Maze Walker screen |
+| `app/games/untangle.tsx` | Untangle game screen |
+
+**Services:**
+| File | Purpose |
+|------|---------|
 | `services/playbackResumeService.ts` | Track audio playback position |
 
 ### Playback Resume Service
@@ -1150,18 +1206,16 @@ formatResumeMessage(info) // "Resume from 12:34 (45%)"
 
 ### Games Category Added to Skills
 
-Added `games` category to SkillProgression types with these skills:
-- Mindful Asteroids
-- Retro Snake
-- Classic Pong
-- Fidget Pad
-- Bubble Wrap
-- Zen Blocks
-- Color Sort
+Added `games` category to SkillProgression types with 20 skills:
+- Mindful Asteroids, Retro Snake, Classic Pong
+- Fidget Pad, Bubble Wrap, Zen Blocks, Color Sort
+- **NEW:** Breathing Orb, Retro Breakout, 2048 Puzzle, Memory Match
+- **NEW:** Water Ripples, Sand Flow, Space Invaders, Frogger
+- **NEW:** Kinetic Sand, Rain on Window, Kaleidoscope, Maze Walker, Untangle
 
 ### Easter Egg Commands Updated
 
-`/snake` and `/pong` now launch their respective games via the `game_snake` and `game_pong` actions in `checkEasterEgg()`.
+`/snake`, `/pong`, `/invaders`, `/breakout`, and `/frogger` now launch their respective games via `checkEasterEgg()`.
 
 ---
 
@@ -1182,7 +1236,7 @@ Added `games` category to SkillProgression types with these skills:
 
 ## QUICK STATUS SNAPSHOT
 
-"**Feature complete.** MoodPrint context compression (40% token savings). TTS with unique voices per coach. Cycle tracking with life stages. Slash commands (30+). D&D collection system. Voice chat, emotion detection, teaching system. Temporal patterns, contextual attachment, coping patterns tracking. **NEW: Food Tracking with AI detection. NEW: Skills Tab with 50+ techniques and D&D progression. NEW: Retro Games (Snake, Pong, Asteroids) with vintage aesthetics. NEW: Playback Resume for Sleep Stories and Old Time Radio.** All processing local/on-device."
+"**Feature complete.** MoodPrint context compression (40% token savings). TTS with unique voices per coach. Cycle tracking with life stages. Slash commands (30+). D&D collection system. Voice chat, emotion detection, teaching system. Temporal patterns, contextual attachment, coping patterns tracking. **NEW: Food Tracking with AI detection. NEW: Skills Tab with 60+ techniques and D&D progression. NEW: 20 Mindful Games (Retro: Snake, Pong, Asteroids, Space Invaders, Breakout, Frogger | Sensory: Bubble Wrap, Water Ripples, Sand Flow, Kinetic Sand, Rain on Window | Puzzle: 2048, Memory Match, Maze Walker, Untangle | Creative: Kaleidoscope, Breathing Orb). NEW: Playback Resume for Sleep Stories and Old Time Radio.** All processing local/on-device."
 
 ---
 

@@ -315,6 +315,9 @@ export function checkEasterEgg(command: string): { found: boolean; message?: str
     '/42': { message: '🌌 The answer to life, the universe, and everything!' },
     '/snake': { message: '🐍 Loading retro Snake...', action: 'game_snake' },
     '/pong': { message: '🏓 Loading classic Pong...', action: 'game_pong' },
+    '/invaders': { message: '👾 Loading Space Invaders...', action: 'game_invaders' },
+    '/breakout': { message: '🧱 Loading Breakout...', action: 'game_breakout' },
+    '/frogger': { message: '🐸 Loading Frogger...', action: 'game_frogger' },
   };
 
   const lower = command.toLowerCase().trim();
