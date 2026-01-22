@@ -6,6 +6,25 @@ Traditional intelligence metrics fail most people. IQ tests reward one type of m
 
 This system discovers HOW someone is smart, not IF they're smart.
 
+## Relationship to MoodPrint
+
+The Cognitive Profile is one core component of the **MoodPrint** - the complete synthesis of everything we know about a person. While MoodPrint combines cognitive profile + memory + conversation patterns + quality metrics, this document focuses specifically on HOW someone thinks.
+
+```
+┌─────────────────────────────────────────────┐
+│              MOODPRINT                       │
+│  (The complete picture of a person)         │
+│                                             │
+│  ┌─────────────────────────────────────┐   │
+│  │     COGNITIVE PROFILE (this doc)     │   │
+│  │     How they think                   │   │
+│  └─────────────────────────────────────┘   │
+│  + Memory Tiers (what they shared)          │
+│  + Conversation Patterns (how to talk)      │
+│  + Quality Metrics (how well we're doing)   │
+└─────────────────────────────────────────────┘
+```
+
 **Core beliefs:**
 - People think in fundamentally different ways
 - Mismatch between thinking style and communication = feeling unheard

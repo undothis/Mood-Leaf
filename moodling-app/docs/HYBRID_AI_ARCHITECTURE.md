@@ -8,6 +8,32 @@ Mood Leaf uses a hybrid AI architecture designed to:
 3. **Own the user's data locally** - Claude can disappear, the system survives
 4. **Self-improve over time** - Scores responses, learns what works
 
+## What is MoodPrint?
+
+**MoodPrint** is the synthesis of everything we know about a person - their unique fingerprint of how they think, feel, and communicate.
+
+Think of it like a fingerprint for the mind:
+- **Cognitive Profile**: HOW they think (patterns, details, stories, feelings)
+- **Memory Tiers**: WHAT they've shared (short-term, mid-term, long-term)
+- **Conversation Patterns**: HOW to talk to them (tone, length, timing)
+- **Quality Metrics**: HOW WELL we're doing (scores, common issues)
+
+The MoodPrint evolves over time as we learn more about the user. It's not a label - it's a living understanding that shapes every interaction.
+
+```typescript
+// Get the complete MoodPrint
+const moodPrint = await getMoodPrint();
+
+// Get a quick summary
+const summary = await getMoodPrintSummary();
+// { summary: "Someone who sees connections, where emotions come first.",
+//   keyTraits: ["Systems thinker", "Needs validation first", "Learns through metaphors"],
+//   communicationGuide: "validate emotions first, use metaphors, connect to bigger picture." }
+
+// Get context formatted for LLM injection
+const context = await getMoodPrintContextForLLM();
+```
+
 ## Architecture Diagram
 
 ```
@@ -177,6 +203,7 @@ Architecture is gender-neutral. v1 targets women; men's version requires only pr
 
 | File | Purpose |
 |------|---------|
+| `moodPrintService.ts` | **MoodPrint synthesis** - combines all systems |
 | `conversationController.ts` | Human-ness rules layer |
 | `cognitiveProfileService.ts` | Thinking style detection |
 | `humanScoreService.ts` | Response quality scoring |
