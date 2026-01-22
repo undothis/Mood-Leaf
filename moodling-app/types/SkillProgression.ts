@@ -799,6 +799,52 @@ export const AVAILABLE_SKILLS: Skill[] = [
     isUnlocked: true,
   },
 
+  // ==================== DBT EMOTIONAL REGULATION ====================
+  {
+    id: 'opposite_action',
+    name: 'Opposite Action',
+    description: 'Change emotions by doing the opposite of what the emotion urges',
+    category: 'anxiety',
+    emoji: '🔄',
+    isPremium: false,
+    isUnlocked: false,
+    requiredAttribute: 'resilience',
+    requiredLevel: 2,
+  },
+  {
+    id: 'radical_acceptance',
+    name: 'Radical Acceptance',
+    description: 'Accept painful realities to reduce suffering',
+    category: 'mindfulness',
+    emoji: '🙏',
+    isPremium: false,
+    isUnlocked: false,
+    requiredAttribute: 'wisdom',
+    requiredLevel: 3,
+  },
+  {
+    id: 'distress_tolerance_kit',
+    name: 'Distress Tolerance Kit',
+    description: 'Build your personalized toolkit for getting through hard moments',
+    category: 'crisis',
+    emoji: '🧰',
+    isPremium: false,
+    isUnlocked: false,
+    requiredAttribute: 'resilience',
+    requiredLevel: 2,
+  },
+  {
+    id: 'wise_mind',
+    name: 'Wise Mind',
+    description: 'Find the balance between emotion mind and reason mind',
+    category: 'mindfulness',
+    emoji: '⚖️',
+    isPremium: false,
+    isUnlocked: false,
+    requiredAttribute: 'wisdom',
+    requiredLevel: 2,
+  },
+
   // ==================== ADVANCED CBT ====================
   {
     id: 'thought_record',
