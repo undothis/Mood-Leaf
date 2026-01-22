@@ -30,13 +30,13 @@ import {
   CoachUnlock,
   SkillCategory,
   SKILL_CATEGORIES,
-  getUnlockRequirements,
 } from '@/types/SkillProgression';
 import {
   getAttributesWithProgress,
   getSkillsWithStatus,
   getCoachUnlocksWithStatus,
   getProgressionSummary,
+  getUnlockRequirements,
 } from '@/services/skillProgressionService';
 
 export default function SkillsScreen() {
