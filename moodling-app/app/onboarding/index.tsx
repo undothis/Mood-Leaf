@@ -10,7 +10,7 @@
  * Unit 17: AI Coach Personality System
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -168,29 +168,41 @@ export default function OnboardingScreen() {
     }, 300);
   };
 
+  // For multi-select: track a timeout to auto-advance
+  const multiSelectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const handleMultiSelect = (optionId: string) => {
     const current = (answers[currentQuestion.id] as string[]) || [];
     const isSelected = current.includes(optionId);
 
+    const newSelection = isSelected
+      ? current.filter((id) => id !== optionId)
+      : [...current, optionId];
+
     setAnswers((prev) => ({
       ...prev,
-      [currentQuestion.id]: isSelected
-        ? current.filter((id) => id !== optionId)
-        : [...current, optionId],
+      [currentQuestion.id]: newSelection,
     }));
-  };
 
-  const handleMultiSelectDone = async () => {
-    if (isTransitioning) return;
+    // Clear any existing timeout
+    if (multiSelectTimeoutRef.current) {
+      clearTimeout(multiSelectTimeoutRef.current);
+    }
 
-    setIsTransitioning(true);
-    if (isLastStep) {
-      await finishOnboarding();
-    } else {
-      animateTransition('next', () => {
-        setCurrentStep((prev) => prev + 1);
-        setIsTransitioning(false);
-      });
+    // Auto-advance after 1.5 seconds of no activity (if at least one selected)
+    if (newSelection.length > 0) {
+      multiSelectTimeoutRef.current = setTimeout(async () => {
+        if (isTransitioning) return;
+        setIsTransitioning(true);
+        if (isLastStep) {
+          await finishOnboarding();
+        } else {
+          animateTransition('next', () => {
+            setCurrentStep((prev) => prev + 1);
+            setIsTransitioning(false);
+          });
+        }
+      }, 1500);
     }
   };
 
@@ -348,13 +360,14 @@ export default function OnboardingScreen() {
     );
   };
 
-  const canProceed = () => {
-    const answer = answers[currentQuestion.id];
-    if (currentQuestion.type === 'multi') {
-      return true; // Multi-select is optional
-    }
-    return answer !== undefined;
-  };
+  // Clear multi-select timeout on unmount or step change
+  useEffect(() => {
+    return () => {
+      if (multiSelectTimeoutRef.current) {
+        clearTimeout(multiSelectTimeoutRef.current);
+      }
+    };
+  }, [currentStep]);
 
   return (
     <View
@@ -383,7 +396,7 @@ export default function OnboardingScreen() {
       {/* Question content */}
       {renderQuestion(currentQuestion)}
 
-      {/* Navigation - Back button + Done for multi-select only */}
+      {/* Navigation - Back button only */}
       <View style={[styles.navigation, { paddingBottom: insets.bottom + 20 }]}>
         {currentStep > 0 ? (
           <Pressable style={styles.backButton} onPress={handleBack} disabled={isTransitioning}>
@@ -394,32 +407,16 @@ export default function OnboardingScreen() {
         ) : (
           <View style={styles.backButton} />
         )}
-
-        {/* Show Done button only for multi-select questions */}
-        {currentQuestion.type === 'multi' && (
-          <Pressable
-            style={[
-              styles.nextButton,
-              { backgroundColor: colors.tint },
-            ]}
-            onPress={handleMultiSelectDone}
-            disabled={isTransitioning}
-          >
-            <Text style={styles.nextText}>
-              {isLastStep ? "Let's Go" : 'Done'}
-            </Text>
-          </Pressable>
-        )}
       </View>
 
-      {/* Footer hint for single-select questions */}
-      {currentQuestion.type !== 'multi' && (
-        <View style={[styles.footer, { paddingBottom: insets.bottom + 20 }]}>
-          <Text style={[styles.footerText, { color: colors.textMuted }]}>
-            Tap an option to continue
-          </Text>
-        </View>
-      )}
+      {/* Footer hint */}
+      <View style={[styles.footer, { paddingBottom: insets.bottom + 10 }]}>
+        <Text style={[styles.footerText, { color: colors.textMuted }]}>
+          {currentQuestion.type === 'multi'
+            ? 'Select options, then wait to continue'
+            : 'Tap an option to continue'}
+        </Text>
+      </View>
     </View>
   );
 }
