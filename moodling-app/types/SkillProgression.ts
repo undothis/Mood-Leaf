@@ -36,7 +36,8 @@ export type SkillCategory =
   | 'mindfulness'
   | 'games'
   | 'crisis'
-  | 'body';
+  | 'body'
+  | 'discovery';
 
 export interface Skill {
   id: string;
@@ -1113,6 +1114,26 @@ export const AVAILABLE_SKILLS: Skill[] = [
     isPremium: false,
     isUnlocked: true,
   },
+
+  // ==================== SELF-DISCOVERY ====================
+  {
+    id: 'human_design',
+    name: 'Human Design',
+    description: 'Explore your energetic blueprint - Type, Strategy, and Authority',
+    category: 'discovery',
+    emoji: '🔮',
+    isPremium: false,
+    isUnlocked: true,
+  },
+  {
+    id: 'astrology_basics',
+    name: 'Astrology Basics',
+    description: 'Learn about zodiac signs, elements, and your Big Three',
+    category: 'discovery',
+    emoji: '✨',
+    isPremium: false,
+    isUnlocked: true,
+  },
 ];
 
 // Coach unlocks - abilities and customizations for your guide
@@ -1288,4 +1309,5 @@ export const SKILL_CATEGORIES: Record<SkillCategory, { name: string; emoji: stri
   games: { name: 'Mindful Games', emoji: '🎮', color: '#6366F1' },
   crisis: { name: 'Crisis Tools', emoji: '🆘', color: '#EF4444' },
   body: { name: 'Body-Based', emoji: '🫀', color: '#EC4899' },
+  discovery: { name: 'Self-Discovery', emoji: '🔮', color: '#A855F7' },
 };
