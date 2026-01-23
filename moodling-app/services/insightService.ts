@@ -103,7 +103,7 @@ export interface PatternDefinition {
 }
 
 export interface PatternTrigger {
-  type: 'mood' | 'activity' | 'sleep' | 'social' | 'food' | 'exercise' | 'weather' | 'time' | 'keyword';
+  type: 'mood' | 'activity' | 'sleep' | 'social' | 'food' | 'exercise' | 'weather' | 'time' | 'keyword' | 'calendar' | 'contact' | 'location' | 'screen_time' | 'app_usage';
   value?: string;                   // Specific value to match
   comparator?: 'equals' | 'contains' | 'above' | 'below' | 'absent';
   threshold?: number;
@@ -337,6 +337,228 @@ export const PATTERN_TEMPLATES: PatternDefinition[] = [
     minOccurrences: 10,
     insightTemplate: "Looking at the bigger picture: Your average mood has improved over the past 3 months."
   },
+
+  // ============================================
+  // CALENDAR-BASED PATTERNS
+  // ============================================
+  {
+    id: 'busy_calendar_mood',
+    name: 'Calendar Busyness Effect',
+    category: 'cycle',
+    description: 'How packed calendars affect mood',
+    triggers: [{ type: 'calendar', value: 'busy', comparator: 'equals' }],
+    outcomes: [{ type: 'mood', direction: 'decrease' }],
+    windowDays: 30,
+    minOccurrences: 4,
+    insightTemplate: "On busy calendar days (4+ events), your mood tends to dip. You might thrive with more margin."
+  },
+  {
+    id: 'meeting_free_days',
+    name: 'Meeting-Free Days',
+    category: 'activity',
+    description: 'Effect of meeting-free time',
+    triggers: [{ type: 'calendar', value: 'free', comparator: 'equals' }],
+    outcomes: [{ type: 'energy', direction: 'increase' }],
+    windowDays: 30,
+    minOccurrences: 3,
+    insightTemplate: "Days without meetings seem restorative for you. Your energy is higher on calendar-free days."
+  },
+  {
+    id: 'back_to_back_drain',
+    name: 'Back-to-Back Drain',
+    category: 'warning_sign',
+    description: 'Sequential meetings drain energy',
+    triggers: [{ type: 'calendar', value: 'packed', comparator: 'equals' }],
+    outcomes: [{ type: 'energy', direction: 'decrease' }],
+    windowDays: 14,
+    minOccurrences: 2,
+    insightTemplate: "Back-to-back meetings (5+) seem to really drain you. Even a 15-minute buffer might help."
+  },
+  {
+    id: 'social_events_mood',
+    name: 'Social Events Pattern',
+    category: 'social',
+    description: 'Calendar social events affect mood',
+    triggers: [{ type: 'calendar', value: 'social', comparator: 'equals' }],
+    outcomes: [{ type: 'mood', direction: 'increase' }],
+    windowDays: 30,
+    minOccurrences: 3,
+    insightTemplate: "Scheduled social events correlate with better moods for you. Consider adding more to your calendar."
+  },
+
+  // ============================================
+  // CONTACT/SOCIAL PATTERNS
+  // ============================================
+  {
+    id: 'family_contact_effect',
+    name: 'Family Connection Effect',
+    category: 'social',
+    description: 'Family contact affects mood',
+    triggers: [{ type: 'contact', value: 'family', comparator: 'equals' }],
+    outcomes: [{ type: 'mood', direction: 'increase' }],
+    windowDays: 30,
+    minOccurrences: 4,
+    insightTemplate: "Contact with family seems to boost your mood. You tend to feel better after family interactions."
+  },
+  {
+    id: 'specific_person_pattern',
+    name: 'Person-Specific Pattern',
+    category: 'social',
+    description: 'Certain people affect mood',
+    triggers: [{ type: 'contact', comparator: 'equals' }],
+    outcomes: [{ type: 'mood', direction: 'stable' }],
+    windowDays: 60,
+    minOccurrences: 5,
+    insightTemplate: "Interactions with {person_name} seem to have a noticeable effect on your mood."
+  },
+  {
+    id: 'social_frequency_threshold',
+    name: 'Social Frequency Need',
+    category: 'social',
+    description: 'Minimum social contact for wellbeing',
+    triggers: [{ type: 'social', comparator: 'below', threshold: 2 }],
+    outcomes: [{ type: 'mood', direction: 'decrease' }],
+    windowDays: 7,
+    minOccurrences: 2,
+    insightTemplate: "When you have fewer than 2 social interactions in a week, your mood tends to decline."
+  },
+
+  // ============================================
+  // LOCATION/ENVIRONMENT PATTERNS
+  // ============================================
+  {
+    id: 'work_from_home_mood',
+    name: 'WFH vs Office Pattern',
+    category: 'environment',
+    description: 'Work location affects mood',
+    triggers: [{ type: 'location', value: 'home', comparator: 'equals' }],
+    outcomes: [{ type: 'productivity', direction: 'stable' }],
+    windowDays: 30,
+    minOccurrences: 5,
+    insightTemplate: "Your mood differs on WFH days vs office days. {specific_pattern}"
+  },
+  {
+    id: 'nature_exposure_benefit',
+    name: 'Nature Exposure',
+    category: 'environment',
+    description: 'Time in nature benefits mood',
+    triggers: [{ type: 'location', value: 'nature', comparator: 'equals' }],
+    outcomes: [{ type: 'mood', direction: 'increase' }],
+    windowDays: 30,
+    minOccurrences: 3,
+    insightTemplate: "Time in nature (parks, trails, gardens) consistently lifts your mood."
+  },
+  {
+    id: 'travel_effect',
+    name: 'Travel Effect',
+    category: 'environment',
+    description: 'How travel affects mood',
+    triggers: [{ type: 'location', value: 'travel', comparator: 'equals' }],
+    outcomes: [{ type: 'mood', direction: 'increase' }],
+    windowDays: 90,
+    minOccurrences: 2,
+    insightTemplate: "Travel seems to give you a mood boost. Even short trips have a positive effect."
+  },
+
+  // ============================================
+  // DIGITAL/SCREEN PATTERNS
+  // ============================================
+  {
+    id: 'screen_time_threshold',
+    name: 'Screen Time Effect',
+    category: 'body_mind',
+    description: 'Screen time affects mood',
+    triggers: [{ type: 'screen_time', comparator: 'above', threshold: 6 }],
+    outcomes: [{ type: 'mood', direction: 'decrease' }],
+    windowDays: 14,
+    minOccurrences: 4,
+    insightTemplate: "On days with 6+ hours of screen time, your mood tends to be lower."
+  },
+  {
+    id: 'social_media_correlation',
+    name: 'Social Media Pattern',
+    category: 'avoidance',
+    description: 'Social media affects mood',
+    triggers: [{ type: 'app_usage', value: 'social_media', comparator: 'above', threshold: 60 }],
+    outcomes: [{ type: 'mood', direction: 'decrease' }],
+    windowDays: 14,
+    minOccurrences: 4,
+    insightTemplate: "More than an hour on social media correlates with lower mood for you."
+  },
+  {
+    id: 'phone_pickup_anxiety',
+    name: 'Phone Pickup Pattern',
+    category: 'body_mind',
+    description: 'Frequent phone pickups correlate with anxiety',
+    triggers: [{ type: 'screen_time', comparator: 'above', threshold: 80 }],
+    outcomes: [{ type: 'symptom', direction: 'increase' }],
+    windowDays: 14,
+    minOccurrences: 3,
+    insightTemplate: "On days with lots of phone pickups (80+), you tend to report more anxiety."
+  },
+
+  // ============================================
+  // HEALTH DATA PATTERNS
+  // ============================================
+  {
+    id: 'step_count_mood',
+    name: 'Movement-Mood Connection',
+    category: 'body_mind',
+    description: 'Daily steps affect mood',
+    triggers: [{ type: 'activity', comparator: 'above', threshold: 8000 }],
+    outcomes: [{ type: 'mood', direction: 'increase' }],
+    windowDays: 21,
+    minOccurrences: 5,
+    insightTemplate: "On days you hit 8,000+ steps, your mood is noticeably better."
+  },
+  {
+    id: 'menstrual_cycle_mood',
+    name: 'Cycle-Mood Pattern',
+    category: 'cycle',
+    description: 'Menstrual cycle affects mood',
+    triggers: [{ type: 'time', value: 'luteal', comparator: 'equals' }],
+    outcomes: [{ type: 'mood', direction: 'decrease' }],
+    windowDays: 60,
+    minOccurrences: 2,
+    insightTemplate: "Your mood tends to dip during your luteal phase (week before period). This is normal, but knowing the pattern helps."
+  },
+  {
+    id: 'period_diet_connection',
+    name: 'Diet-Period Connection',
+    category: 'body_mind',
+    description: 'Food choices affect period symptoms',
+    triggers: [{ type: 'food', value: 'junk', comparator: 'contains' }],
+    outcomes: [{ type: 'symptom', direction: 'increase' }],
+    windowDays: 14,
+    minOccurrences: 2,
+    insightTemplate: "When you eat more processed food, your period symptoms seem harder. There might be a connection worth exploring."
+  },
+
+  // ============================================
+  // WEATHER PATTERNS
+  // ============================================
+  {
+    id: 'weather_mood_seasonal',
+    name: 'Weather-Mood Connection',
+    category: 'environment',
+    description: 'Weather affects mood',
+    triggers: [{ type: 'weather', value: 'cloudy', comparator: 'equals' }],
+    outcomes: [{ type: 'mood', direction: 'decrease' }],
+    windowDays: 60,
+    minOccurrences: 5,
+    insightTemplate: "Your mood seems affected by weather. Cloudy days correlate with lower energy for you."
+  },
+  {
+    id: 'seasonal_pattern',
+    name: 'Seasonal Pattern',
+    category: 'cycle',
+    description: 'Seasonal mood variations',
+    triggers: [{ type: 'time', value: 'winter', comparator: 'equals' }],
+    outcomes: [{ type: 'mood', direction: 'decrease' }],
+    windowDays: 365,
+    minOccurrences: 10,
+    insightTemplate: "You might have some seasonal variation in your mood. Consider light therapy or vitamin D during darker months."
+  },
 ];
 
 // ============================================
@@ -501,16 +723,84 @@ export async function updateInsightSettings(settings: Partial<InsightSettings>):
 // ============================================
 
 /**
+ * Additional data sources for insight analysis
+ */
+export interface InsightDataSources {
+  twigs?: any[];
+  conversations?: any[];
+  calendarEvents?: CalendarEventData[];
+  contacts?: ContactInteraction[];
+  locationHistory?: LocationData[];
+  screenTime?: ScreenTimeData[];
+  healthData?: HealthData[];
+  weatherData?: WeatherData[];
+}
+
+export interface ContactInteraction {
+  contactId: string;
+  contactName: string;
+  contactType: 'family' | 'friend' | 'work' | 'other';
+  interactionType: 'call' | 'text' | 'email' | 'in_person' | 'social_media';
+  timestamp: string;
+  duration?: number;
+  sentiment?: 'positive' | 'neutral' | 'negative';
+}
+
+export interface LocationData {
+  timestamp: string;
+  location: string;
+  category: 'home' | 'work' | 'gym' | 'nature' | 'social_venue' | 'shopping' | 'travel' | 'other';
+  duration?: number;
+  coordinates?: { lat: number; lng: number };
+}
+
+export interface ScreenTimeData {
+  date: string;
+  totalMinutes: number;
+  pickups: number;
+  appBreakdown?: { [appName: string]: number };
+  socialMediaMinutes?: number;
+}
+
+export interface HealthData {
+  date: string;
+  steps?: number;
+  heartRate?: { avg: number; resting?: number };
+  sleepHours?: number;
+  sleepQuality?: number;
+  menstrualPhase?: 'menstrual' | 'follicular' | 'ovulation' | 'luteal';
+  menstrualDay?: number;
+}
+
+export interface WeatherData {
+  date: string;
+  condition: 'sunny' | 'cloudy' | 'rainy' | 'snowy' | 'stormy';
+  temperature: number;
+  humidity?: number;
+}
+
+/**
  * Run insight analysis on user data
  * This is the main function that discovers patterns
+ *
+ * Supports multiple data sources:
+ * - Twigs (journal entries, quick logs)
+ * - Conversations (coach chats)
+ * - Calendar events
+ * - Contact/social interactions
+ * - Location history
+ * - Screen time data
+ * - Health data (steps, sleep, menstrual cycle)
+ * - Weather data
  */
 export async function runInsightAnalysis(
-  twigs: any[],
-  conversations: any[],
+  twigs?: any[],
+  conversations?: any[],
   options?: {
     forceRefresh?: boolean;
     useLLM?: boolean;
     llmApiKey?: string;
+    dataSources?: InsightDataSources;
   }
 ): Promise<{ newInsights: Insight[]; updatedInsights: Insight[] }> {
   console.log('[Insights] Starting analysis...');
@@ -534,13 +824,21 @@ export async function runInsightAnalysis(
   const newInsights: Insight[] = [];
   const updatedInsights: Insight[] = [];
 
-  // 1. Run heuristic pattern detection
-  const heuristicResults = await runHeuristicAnalysis(twigs, conversations);
+  // Merge direct params with dataSources
+  const allTwigs = twigs || options?.dataSources?.twigs || [];
+  const allConversations = conversations || options?.dataSources?.conversations || [];
+
+  // 1. Run heuristic pattern detection (includes calendar, contacts, etc.)
+  const heuristicResults = await runHeuristicAnalysis(
+    allTwigs,
+    allConversations,
+    options?.dataSources
+  );
 
   // 2. Optionally run LLM analysis for deeper patterns
   let llmResults: Insight[] = [];
   if ((options?.useLLM || settings.useLLMAnalysis) && options?.llmApiKey) {
-    llmResults = await runLLMAnalysis(twigs, conversations, options.llmApiKey, settings.llmProvider);
+    llmResults = await runLLMAnalysis(allTwigs, allConversations, options.llmApiKey, settings.llmProvider);
   }
 
   // 3. Merge and deduplicate results
@@ -593,17 +891,24 @@ export async function runInsightAnalysis(
  */
 async function runHeuristicAnalysis(
   twigs: any[],
-  conversations: any[]
+  conversations: any[],
+  dataSources?: InsightDataSources
 ): Promise<Insight[]> {
   const insights: Insight[] = [];
 
-  if (twigs.length < 5) {
-    console.log('[Insights] Not enough twigs for analysis');
+  // Need at least some data to analyze
+  const hasEnoughData =
+    (twigs && twigs.length >= 3) ||
+    (dataSources?.calendarEvents && dataSources.calendarEvents.length >= 5) ||
+    (dataSources?.contacts && dataSources.contacts.length >= 5);
+
+  if (!hasEnoughData) {
+    console.log('[Insights] Not enough data for analysis');
     return insights;
   }
 
   // Extract data points for analysis
-  const dataPoints = extractDataPoints(twigs, conversations);
+  const dataPoints = extractDataPoints(twigs || [], conversations || [], dataSources);
 
   // Check each pattern template
   for (const pattern of PATTERN_TEMPLATES) {
@@ -616,6 +921,18 @@ async function runHeuristicAnalysis(
   // Look for custom correlations
   const correlations = findCorrelations(dataPoints);
   insights.push(...correlations);
+
+  // Look for calendar-specific patterns
+  if (dataSources?.calendarEvents) {
+    const calendarInsights = analyzeCalendarPatterns(dataPoints);
+    insights.push(...calendarInsights);
+  }
+
+  // Look for contact/social patterns
+  if (dataSources?.contacts) {
+    const contactInsights = analyzeContactPatterns(dataPoints, dataSources.contacts);
+    insights.push(...contactInsights);
+  }
 
   return insights;
 }
@@ -653,16 +970,68 @@ interface DataPoint {
   timeOfDay: 'morning' | 'afternoon' | 'evening' | 'night';
   dayOfWeek: number;
   content: string;
+
+  // === NEW DATA SOURCES ===
+  // Calendar events
+  calendarEvents?: CalendarEventData[];
+  hasCalendarEvent?: boolean;
+  calendarBusyness?: 'free' | 'light' | 'moderate' | 'busy' | 'packed';
+
+  // Contacts/Social
+  contactsMessaged?: string[];
+  socialInteractionCount?: number;
+  familyContact?: boolean;
+  friendContact?: boolean;
+  workContact?: boolean;
+
+  // Location
+  location?: string;
+  locationCategory?: 'home' | 'work' | 'gym' | 'nature' | 'social_venue' | 'shopping' | 'travel' | 'other';
+  travelDistance?: number;
+
+  // Digital behavior
+  screenTime?: number;
+  appUsage?: { [app: string]: number };
+  phonePickups?: number;
+
+  // Health data (if available)
+  steps?: number;
+  heartRate?: number;
+  menstrualPhase?: 'menstrual' | 'follicular' | 'ovulation' | 'luteal';
+  menstrualDay?: number;
+
+  // Weather
+  weather?: string;
+  temperature?: number;
 }
 
-function extractDataPoints(twigs: any[], conversations: any[]): DataPoint[] {
-  const points: DataPoint[] = [];
+// Calendar event data structure
+interface CalendarEventData {
+  id: string;
+  title: string;
+  startTime: string;
+  endTime?: string;
+  isAllDay?: boolean;
+  category?: 'work' | 'personal' | 'social' | 'health' | 'travel' | 'other';
+  attendees?: string[];
+  location?: string;
+}
 
+function extractDataPoints(
+  twigs: any[],
+  conversations: any[],
+  dataSources?: InsightDataSources
+): DataPoint[] {
+  const points: DataPoint[] = [];
+  const datePointsMap = new Map<string, DataPoint>();
+
+  // Process twigs
   for (const twig of twigs) {
     const date = new Date(twig.createdAt || twig.timestamp);
+    const dateKey = date.toISOString().split('T')[0];
     const content = (twig.content || twig.text || '').toLowerCase();
 
-    points.push({
+    const point: DataPoint = {
       date: twig.createdAt || twig.timestamp,
       mood: twig.mood || extractMoodFromContent(content),
       energy: twig.energy,
@@ -675,10 +1044,285 @@ function extractDataPoints(twigs: any[], conversations: any[]): DataPoint[] {
       timeOfDay: getTimeOfDay(date),
       dayOfWeek: date.getDay(),
       content,
-    });
+    };
+
+    // Merge with existing point for same date or add new
+    const existing = datePointsMap.get(dateKey);
+    if (existing) {
+      datePointsMap.set(dateKey, mergeDataPoints(existing, point));
+    } else {
+      datePointsMap.set(dateKey, point);
+    }
+  }
+
+  // Process calendar events
+  if (dataSources?.calendarEvents) {
+    for (const event of dataSources.calendarEvents) {
+      const dateKey = new Date(event.startTime).toISOString().split('T')[0];
+      const existing = datePointsMap.get(dateKey) || createEmptyDataPoint(event.startTime);
+
+      // Add calendar data
+      if (!existing.calendarEvents) existing.calendarEvents = [];
+      existing.calendarEvents.push(event);
+
+      // Calculate busyness
+      existing.hasCalendarEvent = true;
+      const eventCount = existing.calendarEvents.length;
+      existing.calendarBusyness = eventCount >= 6 ? 'packed' :
+        eventCount >= 4 ? 'busy' :
+        eventCount >= 2 ? 'moderate' :
+        eventCount >= 1 ? 'light' : 'free';
+
+      datePointsMap.set(dateKey, existing);
+    }
+  }
+
+  // Process contact interactions
+  if (dataSources?.contacts) {
+    for (const contact of dataSources.contacts) {
+      const dateKey = new Date(contact.timestamp).toISOString().split('T')[0];
+      const existing = datePointsMap.get(dateKey) || createEmptyDataPoint(contact.timestamp);
+
+      // Add contact data
+      if (!existing.contactsMessaged) existing.contactsMessaged = [];
+      if (!existing.contactsMessaged.includes(contact.contactName)) {
+        existing.contactsMessaged.push(contact.contactName);
+      }
+
+      existing.socialInteractionCount = (existing.socialInteractionCount || 0) + 1;
+      if (contact.contactType === 'family') existing.familyContact = true;
+      if (contact.contactType === 'friend') existing.friendContact = true;
+      if (contact.contactType === 'work') existing.workContact = true;
+
+      datePointsMap.set(dateKey, existing);
+    }
+  }
+
+  // Process location data
+  if (dataSources?.locationHistory) {
+    for (const loc of dataSources.locationHistory) {
+      const dateKey = new Date(loc.timestamp).toISOString().split('T')[0];
+      const existing = datePointsMap.get(dateKey) || createEmptyDataPoint(loc.timestamp);
+
+      existing.location = loc.location;
+      existing.locationCategory = loc.category;
+      if (loc.category === 'nature') existing.outdoor = true;
+
+      datePointsMap.set(dateKey, existing);
+    }
+  }
+
+  // Process screen time data
+  if (dataSources?.screenTime) {
+    for (const screen of dataSources.screenTime) {
+      const dateKey = screen.date;
+      const existing = datePointsMap.get(dateKey) || createEmptyDataPoint(screen.date);
+
+      existing.screenTime = screen.totalMinutes;
+      existing.phonePickups = screen.pickups;
+      existing.appUsage = screen.appBreakdown;
+
+      datePointsMap.set(dateKey, existing);
+    }
+  }
+
+  // Process health data
+  if (dataSources?.healthData) {
+    for (const health of dataSources.healthData) {
+      const dateKey = health.date;
+      const existing = datePointsMap.get(dateKey) || createEmptyDataPoint(health.date);
+
+      if (health.steps) existing.steps = health.steps;
+      if (health.sleepHours) existing.sleep = health.sleepHours;
+      if (health.heartRate) existing.heartRate = health.heartRate.avg;
+      if (health.menstrualPhase) existing.menstrualPhase = health.menstrualPhase;
+      if (health.menstrualDay) existing.menstrualDay = health.menstrualDay;
+
+      datePointsMap.set(dateKey, existing);
+    }
+  }
+
+  // Process weather data
+  if (dataSources?.weatherData) {
+    for (const weather of dataSources.weatherData) {
+      const dateKey = weather.date;
+      const existing = datePointsMap.get(dateKey) || createEmptyDataPoint(weather.date);
+
+      existing.weather = weather.condition;
+      existing.temperature = weather.temperature;
+
+      datePointsMap.set(dateKey, existing);
+    }
+  }
+
+  // Convert map to array and sort by date
+  for (const point of datePointsMap.values()) {
+    points.push(point);
   }
 
   return points.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+}
+
+function createEmptyDataPoint(dateStr: string): DataPoint {
+  const date = new Date(dateStr);
+  return {
+    date: dateStr,
+    activities: [],
+    keywords: [],
+    social: false,
+    outdoor: false,
+    exercise: false,
+    timeOfDay: getTimeOfDay(date),
+    dayOfWeek: date.getDay(),
+    content: '',
+  };
+}
+
+function mergeDataPoints(a: DataPoint, b: DataPoint): DataPoint {
+  return {
+    ...a,
+    mood: b.mood ?? a.mood,
+    energy: b.energy ?? a.energy,
+    sleep: b.sleep ?? a.sleep,
+    activities: [...new Set([...a.activities, ...b.activities])],
+    keywords: [...new Set([...a.keywords, ...b.keywords])],
+    social: a.social || b.social,
+    outdoor: a.outdoor || b.outdoor,
+    exercise: a.exercise || b.exercise,
+    content: [a.content, b.content].filter(Boolean).join(' '),
+  };
+}
+
+/**
+ * Analyze calendar-specific patterns
+ */
+function analyzeCalendarPatterns(dataPoints: DataPoint[]): Insight[] {
+  const insights: Insight[] = [];
+
+  // Find days with different calendar busyness levels
+  const busyDays = dataPoints.filter(d => d.calendarBusyness === 'busy' || d.calendarBusyness === 'packed');
+  const freeDays = dataPoints.filter(d => d.calendarBusyness === 'free' || d.calendarBusyness === 'light');
+
+  if (busyDays.length >= 3 && freeDays.length >= 3) {
+    const busyMood = busyDays.filter(d => d.mood).reduce((sum, d) => sum + (d.mood || 0), 0) / busyDays.filter(d => d.mood).length;
+    const freeMood = freeDays.filter(d => d.mood).reduce((sum, d) => sum + (d.mood || 0), 0) / freeDays.filter(d => d.mood).length;
+
+    if (Math.abs(busyMood - freeMood) > 1) {
+      insights.push({
+        id: `insight_calendar_busyness_${Date.now()}`,
+        category: 'cycle',
+        title: 'Calendar Busyness Pattern',
+        description: busyMood < freeMood
+          ? "You seem happier on lighter calendar days. Packed schedules might be draining you."
+          : "Busy days seem to energize you. You might thrive with structure and activity.",
+        evidence: [],
+        strength: 'developing',
+        sentiment: 'neutral',
+        discoveredAt: new Date().toISOString(),
+        lastUpdatedAt: new Date().toISOString(),
+        timesReinforced: busyDays.length + freeDays.length,
+        isNew: true,
+        isAcknowledged: false,
+        mentionedInConversation: false,
+        source: 'statistical',
+        confidence: Math.min(0.5 + (busyDays.length + freeDays.length) / 20, 0.8),
+        suggestedExperiment: "Try blocking one day next week as meeting-free and see how you feel.",
+      });
+    }
+  }
+
+  return insights;
+}
+
+/**
+ * Analyze contact/social patterns
+ */
+function analyzeContactPatterns(dataPoints: DataPoint[], contacts: ContactInteraction[]): Insight[] {
+  const insights: Insight[] = [];
+
+  // Group by contact
+  const contactMoods = new Map<string, { name: string; moods: number[]; type: string }>();
+
+  for (const contact of contacts) {
+    const dateKey = new Date(contact.timestamp).toISOString().split('T')[0];
+    const dayPoint = dataPoints.find(d => d.date.startsWith(dateKey));
+
+    if (dayPoint?.mood) {
+      const existing = contactMoods.get(contact.contactName) || {
+        name: contact.contactName,
+        moods: [],
+        type: contact.contactType,
+      };
+      existing.moods.push(dayPoint.mood);
+      contactMoods.set(contact.contactName, existing);
+    }
+  }
+
+  // Find contacts with mood patterns
+  const overallAvgMood = dataPoints.filter(d => d.mood).reduce((sum, d) => sum + (d.mood || 0), 0) /
+    dataPoints.filter(d => d.mood).length;
+
+  for (const [contactName, data] of contactMoods) {
+    if (data.moods.length >= 4) {
+      const avgMood = data.moods.reduce((a, b) => a + b, 0) / data.moods.length;
+      const diff = avgMood - overallAvgMood;
+
+      if (Math.abs(diff) > 1.5) {
+        insights.push({
+          id: `insight_contact_${contactName.replace(/\s+/g, '_')}_${Date.now()}`,
+          category: 'social',
+          title: `${contactName} Connection`,
+          description: diff > 0
+            ? `Interactions with ${contactName} seem to lift your mood. You might want to connect with them more often.`
+            : `Your mood tends to be lower around interactions with ${contactName}. This pattern might be worth reflecting on.`,
+          evidence: [],
+          strength: data.moods.length >= 8 ? 'established' : 'developing',
+          sentiment: diff > 0 ? 'positive' : 'cautionary',
+          discoveredAt: new Date().toISOString(),
+          lastUpdatedAt: new Date().toISOString(),
+          timesReinforced: data.moods.length,
+          isNew: true,
+          isAcknowledged: false,
+          mentionedInConversation: false,
+          source: 'statistical',
+          confidence: Math.min(0.5 + (data.moods.length / 15) * 0.3, 0.85),
+        });
+      }
+    }
+  }
+
+  // Check family vs friend vs work patterns
+  const familyDays = dataPoints.filter(d => d.familyContact && d.mood);
+  const friendDays = dataPoints.filter(d => d.friendContact && d.mood);
+
+  if (familyDays.length >= 3 && friendDays.length >= 3) {
+    const familyAvg = familyDays.reduce((sum, d) => sum + (d.mood || 0), 0) / familyDays.length;
+    const friendAvg = friendDays.reduce((sum, d) => sum + (d.mood || 0), 0) / friendDays.length;
+
+    if (Math.abs(familyAvg - friendAvg) > 1) {
+      insights.push({
+        id: `insight_family_vs_friends_${Date.now()}`,
+        category: 'social',
+        title: 'Social Circle Pattern',
+        description: familyAvg > friendAvg
+          ? "Family time seems more restorative for you than friend time."
+          : "Time with friends seems to lift your mood more than family time.",
+        evidence: [],
+        strength: 'developing',
+        sentiment: 'neutral',
+        discoveredAt: new Date().toISOString(),
+        lastUpdatedAt: new Date().toISOString(),
+        timesReinforced: familyDays.length + friendDays.length,
+        isNew: true,
+        isAcknowledged: false,
+        mentionedInConversation: false,
+        source: 'statistical',
+        confidence: 0.65,
+      });
+    }
+  }
+
+  return insights;
 }
 
 function extractMoodFromContent(content: string): number | undefined {
@@ -782,9 +1426,54 @@ function checkPattern(pattern: PatternDefinition, dataPoints: DataPoint[]): Insi
           break;
         case 'time':
           if (trigger.value === point.timeOfDay) triggerMatch = true;
+          // Also handle menstrual phase for cycle patterns
+          if (trigger.value === 'luteal' && point.menstrualPhase === 'luteal') triggerMatch = true;
+          if (trigger.value === 'follicular' && point.menstrualPhase === 'follicular') triggerMatch = true;
           break;
         case 'keyword':
           if (point.keywords.some(k => k.includes(trigger.value || ''))) triggerMatch = true;
+          break;
+
+        // === NEW TRIGGER TYPES ===
+        case 'calendar':
+          if (trigger.comparator === 'equals' && point.calendarBusyness === trigger.value) triggerMatch = true;
+          if (trigger.value === 'busy' && (point.calendarBusyness === 'busy' || point.calendarBusyness === 'packed')) triggerMatch = true;
+          if (trigger.value === 'free' && (point.calendarBusyness === 'free' || point.calendarBusyness === 'light')) triggerMatch = true;
+          if (trigger.value === 'social' && point.calendarEvents?.some(e => e.category === 'social')) triggerMatch = true;
+          break;
+
+        case 'contact':
+          if (trigger.value === 'family' && point.familyContact) triggerMatch = true;
+          if (trigger.value === 'friend' && point.friendContact) triggerMatch = true;
+          if (trigger.value === 'work' && point.workContact) triggerMatch = true;
+          if (trigger.comparator === 'equals' && point.contactsMessaged?.includes(trigger.value || '')) triggerMatch = true;
+          break;
+
+        case 'location':
+          if (trigger.comparator === 'equals' && point.locationCategory === trigger.value) triggerMatch = true;
+          if (trigger.value === 'nature' && point.outdoor) triggerMatch = true;
+          break;
+
+        case 'screen_time':
+          if (point.screenTime !== undefined) {
+            if (trigger.comparator === 'above' && point.screenTime > (trigger.threshold || 0)) triggerMatch = true;
+            if (trigger.comparator === 'below' && point.screenTime < (trigger.threshold || 0)) triggerMatch = true;
+          }
+          if (point.phonePickups !== undefined) {
+            if (trigger.comparator === 'above' && point.phonePickups > (trigger.threshold || 0)) triggerMatch = true;
+          }
+          break;
+
+        case 'app_usage':
+          if (point.appUsage && trigger.value) {
+            const appMinutes = point.appUsage[trigger.value] || 0;
+            if (trigger.comparator === 'above' && appMinutes > (trigger.threshold || 0)) triggerMatch = true;
+            if (trigger.comparator === 'below' && appMinutes < (trigger.threshold || 0)) triggerMatch = true;
+          }
+          break;
+
+        case 'weather':
+          if (point.weather === trigger.value) triggerMatch = true;
           break;
       }
     }
@@ -1002,4 +1691,14 @@ export default {
 
   // Constants
   PATTERN_TEMPLATES,
+};
+
+// Re-export types for consumers
+export type {
+  InsightDataSources,
+  ContactInteraction,
+  LocationData,
+  ScreenTimeData,
+  HealthData,
+  WeatherData,
 };
