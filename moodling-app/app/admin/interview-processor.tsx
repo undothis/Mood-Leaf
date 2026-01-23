@@ -147,6 +147,7 @@ export default function InterviewProcessorScreen() {
   const [newChannelUrl, setNewChannelUrl] = useState('');
   const [newChannelCategory, setNewChannelCategory] = useState<ChannelCategory>('therapy_mental_health');
   const [addingChannel, setAddingChannel] = useState(false);
+  const [addingRecommendedHandle, setAddingRecommendedHandle] = useState<string | null>(null);
 
   // Processing state
   const [selectedChannel, setSelectedChannel] = useState<CuratedChannel | null>(null);
@@ -238,7 +239,7 @@ export default function InterviewProcessorScreen() {
 
   // Add recommended channel
   const handleAddRecommended = async (rec: typeof RECOMMENDED_CHANNELS[0]) => {
-    setAddingChannel(true);
+    setAddingRecommendedHandle(rec.handle);
     try {
       const url = `https://www.youtube.com/@${rec.handle}`;
       const result = await fetchChannelVideos(url, 1);
@@ -262,7 +263,7 @@ export default function InterviewProcessorScreen() {
     } catch (error) {
       Alert.alert('Error', `Failed to add ${rec.name}`);
     } finally {
-      setAddingChannel(false);
+      setAddingRecommendedHandle(null);
     }
   };
 
@@ -494,31 +495,35 @@ export default function InterviewProcessorScreen() {
         High-quality sources for human insights
       </Text>
 
-      {RECOMMENDED_CHANNELS.filter(rec => !channels.find(c => c.name === rec.name)).map(rec => (
-        <View key={rec.handle} style={[styles.recCard, { backgroundColor: colors.cardBackground }]}>
-          <View style={styles.recHeader}>
-            <Text style={[styles.recName, { color: colors.text }]}>{rec.name}</Text>
-            <View style={[styles.trustBadge, { backgroundColor: '#4CAF5030' }]}>
-              <Text style={{ color: '#4CAF50', fontSize: 11 }}>recommended</Text>
+      {RECOMMENDED_CHANNELS.filter(rec => !channels.find(c => c.name === rec.name)).map(rec => {
+        const isAddingThis = addingRecommendedHandle === rec.handle;
+        const isAddingAny = addingRecommendedHandle !== null;
+        return (
+          <View key={rec.handle} style={[styles.recCard, { backgroundColor: colors.cardBackground }]}>
+            <View style={styles.recHeader}>
+              <Text style={[styles.recName, { color: colors.text }]}>{rec.name}</Text>
+              <View style={[styles.trustBadge, { backgroundColor: '#4CAF5030' }]}>
+                <Text style={{ color: '#4CAF50', fontSize: 11 }}>recommended</Text>
+              </View>
             </View>
+            <Text style={[styles.recCategory, { color: colors.tint }]}>
+              {CHANNEL_CATEGORIES.find(c => c.value === rec.category)?.label}
+            </Text>
+            <Text style={[styles.recDesc, { color: colors.textSecondary }]}>{rec.description}</Text>
+            <Pressable
+              style={[styles.addRecButton, { borderColor: colors.tint, opacity: isAddingAny && !isAddingThis ? 0.5 : 1 }]}
+              onPress={() => handleAddRecommended(rec)}
+              disabled={isAddingAny}
+            >
+              {isAddingThis ? (
+                <ActivityIndicator size="small" color={colors.tint} />
+              ) : (
+                <Text style={{ color: colors.tint }}>+ Add Channel</Text>
+              )}
+            </Pressable>
           </View>
-          <Text style={[styles.recCategory, { color: colors.tint }]}>
-            {CHANNEL_CATEGORIES.find(c => c.value === rec.category)?.label}
-          </Text>
-          <Text style={[styles.recDesc, { color: colors.textSecondary }]}>{rec.description}</Text>
-          <Pressable
-            style={[styles.addRecButton, { borderColor: colors.tint }]}
-            onPress={() => handleAddRecommended(rec)}
-            disabled={addingChannel}
-          >
-            {addingChannel ? (
-              <ActivityIndicator size="small" color={colors.tint} />
-            ) : (
-              <Text style={{ color: colors.tint }}>+ Add Channel</Text>
-            )}
-          </Pressable>
-        </View>
-      ))}
+        );
+      })}
 
       {/* Add Channel Modal */}
       <Modal visible={showAddChannel} transparent animationType="slide">
