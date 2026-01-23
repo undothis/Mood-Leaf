@@ -36,6 +36,7 @@ import {
   PERSONAS,
   CoachPersona,
   Chronotype,
+  NameStyle,
 } from '@/services/coachPersonalityService';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -116,9 +117,13 @@ export default function OnboardingScreen() {
       // Get chronotype from schedule preference (defaults to 'normal')
       const chronotype = (answers.schedule_preference as Chronotype) || 'normal';
 
+      // Get name style preference (defaults to 'classic')
+      const nameStyle = (answers.name_style as NameStyle) || 'classic';
+
       // Save settings
       await saveCoachSettings({
         selectedPersona: recommendedPersona,
+        nameStyle, // User's preferred name style for coaches
         detailedSettings: {
           ...getSettingsForPersona(recommendedPersona),
           ...detailedSettings,

@@ -33,6 +33,52 @@ export type CoachPersona =
   | 'flint'    // The Straight Shooter - direct, honest
   | 'fern';    // The Cozy Blanket - extra gentle, nurturing
 
+// ============================================
+// NAME STYLE VARIANTS
+// Users can choose which name style feels more comfortable.
+// No gender labels - just "Style A" and "Style B" (or descriptive names).
+// ============================================
+
+export type NameStyle = 'classic' | 'alternative';
+
+export const NAME_STYLE_LABELS: Record<NameStyle, { label: string; description: string }> = {
+  classic: {
+    label: 'Nature Names',
+    description: 'Clover, Spark, Willow, Luna, Ridge, Flint, Fern',
+  },
+  alternative: {
+    label: 'Earth Names',
+    description: 'Cole, Blaze, Wade, Leo, River, Stone, Forrest',
+  },
+};
+
+// Alternative names for each persona (same personality, different name)
+export const NAME_VARIANTS: Record<CoachPersona, { classic: string; alternative: string }> = {
+  clover: { classic: 'Clover', alternative: 'Cole' },
+  spark: { classic: 'Spark', alternative: 'Blaze' },
+  willow: { classic: 'Willow', alternative: 'Wade' },
+  luna: { classic: 'Luna', alternative: 'Leo' },
+  ridge: { classic: 'Ridge', alternative: 'River' },
+  flint: { classic: 'Flint', alternative: 'Stone' },
+  fern: { classic: 'Fern', alternative: 'Forrest' },
+};
+
+/**
+ * Get all available names for display during onboarding
+ */
+export function getAllNameOptions(): { style: NameStyle; names: string[] }[] {
+  return [
+    {
+      style: 'classic',
+      names: Object.values(NAME_VARIANTS).map(v => v.classic),
+    },
+    {
+      style: 'alternative',
+      names: Object.values(NAME_VARIANTS).map(v => v.alternative),
+    },
+  ];
+}
+
 export interface PersonaDefinition {
   id: CoachPersona;
   name: string;
@@ -240,7 +286,11 @@ export interface CoachSettings {
   // Primary persona selection
   selectedPersona: CoachPersona;
 
-  // Custom name for the coach (optional - uses persona name if not set)
+  // Name style preference (classic or alternative names)
+  // This applies to ALL coaches - switches between name sets
+  nameStyle: NameStyle;
+
+  // Custom name for the coach (optional - overrides persona name if set)
   customName?: string;
 
   // Custom emoji/icon for the coach (optional - uses persona emoji if not set)
@@ -272,13 +322,29 @@ export interface CoachSettings {
 }
 
 /**
- * Get the display name for the coach (custom name or persona name)
+ * Get the display name for the coach
+ * Priority: custom name > name variant > default persona name
  */
 export function getCoachDisplayName(settings: CoachSettings): string {
+  // Custom name takes highest priority
   if (settings.customName && settings.customName.trim()) {
     return settings.customName.trim();
   }
-  return PERSONAS[settings.selectedPersona].name;
+
+  // Use name variant based on style preference
+  const style = settings.nameStyle || 'classic';
+  return NAME_VARIANTS[settings.selectedPersona][style];
+}
+
+/**
+ * Get all coach names for the current name style
+ */
+export function getAllCoachNamesForStyle(style: NameStyle): Record<CoachPersona, string> {
+  const result: Partial<Record<CoachPersona, string>> = {};
+  for (const [persona, variants] of Object.entries(NAME_VARIANTS)) {
+    result[persona as CoachPersona] = variants[style];
+  }
+  return result as Record<CoachPersona, string>;
 }
 
 /**
@@ -329,6 +395,7 @@ const DEFAULT_ADAPTIVE_SETTINGS: AdaptiveSettings = {
 
 const DEFAULT_COACH_SETTINGS: CoachSettings = {
   selectedPersona: 'clover',
+  nameStyle: 'classic',
   detailedSettings: DEFAULT_DETAILED_SETTINGS,
   useDetailedSettings: false,
   adaptiveSettings: DEFAULT_ADAPTIVE_SETTINGS,
@@ -487,6 +554,13 @@ export async function updateCoachSettings(
  */
 export async function setPersona(persona: CoachPersona): Promise<CoachSettings> {
   return updateCoachSettings({ selectedPersona: persona });
+}
+
+/**
+ * Set the name style (switches names for ALL coaches)
+ */
+export async function setNameStyle(style: NameStyle): Promise<CoachSettings> {
+  return updateCoachSettings({ nameStyle: style });
 }
 
 /**
@@ -935,6 +1009,26 @@ export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
       { id: 'awareness', emoji: '🔍', label: 'Self-awareness', description: 'Understanding my patterns' },
       { id: 'processing', emoji: '💭', label: 'Processing life', description: 'Working through experiences' },
       { id: 'curious', emoji: '✨', label: 'Just curious', description: 'Exploring what this is' },
+    ],
+  },
+  {
+    id: 'name_style',
+    question: "Which names feel right to you?",
+    subtitle: "Your guide can go by different names",
+    type: 'single',
+    options: [
+      {
+        id: 'classic',
+        emoji: '🌿',
+        label: 'Nature Names',
+        description: 'Clover, Spark, Willow, Luna, Ridge, Flint, Fern'
+      },
+      {
+        id: 'alternative',
+        emoji: '🌍',
+        label: 'Earth Names',
+        description: 'Cole, Blaze, Wade, Leo, River, Stone, Forrest'
+      },
     ],
   },
   {
