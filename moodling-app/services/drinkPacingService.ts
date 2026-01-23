@@ -13,9 +13,23 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Notifications from 'expo-notifications';
-import * as Haptics from 'expo-haptics';
 import { Platform } from 'react-native';
+
+// Optional dependencies - may not be installed
+let Notifications: typeof import('expo-notifications') | null = null;
+let Haptics: typeof import('expo-haptics') | null = null;
+
+try {
+  Notifications = require('expo-notifications');
+} catch {
+  console.log('[DrinkPacing] expo-notifications not available');
+}
+
+try {
+  Haptics = require('expo-haptics');
+} catch {
+  console.log('[DrinkPacing] expo-haptics not available');
+}
 
 // Storage keys
 const PACING_SESSION_KEY = 'moodleaf_drink_pacing_session';
@@ -127,8 +141,10 @@ export async function startDrinkPacingSession(options?: {
 
   await AsyncStorage.setItem(PACING_SESSION_KEY, JSON.stringify(session));
 
-  // Request notification permissions
-  await Notifications.requestPermissionsAsync();
+  // Request notification permissions (if available)
+  if (Notifications) {
+    await Notifications.requestPermissionsAsync();
+  }
 
   return session;
 }
@@ -182,7 +198,7 @@ export async function logDrink(): Promise<{
   await scheduleNextDrinkReminder(session, prefs);
 
   // Haptic feedback for logging
-  if (Platform.OS !== 'web') {
+  if (Platform.OS !== 'web' && Haptics) {
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   }
 
@@ -204,6 +220,11 @@ async function scheduleNextDrinkReminder(
   session: DrinkPacingSession,
   prefs: DrinkPacingPreferences
 ): Promise<void> {
+  if (!Notifications) {
+    console.log('[DrinkPacing] Notifications not available, skipping reminder');
+    return;
+  }
+
   // Cancel any existing reminders
   await Notifications.cancelAllScheduledNotificationsAsync();
 
@@ -283,7 +304,9 @@ export async function endDrinkPacingSession(): Promise<DrinkPacingHistoryEntry |
   await AsyncStorage.removeItem(PACING_SESSION_KEY);
 
   // Cancel scheduled notifications
-  await Notifications.cancelAllScheduledNotificationsAsync();
+  if (Notifications) {
+    await Notifications.cancelAllScheduledNotificationsAsync();
+  }
 
   return historyEntry;
 }
@@ -381,7 +404,7 @@ export async function getDrinkPacingContextForCoach(): Promise<string> {
  * Set up notification channel for drink pacing (Android)
  */
 export async function setupDrinkPacingNotificationChannel(): Promise<void> {
-  if (Platform.OS === 'android') {
+  if (Platform.OS === 'android' && Notifications) {
     await Notifications.setNotificationChannelAsync('drink-pacing', {
       name: 'Drink Pacing',
       importance: Notifications.AndroidImportance.HIGH,

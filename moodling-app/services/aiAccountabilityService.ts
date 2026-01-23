@@ -13,11 +13,18 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Calendar from 'expo-calendar';
-import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
-// Contacts is optional - may not be installed
+// Optional dependencies - may not be installed
+let Notifications: typeof import('expo-notifications') | null = null;
 let Contacts: typeof import('expo-contacts') | null = null;
+
+try {
+  Notifications = require('expo-notifications');
+} catch {
+  console.log('[Accountability] expo-notifications not available');
+}
+
 try {
   Contacts = require('expo-contacts');
 } catch {
@@ -925,6 +932,10 @@ export async function aiCreateContact(params: {
  * Request notification permissions
  */
 export async function requestNotificationPermission(): Promise<boolean> {
+  if (!Notifications) {
+    console.log('[Accountability] Notifications not available');
+    return false;
+  }
   try {
     const { status } = await Notifications.requestPermissionsAsync();
     return status === 'granted';
@@ -962,6 +973,8 @@ export async function sendLimitAlertNotification(
       body = `${currentCount}/${maxLimit} today. Tomorrow's a fresh start.`;
       break;
   }
+
+  if (!Notifications) return;
 
   await Notifications.scheduleNotificationAsync({
     content: {
