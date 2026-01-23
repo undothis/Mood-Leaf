@@ -43,6 +43,8 @@ export default function CognitiveOnboardingScreen() {
 
   const [currentQuestion, setCurrentQuestion] = useState<OnboardingQuestion | null>(null);
   const [progressPercent, setProgressPercent] = useState(0);
+  const [questionNumber, setQuestionNumber] = useState(1);
+  const [totalQuestions, setTotalQuestions] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -64,6 +66,8 @@ export default function CognitiveOnboardingScreen() {
       // Update progress info
       const progressInfo = await getOnboardingProgressInfo();
       setProgressPercent(progressInfo.progressPercent);
+      setQuestionNumber(progressInfo.answeredCount + 1);
+      setTotalQuestions(progressInfo.totalAtCurrentDepth);
 
       const question = await getNextOnboardingQuestion();
       if (question) {
@@ -160,6 +164,7 @@ export default function CognitiveOnboardingScreen() {
         // Update progress (will be slightly lower going back)
         const progressInfo = await getOnboardingProgressInfo();
         setProgressPercent(Math.max(0, progressInfo.progressPercent - 5)); // Approximate back
+        setQuestionNumber(prev => Math.max(1, prev - 1));
       }
     });
   };
@@ -211,11 +216,13 @@ export default function CognitiveOnboardingScreen() {
         </Pressable>
       </View>
 
-      {/* Intro text */}
+      {/* Question counter and intro */}
       <View style={styles.introContainer}>
-        <Text style={[styles.introEmoji]}>
-          {progressPercent < 10 ? '🌱' : '💭'}
-        </Text>
+        {totalQuestions > 0 && (
+          <Text style={[styles.questionCounter, { color: colors.text }]}>
+            Question {questionNumber} of {totalQuestions}
+          </Text>
+        )}
         <Text style={[styles.introText, { color: colors.textSecondary }]}>
           {progressPercent < 10
             ? "Let's discover how your mind works"
@@ -359,9 +366,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
   },
-  introEmoji: {
-    fontSize: 32,
-    marginBottom: 8,
+  questionCounter: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 4,
   },
   introText: {
     fontSize: 14,
