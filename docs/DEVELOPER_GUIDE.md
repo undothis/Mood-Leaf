@@ -647,6 +647,333 @@ async function checkForUnlocks(): Promise<Collectible[]> {
 
 ---
 
+### aiAccountabilityService.ts
+
+**Purpose**: AI-driven accountability system that creates and manages limits, tracks AI-created items, and provides context-aware accountability support.
+
+**Key Types**:
+```typescript
+interface LimitAlert {
+  id: string;
+  twigId: string;
+  twigName: string;
+  maxLimit: number;
+  currentCount: number;
+  alertThreshold: number; // 0.75 = 75% of limit
+  isActive: boolean;
+  createdAt: string;
+  createdBy: 'user' | 'ai';
+  lastTriggered?: string;
+}
+
+interface AICreatedItem {
+  id: string;
+  type: 'twig' | 'calendar_event' | 'contact';
+  itemId: string;
+  itemName: string;
+  createdAt: string;
+  conversationContext?: string;
+}
+
+type AccountabilityIntensity = 'off' | 'gentle' | 'moderate' | 'proactive';
+
+interface AccountabilityPreferences {
+  intensity: AccountabilityIntensity;
+  pausedUntil?: string; // ISO date - pause until this date
+  pausedItems?: string[]; // Specific twig IDs paused for today
+  lastAskedAboutComfort?: string;
+  userFeedback?: string;
+}
+```
+
+**Key Exports**:
+```typescript
+// Limit Alerts
+createLimitAlert(twigId: string, name: string, maxLimit: number): Promise<LimitAlert>
+getLimitAlerts(): Promise<LimitAlert[]>
+checkLimitAlerts(): Promise<{alert, status, currentCount}[]>
+deleteLimitAlert(alertId: string): Promise<void>
+onTwigLogged(twigId: string): Promise<{shouldAlert, alertMessage, status}>
+
+// Notifications
+sendLimitAlertNotification(twigName: string, count: number, max: number, status: string): Promise<void>
+
+// AI Item Tracking
+recordAICreatedItem(type: string, itemId: string, itemName: string, context?: string): Promise<void>
+getAICreatedItems(): Promise<AICreatedItem[]>
+
+// Coach Integration
+getAccountabilityContextForCoach(): Promise<string>
+shouldMentionLimits(): Promise<{shouldMention: boolean, context?: string}>
+getAccountabilityPreferencesContext(): Promise<string>
+
+// User Preferences
+getAccountabilityPreferences(): Promise<AccountabilityPreferences>
+setAccountabilityPreferences(prefs: Partial<AccountabilityPreferences>): Promise<void>
+setAccountabilityIntensity(intensity: AccountabilityIntensity): Promise<void>
+pauseAccountabilityForToday(twigIds?: string[]): Promise<void>
+resumeAccountability(): Promise<void>
+isAccountabilityPaused(twigId?: string): Promise<boolean>
+recordAccountabilityFeedback(feedback: string): Promise<void>
+shouldAskAboutAccountabilityComfort(): Promise<boolean>
+```
+
+**Limit Alert Logic**:
+```typescript
+// Check triggers at 75%, 100%, and 100%+ of limit
+const statuses: AlertStatus[] = ['approaching', 'reached', 'exceeded'];
+
+// Status determination
+if (currentCount > alert.maxLimit) status = 'exceeded';
+else if (currentCount === alert.maxLimit) status = 'reached';
+else if (currentCount >= alert.maxLimit * alert.alertThreshold) status = 'approaching';
+```
+
+**Adaptive Accountability Behavior**:
+| Intensity | Approaching | Reached | Exceeded |
+|-----------|-------------|---------|----------|
+| `off` | Silent | Silent | Silent |
+| `gentle` | Silent | Silent | Very soft mention |
+| `moderate` | Heads up | Acknowledge | Supportive note |
+| `proactive` | Active check-in | Celebrate | Reflective check-in |
+
+---
+
+### drinkPacingService.ts
+
+**Purpose**: Harm reduction tool for mindful alcohol consumption at social events. Provides timed reminders to pace drinking.
+
+**Key Types**:
+```typescript
+interface DrinkPacingSession {
+  id: string;
+  startTime: string;
+  intervalMinutes: number; // How often to buzz (e.g., 60 = once per hour)
+  maxDrinks?: number; // Optional max limit
+  drinksConsumed: number;
+  drinkTimes: string[]; // Timestamps of each drink
+  nextDrinkTime?: string;
+  isActive: boolean;
+  eventName?: string; // "Sarah's party"
+  endTime?: string;
+}
+
+interface DrinkPacingHistoryEntry {
+  id: string;
+  date: string;
+  eventName?: string;
+  totalDrinks: number;
+  durationMinutes: number;
+  intervalMinutes: number;
+  stayedOnPace: boolean; // Did they stick to the plan?
+}
+
+interface DrinkPacingPreferences {
+  defaultIntervalMinutes: number; // Default: 60
+  defaultMaxDrinks: number; // Default: 4
+  vibrateOnly: boolean; // Silent mode - vibration only
+  autoEndAfterHours: number; // Default: 6
+}
+```
+
+**Key Exports**:
+```typescript
+// Session Management
+startDrinkPacingSession(options?: {
+  intervalMinutes?: number;
+  maxDrinks?: number;
+  eventName?: string;
+}): Promise<DrinkPacingSession>
+
+getActiveSession(): Promise<DrinkPacingSession | null>
+
+logDrink(): Promise<{
+  session: DrinkPacingSession;
+  atLimit: boolean;
+  overLimit: boolean;
+  nextBuzzIn: number;
+}>
+
+endDrinkPacingSession(): Promise<DrinkPacingHistoryEntry | null>
+
+// Status
+getSessionStatus(): Promise<{
+  isActive: boolean;
+  drinksConsumed: number;
+  maxDrinks?: number;
+  minutesSinceLastDrink: number;
+  minutesUntilNextBuzz: number;
+  eventName?: string;
+} | null>
+
+// History & Preferences
+getDrinkPacingHistory(): Promise<DrinkPacingHistoryEntry[]>
+getDrinkPacingPreferences(): Promise<DrinkPacingPreferences>
+setDrinkPacingPreferences(prefs: Partial<DrinkPacingPreferences>): Promise<void>
+
+// Coach Integration
+getDrinkPacingContextForCoach(): Promise<string>
+
+// Initialization
+initDrinkPacingService(): Promise<void>
+setupDrinkPacingNotificationChannel(): Promise<void>
+```
+
+**Notification Flow**:
+```typescript
+// After logging a drink:
+1. Check if at/over limit
+2. If at limit: Send "Limit Reached" notification
+3. If under limit: Schedule next reminder notification
+4. Haptic feedback for acknowledgment
+
+// Notification content (vibrateOnly mode):
+{
+  title: 'Drink Pacing',
+  body: 'Time for drink 2/4',
+  sound: false, // Silent for discretion
+}
+```
+
+**Safety Features**:
+- Minimum 15-minute interval enforcement
+- Auto-end sessions after 6 hours
+- "At limit" UI state change
+- Supportive (not judgmental) messaging
+
+---
+
+### accountabilityService.ts
+
+**Purpose**: Tracks skill practice for coach integration, manages skill achievements, and provides context for AI to suggest relevant skills.
+
+**Key Types**:
+```typescript
+interface SkillPractice {
+  skillId: string;
+  timestamp: string;
+  duration?: number;
+  completed: boolean;
+  context?: 'suggested_by_coach' | 'self_initiated' | 'notification';
+}
+
+interface SkillStreak {
+  skillId: string;
+  currentStreak: number;
+  longestStreak: number;
+  lastPracticed: string;
+}
+
+interface SkillAchievement {
+  id: string;
+  skillId: string;
+  achievementType: 'first_use' | 'streak_3' | 'streak_7' | 'streak_30' | 'mastery';
+  unlockedAt: string;
+  notified: boolean;
+}
+
+// Coach skill suggestions by emotional state
+const COACH_SKILL_SUGGESTIONS: Record<string, string[]> = {
+  anxious: ['box_breathing', 'five_senses', 'physiological_sigh', 'cold_water'],
+  sad: ['self_compassion_break', 'gratitude_practice', 'body_scan', 'fern_energy'],
+  angry: ['physiological_sigh', 'shake_it_out', 'opposite_action', 'urge_surfing'],
+  stressed: ['box_breathing', 'body_scan', 'brain_dump', 'pomodoro'],
+  // ... more states
+};
+```
+
+**Key Exports**:
+```typescript
+// Practice Logging
+logSkillPractice(skillId: string, options?: {
+  duration?: number;
+  completed?: boolean;
+  context?: 'suggested_by_coach' | 'self_initiated' | 'notification';
+}): Promise<void>
+
+// Streaks & History
+getSkillStreak(skillId: string): Promise<SkillStreak | null>
+getRecentPractice(limit?: number): Promise<SkillPractice[]>
+
+// Achievements
+checkForAchievements(skillId: string): Promise<SkillAchievement[]>
+getUnnotifiedAchievements(): Promise<SkillAchievement[]>
+markAchievementNotified(achievementId: string): Promise<void>
+
+// Coach Integration
+getSkillContextForCoach(): Promise<string>
+suggestSkillsForMood(mood: string): string[]
+
+// Notifications
+triggerTestSkillAlert(): Promise<void>
+sendSkillAchievementNotification(achievement: SkillAchievement): Promise<void>
+```
+
+**Coach Context Generation**:
+```typescript
+// getSkillContextForCoach() returns formatted string:
+`SKILL PRACTICE CONTEXT:
+  Recent practice:
+    - box_breathing: practiced 3 days ago
+    - five_senses: practiced today
+
+  Current streaks:
+    - box_breathing: 5 day streak
+
+  Suggested skills for current mood (anxious):
+    - box_breathing, five_senses, physiological_sigh
+
+  Achievements pending notification:
+    - box_breathing: streak_7 (unlocked today)`
+```
+
+---
+
+### youtubeProcessorService.ts (Updated)
+
+**Purpose**: Processes YouTube channels for AI training content with comprehensive logging.
+
+**Key Features**:
+- RSS feed-based video fetching (no API key required)
+- Optional YouTube Data API v3 integration for better stats
+- Comprehensive error codes for debugging
+
+**Error Codes**:
+```typescript
+// Logging format: [YouTubeService] function_name: details
+
+// Error codes in logs:
+ERR_INVALID_URL     // URL doesn't match YouTube patterns
+ERR_NO_CHANNEL_ID   // Couldn't extract channel ID from URL
+ERR_NO_URL          // fetchChannelVideos called with no URL
+ERR_NETWORK         // Network request failed
+ERR_HTTP_XXX        // HTTP error (e.g., ERR_HTTP_404)
+ERR_RSS_PARSE       // RSS feed parsing failed
+ERR_NO_VIDEOS       // Channel has no videos
+```
+
+**Pre-populated Channel IDs**:
+```typescript
+// Recommended channels include pre-populated IDs to bypass fetch issues
+const RECOMMENDED_CHANNELS = [
+  { name: 'Esther Perel', handle: 'estherperel', channelId: 'UCyktTJjKdR81Cv9sMXK5QCA', ... },
+  { name: 'How to ADHD', handle: 'HowtoADHD', channelId: 'UC-nPM1_kSZf91ZGkcgy_95Q', ... },
+  { name: 'Michael Sealey', handle: 'MichaelSealey', channelId: 'UC9GoqsWjluXVSKHO4Wistbw', ... },
+  // ... more channels with IDs
+];
+```
+
+**YouTube API Key Integration**:
+```typescript
+// Optional API key stored in AsyncStorage
+const apiKey = await AsyncStorage.getItem('youtube_api_key');
+
+// With API key: Use YouTube Data API v3 for video stats
+// Without API key: Use RSS feed fallback (always works)
+```
+
+---
+
 ## Data Models
 
 ### JournalEntry

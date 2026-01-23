@@ -1494,7 +1494,9 @@ if (insight) {
 | `llamaIntegrationService.ts` | LLM integration, prompt formatting, export |
 | `trainingStatusService.ts` | Real-time status, activity logging, alerts |
 | `TrainingStatusIndicator.tsx` | Persistent UI indicator component |
-| `aiAccountabilityService.ts` | AI auto-creation of Twigs, calendar events, contacts, limit alerts |
+| `aiAccountabilityService.ts` | AI auto-creation of Twigs, calendar events, contacts, limit alerts, adaptive accountability preferences |
+| `accountabilityService.ts` | Skill practice tracking, streaks, achievements, coach skill suggestions |
+| `drinkPacingService.ts` | Harm reduction drink pacing with timed reminders |
 | `quickLogsService.ts` | Twig/Quick Log management with limit support |
 
 ---
@@ -1533,6 +1535,13 @@ if (insight) {
 | `moodleaf_accountability_goals` | Accountability | User accountability goals |
 | `moodleaf_limit_alerts` | Accountability | Limit-based alert configurations |
 | `moodleaf_ai_created_items` | Accountability | Items created by AI from conversation |
+| `moodleaf_accountability_prefs` | Accountability | User's accountability intensity preferences (off/gentle/moderate/proactive) |
+| `moodleaf_drink_pacing_session` | Drink Pacing | Active drink pacing session |
+| `moodleaf_drink_pacing_history` | Drink Pacing | Past pacing session summaries |
+| `moodleaf_drink_pacing_prefs` | Drink Pacing | Default interval, max drinks, vibrate-only settings |
+| `moodleaf_skill_practice` | Skill Tracking | Skill practice log entries |
+| `moodleaf_skill_streaks` | Skill Tracking | Current and longest streaks per skill |
+| `moodleaf_skill_achievements` | Skill Tracking | Unlocked skill achievements |
 
 ---
 

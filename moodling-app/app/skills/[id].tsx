@@ -40,16 +40,52 @@ const BREATHING_SKILLS = [
 
 // Skills that should launch a guided step-by-step experience
 const GUIDED_STEP_SKILLS = [
+  // Grounding
   'five_senses',
-  'body_scan',
-  'body_scan_sleep',
-  'loving_kindness',
-  'rain_technique',
+  'cold_water',
   'butterfly_hug',
-  'self_compassion_break',
-  'progressive_muscle',
   'safe_place_visualization',
+  // Anxiety
+  'worry_time',
+  'thought_challenging',
+  'worst_case_best_case',
+  'fact_vs_feeling',
+  'containment',
+  // Sleep
+  'wind_down',
+  'body_scan_sleep',
   'cognitive_shuffle',
+  // Focus
+  'pomodoro',
+  'brain_dump',
+  'single_tasking',
+  'habit_stacking',
+  'implementation_intentions',
+  // Self-care
+  'self_compassion_break',
+  'gratitude_practice',
+  'values_clarification',
+  'needs_inventory',
+  'behavioral_activation',
+  // Relationships
+  'conflict_cool_down',
+  'repair_conversations',
+  'i_statements',
+  'active_listening',
+  // Mindfulness
+  'body_scan',
+  'loving_kindness',
+  'mindful_moment',
+  'noting_practice',
+  'rain_technique',
+  'mindful_eating',
+  'walking_meditation',
+  'urge_surfing',
+  'emotional_labeling',
+  'wise_mind',
+  // Body
+  'somatic_tracking',
+  'shake_it_out',
 ];
 
 // Get execution mode for a skill

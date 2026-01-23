@@ -843,10 +843,25 @@ Type commands starting with `/` in the chat to access quick features and switch 
 | `/prep` | `/prepare`, `/event` | Prepare for upcoming social event |
 
 #### Games Commands
+
+All games can be launched directly via slash commands:
+
 | Command | Aliases | What It Does |
 |---------|---------|--------------|
-| `/games` | `/game`, `/play`, `/fun` | Browse mindful games and activities |
+| `/games` | `/game`, `/play`, `/fun` | Browse all mindful games |
 | `/fidget` | `/bubble`, `/pop` | Open the fidget pad |
+| `/snake` | `/mindful_snake` | Mindful snake (slow, calming) |
+| `/pong` | `/gentle_pong` | Gentle pong (slow motion) |
+| `/asteroids` | `/space` | Classic asteroids |
+| `/breakout` | `/bricks`, `/arkanoid` | Brick-breaking game |
+| `/2048` | `/puzzle` | Number merge puzzle |
+| `/memory` | `/match`, `/pairs` | Memory match game |
+| `/bubbles` | `/bubblewrap` | Pop bubble wrap |
+| `/sand` | `/kinetic` | Kinetic sand simulation |
+| `/rain` | `/window`, `/raindrops` | Rain on window (calming) |
+| `/kaleidoscope` | `/kscope` | Mesmerizing patterns |
+| `/maze` | `/mazewalker` | Navigate peaceful mazes |
+| `/untangle` | `/knots` | Untangle the lines puzzle |
 
 #### Coach Commands
 | Command | Aliases | What It Does |
@@ -958,15 +973,49 @@ Skills are capabilities you can develop through practice. Unlike streaks that pu
 - Type `/skills` in chat to browse all skills
 - Use `/breathe`, `/ground`, `/calm` for instant exercises
 
-**Method 2: Skills Menu**
-1. Tap the **Skills** quick action button below the chat
-2. Browse categories and exercises
-3. Tap any exercise to see a preview card
-4. Tap "Start" to begin the guided exercise
+**Method 2: Skills Tab**
+1. Tap the **Skills** (sparkles icon) in the bottom navigation
+2. Browse skills by category
+3. **Tap any skill to immediately start it**
 
 **Method 3: Ask Your Coach**
 - Say "I need a breathing exercise" or "Help me ground"
 - Your coach will suggest appropriate skills
+
+### Actionable Skills (Instant Launch)
+
+Many skills now launch immediately when tapped - no reading required. Just tap and do:
+
+**Breathing Skills (Launch Breathing Orb):**
+| Skill | What Happens |
+|-------|--------------|
+| Box Breathing | Opens animated breathing orb with 4-4-4-4 pattern |
+| Physiological Sigh | Opens breathing orb with double-inhale pattern |
+| 4-7-8 Breathing | Opens breathing orb with sleep-inducing pattern |
+
+**Guided Step Skills (Step-by-Step Overlay):**
+| Skill | What Happens |
+|-------|--------------|
+| 5-4-3-2-1 Grounding | Full-screen guided experience with each step |
+| Cold Water Reset | Step-by-step instructions |
+| Butterfly Hug | Guided movement instructions |
+| Safe Place Visualization | Guided imagery steps |
+| Body Scan | Progressive relaxation guidance |
+
+**Game Skills (Direct Launch):**
+| Skill | What Happens |
+|-------|--------------|
+| Fidget Pad | Opens fidget interface directly |
+| Breathing Bubble | Opens breathing game |
+
+### Default Skills (Available from Start)
+
+These skills are always available, no unlocking required:
+
+1. **Breathing Exercises** - Box breathing, 4-7-8, physiological sigh
+2. **5-4-3-2-1 Grounding** - Sensory grounding exercise
+3. **Drink Pacing** - Accountability timer for social drinking (see AI Accountability section)
+4. **Fidget Pad** - Quick tactile relief tool
 
 ### Skill Progress & Levels
 
@@ -1534,7 +1583,7 @@ Have a promo code? Go to **Settings > Subscription > Redeem Code**.
 
 ## AI Accountability Features
 
-Mood Leaf's AI can help hold you accountable by automatically creating trackers, reminders, and alerts based on your conversations.
+Mood Leaf's AI can help hold you accountable by automatically creating trackers, reminders, and alerts based on your conversations. The accountability system is designed to be **supportive, not preachy** - it adapts to your comfort level and respects your autonomy.
 
 ### How It Works
 
@@ -1544,6 +1593,7 @@ When you mention goals or habits in conversation, the AI can offer to:
 2. **Create Calendar Events** - Set reminders in your phone's calendar
 3. **Create Contacts** - Save people to your address book
 4. **Set Limit Alerts** - Get notified when you're approaching or exceeding limits
+5. **Drink Pacing** - Help pace drinking at social events with timed reminders
 
 ### Example Conversations
 
@@ -1628,12 +1678,84 @@ To see what the AI has created for you:
 3. **Confirm when asked**: The AI will always ask before creating anything
 4. **Review regularly**: Check your Twigs to see your progress
 
+### Drink Pacing (Harm Reduction Tool)
+
+The Drink Pacing feature helps you pace your alcohol consumption at social events. This is a **harm reduction tool** - not promoting drinking, but helping those who choose to drink do so more mindfully.
+
+**How to Start a Session:**
+1. Open Skills → find "Drink Pacing" or say "I want to pace my drinking tonight"
+2. Set your interval (how often to be reminded, e.g., every 60 minutes)
+3. Set your max drinks (optional limit)
+4. Name your event (optional, e.g., "Sarah's party")
+5. Tap "Start Pacing"
+
+**During Your Session:**
+- Your phone will vibrate when it's time for your next drink
+- Tap "Log a Drink" each time you have one
+- See your running count: "2/4 drinks"
+- Get alerts when approaching or reaching your limit
+
+**Features:**
+| Feature | Description |
+|---------|-------------|
+| **Silent Mode** | Vibration only - no sounds (discreet for social settings) |
+| **Smart Timing** | Minimum 15-minute intervals for safety |
+| **Limit Tracking** | Visual progress: "2/4 drinks" |
+| **Auto-End** | Session auto-ends after 6 hours |
+| **History** | Track your patterns over time |
+
+**Example Session:**
+> You: "I'm going to a party tonight and want to stick to 3 drinks max"
+> Coach: "Got it! I can set up drink pacing - one drink every hour, max 3. I'll buzz your phone when it's time. Want me to start the session?"
+
+**Ending Your Session:**
+Tap "End Session" to see your summary:
+- Total drinks consumed
+- Duration of session
+- Whether you stayed on pace
+
+### Adaptive Accountability
+
+The accountability system adapts to your preferences. You're in control of how much (or how little) the coach mentions your limits.
+
+**Intensity Levels:**
+
+| Level | How It Works |
+|-------|--------------|
+| **Off** | Coach never mentions limits or accountability |
+| **Gentle** | Only mentions if you significantly exceed limits, very softly |
+| **Moderate** | Normal check-ins when approaching/reaching limits |
+| **Proactive** | Active check-ins, encouragement, and progress updates |
+
+**Adjusting On-the-Fly:**
+
+You can change accountability intensity in conversation:
+- "Stop reminding me about coffee" → Pauses coffee reminders
+- "Don't hold me accountable today" → Pauses all accountability for today
+- "Be more strict with me" → Increases accountability intensity
+- "Back off a bit" → Decreases accountability intensity
+
+**Comfort Check-ins:**
+
+Periodically, the coach may ask:
+> "How's the accountability feeling? Too much? Too little? Just right?"
+
+This helps the system learn your preferences over time.
+
+**Pause Feature:**
+
+Say "Pause accountability for today" to:
+- Stop all limit reminders until midnight
+- Coach won't mention any tracked items
+- Everything resumes automatically the next day
+
 ### Privacy Note
 
 All accountability data stays on your device:
 - Twigs and their entries are stored locally
 - Calendar events go to YOUR calendar
 - Contacts go to YOUR address book
+- Drink pacing sessions stored locally
 - No data is sent to external servers
 
 ---

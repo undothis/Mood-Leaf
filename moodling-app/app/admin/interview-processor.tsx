@@ -141,31 +141,46 @@ export default function InterviewProcessorScreen() {
   // Stats state
   const [qualityStats, setQualityStats] = useState<QualityStats | null>(null);
 
-  // API Key
+  // API Keys
   const [apiKey, setApiKey] = useState('');
+  const [youtubeApiKey, setYoutubeApiKey] = useState('');
+  const [showYoutubeApiInput, setShowYoutubeApiInput] = useState(false);
 
   // Load data
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [channelsData, pendingData, approvedData, statsData, storedApiKey] = await Promise.all([
+      const [channelsData, pendingData, approvedData, statsData, storedApiKey, storedYoutubeKey] = await Promise.all([
         getCuratedChannels(),
         getPendingInsights(),
         getApprovedInsights(),
         getQualityStats(),
         AsyncStorage.getItem('claude_api_key'),
+        AsyncStorage.getItem('youtube_api_key'),
       ]);
       setChannels(channelsData);
       setPendingInsights(pendingData);
       setApprovedInsights(approvedData);
       setQualityStats(statsData);
       if (storedApiKey) setApiKey(storedApiKey);
+      if (storedYoutubeKey) setYoutubeApiKey(storedYoutubeKey);
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
       setLoading(false);
     }
   }, []);
+
+  // Save YouTube API key
+  const handleSaveYoutubeApiKey = async () => {
+    try {
+      await AsyncStorage.setItem('youtube_api_key', youtubeApiKey);
+      setShowYoutubeApiInput(false);
+      Alert.alert('Saved', 'YouTube API key saved. This enables video statistics for better sampling.');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to save API key');
+    }
+  };
 
   useEffect(() => {
     loadData();
@@ -437,6 +452,64 @@ export default function InterviewProcessorScreen() {
   // Render tabs
   const renderChannelsTab = () => (
     <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
+      {/* YouTube API Key Settings */}
+      <View style={[styles.card, { backgroundColor: colors.cardBackground, marginBottom: 16 }]}>
+        <Pressable
+          style={styles.settingsHeader}
+          onPress={() => setShowYoutubeApiInput(!showYoutubeApiInput)}
+        >
+          <Text style={[styles.cardTitle, { color: colors.text, marginBottom: 0 }]}>
+            YouTube API Settings
+          </Text>
+          <Text style={{ color: colors.textSecondary, fontSize: 18 }}>
+            {showYoutubeApiInput ? '−' : '+'}
+          </Text>
+        </Pressable>
+
+        {showYoutubeApiInput && (
+          <View style={{ marginTop: 12 }}>
+            <Text style={[styles.helperText, { color: colors.textSecondary, marginBottom: 8 }]}>
+              Optional: Add a YouTube Data API v3 key to enable video statistics for better sampling.
+              Get one free at console.cloud.google.com
+            </Text>
+            <TextInput
+              style={[styles.input, { color: colors.text, borderColor: colors.border }]}
+              placeholder="AIza..."
+              placeholderTextColor={colors.textSecondary}
+              value={youtubeApiKey}
+              onChangeText={setYoutubeApiKey}
+              autoCapitalize="none"
+              secureTextEntry
+            />
+            <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
+              {youtubeApiKey ? (
+                <Pressable
+                  style={[styles.channelAction, { backgroundColor: '#F4433620', flex: 1 }]}
+                  onPress={() => {
+                    setYoutubeApiKey('');
+                    AsyncStorage.removeItem('youtube_api_key');
+                    Alert.alert('Cleared', 'YouTube API key removed');
+                  }}
+                >
+                  <Text style={{ color: '#F44336', textAlign: 'center' }}>Clear Key</Text>
+                </Pressable>
+              ) : null}
+              <Pressable
+                style={[styles.channelAction, { backgroundColor: colors.tint + '20', flex: 1 }]}
+                onPress={handleSaveYoutubeApiKey}
+              >
+                <Text style={{ color: colors.tint, textAlign: 'center' }}>Save Key</Text>
+              </Pressable>
+            </View>
+            {youtubeApiKey && (
+              <Text style={[styles.helperText, { color: '#4CAF50', marginTop: 8 }]}>
+                API key configured
+              </Text>
+            )}
+          </View>
+        )}
+      </View>
+
       {/* Add Channel Button */}
       <Pressable
         style={[styles.addButton, { backgroundColor: colors.tint }]}
@@ -1328,5 +1401,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     marginTop: 8,
+  },
+  settingsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
 });
