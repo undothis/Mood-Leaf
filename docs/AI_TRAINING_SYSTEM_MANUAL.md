@@ -1498,6 +1498,9 @@ if (insight) {
 | `accountabilityService.ts` | Skill practice tracking, streaks, achievements, coach skill suggestions |
 | `drinkPacingService.ts` | Harm reduction drink pacing with timed reminders |
 | `quickLogsService.ts` | Twig/Quick Log management with limit support |
+| `achievementNotificationService.ts` | Achievement tracking, tab glow notifications, celebration messages |
+| `safeguardService.ts` | Safety detection (self-harm, violence, abuse), crisis resources |
+| `llmProviderService.ts` | Multi-platform LLM abstraction (Claude, Llama, Apple, Android, Windows) |
 
 ---
 
@@ -1537,6 +1540,11 @@ if (insight) {
 | `moodleaf_ai_created_items` | Accountability | Items created by AI from conversation |
 | `moodleaf_accountability_prefs` | Accountability | User's accountability intensity preferences (off/gentle/moderate/proactive) |
 | `moodleaf_drink_pacing_session` | Drink Pacing | Active drink pacing session |
+| `moodleaf_pending_achievements` | Achievements | Achievements awaiting celebration |
+| `moodleaf_achievement_settings` | Achievements | Glow and notification preferences |
+| `moodleaf_safeguard_log` | Safeguards | Anonymized safety event log |
+| `moodleaf_safeguard_config` | Safeguards | Additional keyword configuration |
+| `moodleaf_llm_provider_config` | LLM Provider | Provider selection and configuration |
 | `moodleaf_drink_pacing_history` | Drink Pacing | Past pacing session summaries |
 | `moodleaf_drink_pacing_prefs` | Drink Pacing | Default interval, max drinks, vibrate-only settings |
 | `moodleaf_skill_practice` | Skill Tracking | Skill practice log entries |

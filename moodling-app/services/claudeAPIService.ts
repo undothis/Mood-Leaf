@@ -59,6 +59,12 @@ import {
   validateCoachResponse,
   validateAgainstTenets,
 } from './corePrincipleKernel';
+import {
+  shouldCoachGlow,
+  getNextCelebration,
+  markAsCelebrated,
+  generateCelebrationMessage,
+} from './achievementNotificationService';
 
 // Storage keys
 const API_KEY_STORAGE = 'moodling_claude_api_key';
@@ -858,6 +864,39 @@ export async function sendMessage(
     console.log('Could not load social connection context:', error);
   }
 
+  // Get user name for personalized address
+  let userNameContext = '';
+  let userName = '';
+  try {
+    const coachSettings = await getCoachSettings();
+    if (coachSettings.userName && coachSettings.userName.trim()) {
+      userName = coachSettings.userName.trim();
+      userNameContext = `USER'S NAME: ${userName} (use this name naturally in conversation when appropriate, but don't overuse it)`;
+    }
+  } catch (error) {
+    console.log('Could not load user name:', error);
+  }
+
+  // Check for achievements to celebrate
+  let achievementContext = '';
+  let pendingAchievement: any = null;
+  try {
+    const shouldGlow = await shouldCoachGlow();
+    if (shouldGlow) {
+      const celebration = await getNextCelebration();
+      if (celebration) {
+        pendingAchievement = celebration;
+        const celebrationMsg = generateCelebrationMessage(celebration);
+        achievementContext = `CELEBRATION OPPORTUNITY: You have something exciting to share with the user!
+${celebrationMsg}
+
+When appropriate in your response (ideally near the beginning), warmly share this with the user. Make it feel natural, not forced. Example: "Oh, before we dive in - ${celebration.title.toLowerCase()}! ${celebration.description}"`;
+      }
+    }
+  } catch (error) {
+    console.log('Could not load achievement context:', error);
+  }
+
   // Get accountability context (limits, tracked items, AI-created twigs, preferences)
   let accountabilityContext = '';
   let shouldMentionAccountability = false;
@@ -885,11 +924,14 @@ export async function sendMessage(
   }
 
   // Assemble full context with ALL data sources:
-  // Order: cognitive profile (how they think), social connection health, memory context,
-  // lifetime overview, psych profile, chronotype/travel, calendar, health + correlations,
-  // detailed tracking logs, lifestyle factors, exposure progress, recent journals,
-  // accountability (limits), user preferences, then current conversation
+  // Order: user name (for personalization), achievements to celebrate, cognitive profile,
+  // social connection health, memory context, lifetime overview, psych profile,
+  // chronotype/travel, calendar, health + correlations, detailed tracking logs,
+  // lifestyle factors, exposure progress, recent journals, accountability (limits),
+  // user preferences, then current conversation
   const contextParts = [
+    userNameContext,     // User's name for personalized address
+    achievementContext,  // Achievements to celebrate (insights, skill completions)
     cognitiveProfileContext, // How this person thinks/learns (from onboarding)
     socialConnectionContext, // Social connection health (isolation risk, connection quality)
     memoryContext,       // Tiered memory (what we know about this person)
@@ -1020,6 +1062,16 @@ ${controllerModifiers}`;
       await addMessageToSession('assistant', responseText);
     } catch (err) {
       console.log('Memory tracking error (non-blocking):', err);
+    }
+
+    // Mark achievement as celebrated (if we had one to share)
+    if (pendingAchievement) {
+      try {
+        await markAsCelebrated(pendingAchievement.id);
+        console.log('[Achievement] Marked as celebrated:', pendingAchievement.title);
+      } catch (err) {
+        console.log('Achievement marking error (non-blocking):', err);
+      }
     }
 
     // Validate response against Core Principle Kernel tenets
