@@ -1501,6 +1501,7 @@ if (insight) {
 | `achievementNotificationService.ts` | Achievement tracking, tab glow notifications, celebration messages |
 | `safeguardService.ts` | Safety detection (self-harm, violence, abuse), crisis resources |
 | `llmProviderService.ts` | Multi-platform LLM abstraction (Claude, Llama, Apple, Android, Windows) |
+| `insightFeedbackService.ts` | Insight feedback collection, anonymous upload, training data export |
 
 ---
 
@@ -1545,6 +1546,9 @@ if (insight) {
 | `moodleaf_safeguard_log` | Safeguards | Anonymized safety event log |
 | `moodleaf_safeguard_config` | Safeguards | Additional keyword configuration |
 | `moodleaf_llm_provider_config` | LLM Provider | Provider selection and configuration |
+| `moodleaf_insight_feedback` | Feedback | User feedback on insights |
+| `moodleaf_feedback_upload_consent` | Feedback | User consent for anonymous upload |
+| `moodleaf_pending_feedback_uploads` | Feedback | Queue of feedback awaiting upload |
 | `moodleaf_drink_pacing_history` | Drink Pacing | Past pacing session summaries |
 | `moodleaf_drink_pacing_prefs` | Drink Pacing | Default interval, max drinks, vibrate-only settings |
 | `moodleaf_skill_practice` | Skill Tracking | Skill practice log entries |
