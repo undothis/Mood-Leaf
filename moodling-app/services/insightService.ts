@@ -11,6 +11,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getAllLogEntries } from './quickLogsService';
 
 // ============================================
 // INSIGHT TYPES
@@ -824,8 +825,21 @@ export async function runInsightAnalysis(
   const newInsights: Insight[] = [];
   const updatedInsights: Insight[] = [];
 
+  // Load twigs data if not provided
+  let loadedTwigs = twigs || options?.dataSources?.twigs;
+  if (!loadedTwigs || loadedTwigs.length === 0) {
+    try {
+      console.log('[Insights] Loading twigs data from quickLogsService...');
+      loadedTwigs = await getAllLogEntries();
+      console.log('[Insights] Loaded', loadedTwigs.length, 'log entries');
+    } catch (error) {
+      console.log('[Insights] Failed to load twigs:', error);
+      loadedTwigs = [];
+    }
+  }
+
   // Merge direct params with dataSources
-  const allTwigs = twigs || options?.dataSources?.twigs || [];
+  const allTwigs = loadedTwigs || [];
   const allConversations = conversations || options?.dataSources?.conversations || [];
 
   // 1. Run heuristic pattern detection (includes calendar, contacts, etc.)
