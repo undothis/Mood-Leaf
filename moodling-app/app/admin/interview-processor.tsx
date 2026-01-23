@@ -133,6 +133,29 @@ export default function InterviewProcessorScreen() {
   const [processingLog, setProcessingLog] = useState<string[]>([]);
   const processingRef = useRef(false);
 
+  // Progress tracking state
+  const [progressState, setProgressState] = useState<{
+    phase: 'idle' | 'fetching_videos' | 'processing' | 'complete' | 'error';
+    currentVideo: number;
+    totalVideos: number;
+    currentVideoTitle: string;
+    currentStep: 'transcript' | 'extracting' | 'saving' | 'done';
+    insightsFound: number;
+    videosSkipped: number;
+    startTime: number | null;
+    estimatedTimeRemaining: string;
+  }>({
+    phase: 'idle',
+    currentVideo: 0,
+    totalVideos: 0,
+    currentVideoTitle: '',
+    currentStep: 'transcript',
+    insightsFound: 0,
+    videosSkipped: 0,
+    startTime: null,
+    estimatedTimeRemaining: '',
+  });
+
   // Review state
   const [pendingInsights, setPendingInsights] = useState<ExtractedInsight[]>([]);
   const [approvedInsights, setApprovedInsights] = useState<ExtractedInsight[]>([]);
@@ -310,6 +333,20 @@ export default function InterviewProcessorScreen() {
     ]);
   };
 
+  // Calculate estimated time remaining
+  const calculateETA = (currentVideo: number, totalVideos: number, startTime: number): string => {
+    if (currentVideo === 0) return 'Calculating...';
+    const elapsed = Date.now() - startTime;
+    const avgTimePerVideo = elapsed / currentVideo;
+    const remaining = avgTimePerVideo * (totalVideos - currentVideo);
+
+    if (remaining < 60000) {
+      return `~${Math.round(remaining / 1000)}s remaining`;
+    } else {
+      return `~${Math.round(remaining / 60000)}m remaining`;
+    }
+  };
+
   // Process channel
   const handleProcessChannel = async () => {
     if (!selectedChannel) {
@@ -327,6 +364,20 @@ export default function InterviewProcessorScreen() {
     setProcessingLog([]);
     processingRef.current = true;
 
+    // Initialize progress state
+    const startTime = Date.now();
+    setProgressState({
+      phase: 'fetching_videos',
+      currentVideo: 0,
+      totalVideos: numVideos,
+      currentVideoTitle: '',
+      currentStep: 'transcript',
+      insightsFound: 0,
+      videosSkipped: 0,
+      startTime,
+      estimatedTimeRemaining: 'Calculating...',
+    });
+
     addLog(`Starting processing for ${selectedChannel.name}...`);
     addLog(`Fetching ${numVideos} videos...`);
 
@@ -336,11 +387,19 @@ export default function InterviewProcessorScreen() {
 
       if (error) {
         addLog(`Error: ${error}`);
+        setProgressState(prev => ({ ...prev, phase: 'error' }));
         setProcessing(false);
         return;
       }
 
       addLog(`Found ${videos.length} videos to process`);
+
+      // Update progress with actual video count
+      setProgressState(prev => ({
+        ...prev,
+        phase: 'processing',
+        totalVideos: videos.length,
+      }));
 
       // Create job
       const job = await createProcessingJob(
@@ -353,11 +412,21 @@ export default function InterviewProcessorScreen() {
       setCurrentJob(job);
 
       let totalInsights = 0;
-      let totalFiltered = 0;
+      let videosSkipped = 0;
 
       // Process each video
       for (let i = 0; i < videos.length && processingRef.current; i++) {
         const video = videos[i];
+
+        // Update progress - starting new video
+        setProgressState(prev => ({
+          ...prev,
+          currentVideo: i + 1,
+          currentVideoTitle: video.title.slice(0, 60),
+          currentStep: 'transcript',
+          estimatedTimeRemaining: calculateETA(i, videos.length, startTime),
+        }));
+
         addLog(`[${i + 1}/${videos.length}] Processing: ${video.title.slice(0, 50)}...`);
 
         // Fetch transcript
@@ -365,10 +434,15 @@ export default function InterviewProcessorScreen() {
 
         if (transcriptError || !transcript) {
           addLog(`  ⚠ No transcript available, skipping`);
+          videosSkipped++;
+          setProgressState(prev => ({ ...prev, videosSkipped }));
           continue;
         }
 
         addLog(`  ✓ Got transcript (${transcript.length} chars)`);
+
+        // Update progress - extracting insights
+        setProgressState(prev => ({ ...prev, currentStep: 'extracting' }));
 
         // Extract insights
         const { insights, error: extractError } = await extractInsightsWithClaude(
@@ -382,11 +456,20 @@ export default function InterviewProcessorScreen() {
 
         if (extractError) {
           addLog(`  ⚠ Extraction error: ${extractError}`);
+          videosSkipped++;
+          setProgressState(prev => ({ ...prev, videosSkipped }));
           continue;
         }
 
         addLog(`  ✓ Extracted ${insights.length} insights`);
         totalInsights += insights.length;
+
+        // Update progress - saving
+        setProgressState(prev => ({
+          ...prev,
+          currentStep: 'saving',
+          insightsFound: totalInsights,
+        }));
 
         // Save insights
         if (insights.length > 0) {
@@ -403,6 +486,13 @@ export default function InterviewProcessorScreen() {
           currentVideoIndex: i + 1,
         });
 
+        // Update progress - done with this video
+        setProgressState(prev => ({
+          ...prev,
+          currentStep: 'done',
+          estimatedTimeRemaining: calculateETA(i + 1, videos.length, startTime),
+        }));
+
         // Small delay to avoid rate limiting
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
@@ -413,14 +503,24 @@ export default function InterviewProcessorScreen() {
         completedAt: new Date().toISOString(),
       });
 
+      // Update progress - complete
+      setProgressState(prev => ({
+        ...prev,
+        phase: 'complete',
+        currentStep: 'done',
+        estimatedTimeRemaining: 'Complete!',
+      }));
+
       addLog(`\n✅ Processing complete!`);
       addLog(`Total insights extracted: ${totalInsights}`);
+      addLog(`Videos skipped (no transcript): ${videosSkipped}`);
 
       // Refresh data
       loadData();
 
     } catch (error) {
       addLog(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setProgressState(prev => ({ ...prev, phase: 'error' }));
     } finally {
       setProcessing(false);
       processingRef.current = false;
@@ -666,90 +766,254 @@ export default function InterviewProcessorScreen() {
     </ScrollView>
   );
 
-  const renderProcessTab = () => (
-    <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
-      {/* Channel Selection */}
-      <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
-        <Text style={[styles.cardTitle, { color: colors.text }]}>Select Channel</Text>
+  const renderProcessTab = () => {
+    const progressPercent = progressState.totalVideos > 0
+      ? Math.round((progressState.currentVideo / progressState.totalVideos) * 100)
+      : 0;
 
-        {channels.length === 0 ? (
-          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-            Add channels first in the Channels tab
-          </Text>
-        ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {channels.map(channel => (
-              <Pressable
-                key={channel.id}
-                style={[
-                  styles.channelChip,
-                  {
-                    backgroundColor: selectedChannel?.id === channel.id ? colors.tint : colors.border,
-                  }
-                ]}
-                onPress={() => setSelectedChannel(channel)}
-              >
-                <Text style={{ color: selectedChannel?.id === channel.id ? '#fff' : colors.text }}>
-                  {channel.name}
-                </Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-        )}
-      </View>
+    const getStepLabel = (step: typeof progressState.currentStep): string => {
+      switch (step) {
+        case 'transcript': return 'Getting transcript...';
+        case 'extracting': return 'Extracting insights with AI...';
+        case 'saving': return 'Saving insights...';
+        case 'done': return 'Done';
+      }
+    };
 
-      {/* Processing Options */}
-      {selectedChannel && (
+    const getPhaseColor = (phase: typeof progressState.phase): string => {
+      switch (phase) {
+        case 'fetching_videos': return '#FF9800';
+        case 'processing': return colors.tint;
+        case 'complete': return '#4CAF50';
+        case 'error': return '#F44336';
+        default: return colors.textSecondary;
+      }
+    };
+
+    return (
+      <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
+        {/* Channel Selection */}
         <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
-          <Text style={[styles.cardTitle, { color: colors.text }]}>Processing Options</Text>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>Select Channel</Text>
 
-          <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Videos to Process</Text>
-          <TextInput
-            style={[styles.input, { color: colors.text, borderColor: colors.border }]}
-            value={videosToProcess}
-            onChangeText={setVideosToProcess}
-            keyboardType="number-pad"
-            placeholder="10"
-          />
+          {channels.length === 0 ? (
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+              Add channels first in the Channels tab
+            </Text>
+          ) : (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {channels.map(channel => (
+                <Pressable
+                  key={channel.id}
+                  style={[
+                    styles.channelChip,
+                    {
+                      backgroundColor: selectedChannel?.id === channel.id ? colors.tint : colors.border,
+                    }
+                  ]}
+                  onPress={() => !processing && setSelectedChannel(channel)}
+                  disabled={processing}
+                >
+                  <Text style={{ color: selectedChannel?.id === channel.id ? '#fff' : colors.text }}>
+                    {channel.name}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          )}
+        </View>
 
-          <Text style={[styles.helperText, { color: colors.textSecondary }]}>
-            Processes random videos from the channel's most recent uploads.
-            Each video costs ~$0.01-0.05 in API calls.
-          </Text>
+        {/* Processing Options */}
+        {selectedChannel && !processing && (
+          <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
+            <Text style={[styles.cardTitle, { color: colors.text }]}>Processing Options</Text>
 
-          {!processing ? (
+            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Videos to Process</Text>
+            <TextInput
+              style={[styles.input, { color: colors.text, borderColor: colors.border }]}
+              value={videosToProcess}
+              onChangeText={setVideosToProcess}
+              keyboardType="number-pad"
+              placeholder="10"
+            />
+
+            <Text style={[styles.helperText, { color: colors.textSecondary }]}>
+              Processes random videos from the channel's most recent uploads.
+              Each video costs ~$0.01-0.05 in API calls.
+            </Text>
+
             <Pressable
               style={[styles.processButton, { backgroundColor: colors.tint }]}
               onPress={handleProcessChannel}
             >
               <Text style={styles.processButtonText}>Start Processing</Text>
             </Pressable>
-          ) : (
+          </View>
+        )}
+
+        {/* Progress Section - shown during processing */}
+        {processing && (
+          <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
+            <View style={styles.progressHeader}>
+              <Text style={[styles.cardTitle, { color: colors.text, marginBottom: 0 }]}>
+                Processing {selectedChannel?.name}
+              </Text>
+              <ActivityIndicator size="small" color={colors.tint} />
+            </View>
+
+            {/* Phase indicator */}
+            <View style={[styles.phaseIndicator, { backgroundColor: getPhaseColor(progressState.phase) + '20' }]}>
+              <Text style={[styles.phaseText, { color: getPhaseColor(progressState.phase) }]}>
+                {progressState.phase === 'fetching_videos' ? '📡 Fetching video list...' :
+                 progressState.phase === 'processing' ? '⚙️ Processing videos...' :
+                 progressState.phase === 'complete' ? '✅ Complete!' :
+                 progressState.phase === 'error' ? '❌ Error occurred' :
+                 'Ready'}
+              </Text>
+            </View>
+
+            {/* Main progress bar */}
+            <View style={styles.progressSection}>
+              <View style={styles.progressLabelRow}>
+                <Text style={[styles.progressLabel, { color: colors.text }]}>
+                  Video {progressState.currentVideo} of {progressState.totalVideos}
+                </Text>
+                <Text style={[styles.progressPercent, { color: colors.tint }]}>
+                  {progressPercent}%
+                </Text>
+              </View>
+
+              <View style={[styles.progressBarLarge, { backgroundColor: colors.border }]}>
+                <View
+                  style={[
+                    styles.progressFillLarge,
+                    {
+                      width: `${progressPercent}%`,
+                      backgroundColor: colors.tint,
+                    }
+                  ]}
+                />
+              </View>
+
+              <Text style={[styles.etaText, { color: colors.textSecondary }]}>
+                {progressState.estimatedTimeRemaining}
+              </Text>
+            </View>
+
+            {/* Current video info */}
+            {progressState.currentVideoTitle && (
+              <View style={[styles.currentVideoBox, { backgroundColor: colors.background }]}>
+                <Text style={[styles.currentVideoLabel, { color: colors.textSecondary }]}>
+                  Now processing:
+                </Text>
+                <Text style={[styles.currentVideoTitle, { color: colors.text }]} numberOfLines={2}>
+                  {progressState.currentVideoTitle}
+                </Text>
+                <View style={styles.stepIndicator}>
+                  <View style={[
+                    styles.stepDot,
+                    { backgroundColor: progressState.currentStep === 'transcript' ? colors.tint : '#4CAF50' }
+                  ]} />
+                  <View style={[styles.stepLine, { backgroundColor: progressState.currentStep === 'transcript' ? colors.border : '#4CAF50' }]} />
+                  <View style={[
+                    styles.stepDot,
+                    { backgroundColor: progressState.currentStep === 'extracting' ? colors.tint :
+                                       progressState.currentStep === 'saving' || progressState.currentStep === 'done' ? '#4CAF50' : colors.border }
+                  ]} />
+                  <View style={[styles.stepLine, { backgroundColor: progressState.currentStep === 'saving' || progressState.currentStep === 'done' ? '#4CAF50' : colors.border }]} />
+                  <View style={[
+                    styles.stepDot,
+                    { backgroundColor: progressState.currentStep === 'saving' ? colors.tint :
+                                       progressState.currentStep === 'done' ? '#4CAF50' : colors.border }
+                  ]} />
+                </View>
+                <Text style={[styles.stepLabel, { color: colors.tint }]}>
+                  {getStepLabel(progressState.currentStep)}
+                </Text>
+              </View>
+            )}
+
+            {/* Stats during processing */}
+            <View style={styles.processingStats}>
+              <View style={styles.processingStat}>
+                <Text style={[styles.processingStatValue, { color: '#4CAF50' }]}>
+                  {progressState.insightsFound}
+                </Text>
+                <Text style={[styles.processingStatLabel, { color: colors.textSecondary }]}>
+                  Insights Found
+                </Text>
+              </View>
+              <View style={styles.processingStat}>
+                <Text style={[styles.processingStatValue, { color: '#FF9800' }]}>
+                  {progressState.videosSkipped}
+                </Text>
+                <Text style={[styles.processingStatLabel, { color: colors.textSecondary }]}>
+                  Skipped
+                </Text>
+              </View>
+              <View style={styles.processingStat}>
+                <Text style={[styles.processingStatValue, { color: colors.text }]}>
+                  {progressState.currentVideo - progressState.videosSkipped}
+                </Text>
+                <Text style={[styles.processingStatLabel, { color: colors.textSecondary }]}>
+                  Processed
+                </Text>
+              </View>
+            </View>
+
+            {/* Stop button */}
             <Pressable
               style={[styles.processButton, { backgroundColor: '#F44336' }]}
               onPress={handleStopProcessing}
             >
               <Text style={styles.processButtonText}>Stop Processing</Text>
             </Pressable>
-          )}
-        </View>
-      )}
+          </View>
+        )}
 
-      {/* Processing Log */}
-      {processingLog.length > 0 && (
-        <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
-          <Text style={[styles.cardTitle, { color: colors.text }]}>Processing Log</Text>
-          <ScrollView style={styles.logContainer}>
-            {processingLog.map((log, i) => (
-              <Text key={i} style={[styles.logText, { color: colors.textSecondary }]}>
-                {log}
+        {/* Processing complete summary */}
+        {progressState.phase === 'complete' && !processing && (
+          <View style={[styles.card, { backgroundColor: '#4CAF5015', borderColor: '#4CAF50', borderWidth: 1 }]}>
+            <Text style={[styles.cardTitle, { color: '#4CAF50' }]}>✅ Processing Complete!</Text>
+            <View style={styles.completeSummary}>
+              <Text style={[styles.summaryText, { color: colors.text }]}>
+                <Text style={{ fontWeight: '700' }}>{progressState.insightsFound}</Text> insights extracted from{' '}
+                <Text style={{ fontWeight: '700' }}>{progressState.currentVideo - progressState.videosSkipped}</Text> videos
               </Text>
-            ))}
-          </ScrollView>
-        </View>
-      )}
-    </ScrollView>
-  );
+              {progressState.videosSkipped > 0 && (
+                <Text style={[styles.summaryNote, { color: colors.textSecondary }]}>
+                  ({progressState.videosSkipped} videos skipped - no transcript available)
+                </Text>
+              )}
+            </View>
+            <Pressable
+              style={[styles.reviewButton, { backgroundColor: colors.tint }]}
+              onPress={() => {
+                setProgressState(prev => ({ ...prev, phase: 'idle' }));
+                setActiveTab('review');
+              }}
+            >
+              <Text style={{ color: '#fff', fontWeight: '600' }}>Review Insights →</Text>
+            </Pressable>
+          </View>
+        )}
+
+        {/* Processing Log */}
+        {processingLog.length > 0 && (
+          <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
+            <Text style={[styles.cardTitle, { color: colors.text }]}>Processing Log</Text>
+            <ScrollView style={styles.logContainer} nestedScrollEnabled>
+              {processingLog.map((log, i) => (
+                <Text key={i} style={[styles.logText, { color: colors.textSecondary }]}>
+                  {log}
+                </Text>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+      </ScrollView>
+    );
+  };
 
   const renderReviewTab = () => (
     <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
@@ -1405,6 +1669,124 @@ const styles = StyleSheet.create({
   settingsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  // Progress UI styles
+  progressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  phaseIndicator: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  phaseText: {
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  progressSection: {
+    marginBottom: 16,
+  },
+  progressLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  progressLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  progressPercent: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  progressBarLarge: {
+    height: 12,
+    borderRadius: 6,
+    overflow: 'hidden',
+  },
+  progressFillLarge: {
+    height: '100%',
+    borderRadius: 6,
+  },
+  etaText: {
+    fontSize: 12,
+    marginTop: 6,
+    textAlign: 'right',
+  },
+  currentVideoBox: {
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 16,
+  },
+  currentVideoLabel: {
+    fontSize: 11,
+    marginBottom: 4,
+  },
+  currentVideoTitle: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 12,
+  },
+  stepIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  stepDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  stepLine: {
+    height: 2,
+    width: 40,
+  },
+  stepLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  processingStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.05)',
+    marginBottom: 12,
+  },
+  processingStat: {
+    alignItems: 'center',
+  },
+  processingStatValue: {
+    fontSize: 24,
+    fontWeight: '700',
+  },
+  processingStatLabel: {
+    fontSize: 11,
+    marginTop: 2,
+  },
+  completeSummary: {
+    marginBottom: 16,
+  },
+  summaryText: {
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  summaryNote: {
+    fontSize: 12,
+    marginTop: 4,
+  },
+  reviewButton: {
+    paddingVertical: 12,
+    borderRadius: 8,
     alignItems: 'center',
   },
 });
