@@ -1670,6 +1670,22 @@ export default function SettingsScreen() {
 
         <TouchableOpacity
           style={[styles.faqItem, { backgroundColor: colors.background }]}
+          onPress={() => router.push('/admin/coach-diagnostics')}
+        >
+          <Text style={styles.faqEmoji}>🔧</Text>
+          <View style={styles.faqContent}>
+            <Text style={[styles.faqTitle, { color: colors.text }]}>
+              Coach Diagnostics
+            </Text>
+            <Text style={[styles.faqSubtitle, { color: colors.textSecondary }]}>
+              Test all Coach services and contexts
+            </Text>
+          </View>
+          <Text style={[styles.faqArrow, { color: colors.textMuted }]}>→</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.faqItem, { backgroundColor: colors.background }]}
           onPress={() => router.push('/admin/interview-processor')}
         >
           <Text style={styles.faqEmoji}>🎬</Text>

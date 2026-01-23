@@ -702,27 +702,38 @@ export async function sendMessage(
   message: string,
   context: ConversationContext
 ): Promise<AIResponse> {
-  // Check for safety concerns (self-harm, violence, etc.)
-  const safeguardCheck = checkSafeguards(message);
-  if (safeguardCheck.triggered && safeguardCheck.response) {
-    return {
-      text: safeguardCheck.response.text,
-      source: 'crisis',
-      cost: 0,
-    };
-  }
+  // Top-level try/catch to catch ANY error and provide meaningful feedback
+  try {
+    console.log('[ClaudeAPI] sendMessage called with message length:', message?.length || 0);
 
-  // Get API key
-  const apiKey = await getAPIKey();
-  if (!apiKey) {
-    console.log('[ClaudeAPI] No API key found');
-    return {
-      text: "I'd like to chat with you, but I need an API key to be set up first. You can add one in Settings.",
-      source: 'fallback',
-      cost: 0,
-    };
-  }
-  console.log('[ClaudeAPI] API key found, length:', apiKey.length);
+    // Check for safety concerns (self-harm, violence, etc.)
+    let safeguardCheck;
+    try {
+      safeguardCheck = checkSafeguards(message);
+    } catch (safeguardError) {
+      console.error('[ClaudeAPI] Safeguard check failed:', safeguardError);
+      safeguardCheck = { triggered: false };
+    }
+
+    if (safeguardCheck.triggered && safeguardCheck.response) {
+      return {
+        text: safeguardCheck.response.text,
+        source: 'crisis',
+        cost: 0,
+      };
+    }
+
+    // Get API key
+    const apiKey = await getAPIKey();
+    if (!apiKey) {
+      console.log('[ClaudeAPI] No API key found');
+      return {
+        text: "I'd like to chat with you, but I need an API key to be set up first. You can add one in Settings.",
+        source: 'fallback',
+        cost: 0,
+      };
+    }
+    console.log('[ClaudeAPI] API key found, length:', apiKey.length);
 
   // Get tone preferences (with fallback to prevent API failure)
   let tonePrefs = context.toneStyles;
@@ -735,7 +746,12 @@ export async function sendMessage(
       tonePrefs = ['balanced']; // Default fallback
     }
   }
-  const toneInstruction = getToneInstruction(tonePrefs);
+  let toneInstruction = 'Be warm, supportive, and empathetic';
+  try {
+    toneInstruction = getToneInstruction(tonePrefs);
+  } catch (toneError) {
+    console.log('[ClaudeAPI] Tone instruction failed, using default:', toneError);
+  }
 
   // Get coach personality settings
   let personalityPrompt: string | undefined;
@@ -764,7 +780,12 @@ export async function sendMessage(
 
   // Build context and prompt
   // Combine: rich user context (Unit 18B) + lifetime context + health context + conversation context
-  const conversationContext = buildConversationContext(context);
+  let conversationContext = 'No additional context available.';
+  try {
+    conversationContext = buildConversationContext(context);
+  } catch (contextError) {
+    console.log('[ClaudeAPI] Build conversation context failed:', contextError);
+  }
 
   // Get rich user context (must be wrapped in try/catch to prevent full API failure)
   let richContext = '';
@@ -861,8 +882,14 @@ export async function sendMessage(
   }
 
   // Track this user message in session memory
-  const userMood = detectUserMood(message);
-  const userEnergy = detectUserEnergy(message);
+  let userMood = 'neutral';
+  let userEnergy = 'medium';
+  try {
+    userMood = detectUserMood(message);
+    userEnergy = detectUserEnergy(message);
+  } catch (moodError) {
+    console.log('[ClaudeAPI] Mood/energy detection failed:', moodError);
+  }
   try {
     await addMessageToSession('user', message, userMood, userEnergy);
     const topics = extractTopics(message);
@@ -1020,7 +1047,14 @@ CONVERSATION STYLE DIRECTIVES (for this specific response):
 ${controllerModifiers}`;
   }
 
-  const messages = buildMessages(message, context.recentMessages);
+  let messages;
+  try {
+    messages = buildMessages(message, context.recentMessages || []);
+  } catch (buildMsgError) {
+    console.error('[ClaudeAPI] buildMessages failed:', buildMsgError);
+    // Fallback to just the user's message
+    messages = [{ role: 'user', content: message }];
+  }
 
   const request: ClaudeRequest = {
     model: CLAUDE_CONFIG.model,
@@ -1029,9 +1063,12 @@ ${controllerModifiers}`;
     messages,
   };
 
+  console.log('[ClaudeAPI] Making API request to:', CLAUDE_CONFIG.baseURL);
+  console.log('[ClaudeAPI] Using model:', CLAUDE_CONFIG.model);
+  console.log('[ClaudeAPI] System prompt length:', systemPrompt?.length || 0);
+  console.log('[ClaudeAPI] Messages count:', messages?.length || 0);
+
   try {
-    console.log('[ClaudeAPI] Making API request to:', CLAUDE_CONFIG.baseURL);
-    console.log('[ClaudeAPI] Using model:', CLAUDE_CONFIG.model);
 
     const response = await fetch(CLAUDE_CONFIG.baseURL, {
       method: 'POST',
@@ -1147,12 +1184,24 @@ ${controllerModifiers}`;
       inputTokens: data.usage.input_tokens,
       outputTokens: data.usage.output_tokens,
     };
-  } catch (error) {
-    console.error('Claude API request failed:', error);
+  } catch (apiError) {
+    console.error('[ClaudeAPI] API request failed:', apiError);
 
-    // Fallback response
+    // Fallback response for API errors
     return {
       text: "I'm having trouble connecting right now. How about we try again in a moment?",
+      source: 'fallback',
+      cost: 0,
+    };
+  }
+
+  } catch (topLevelError: unknown) {
+    // This catches ANY unexpected error in the entire sendMessage function
+    console.error('[ClaudeAPI] CRITICAL: Unexpected error in sendMessage:', topLevelError);
+    console.error('[ClaudeAPI] Error stack:', topLevelError instanceof Error ? topLevelError.stack : 'No stack');
+
+    return {
+      text: "Something unexpected happened. I'm still here - what's on your mind?",
       source: 'fallback',
       cost: 0,
     };
