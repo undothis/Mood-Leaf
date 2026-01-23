@@ -1258,6 +1258,26 @@ The Import tab is a FORM. Fill in Title, Insight, and Coaching Implication, then
 - API key may be invalid
 - Video content may not contain relevant insights
 
+#### "No transcript available" (YouTube Processing)
+The transcript extraction uses multiple regex patterns to find `ytInitialPlayerResponse` in the YouTube page. If all videos show "No transcript available":
+
+**Debugging Steps:**
+1. Check the logs - extensive logging has been added at each extraction step:
+   - `[Transcript] HTML contains 'ytInitialPlayerResponse': true/false`
+   - `[Transcript] HTML contains 'captionTracks': true/false`
+   - `[Transcript] Pattern 1/2/3/4/5: MATCHED or no match`
+
+2. **React Native Compatibility:** The regex uses `[\s\S]` instead of the `/s` dotall flag for React Native JS engine compatibility
+
+3. **Five Extraction Patterns Tried:**
+   - Pattern 1: `var ytInitialPlayerResponse = {...}`
+   - Pattern 2: `ytInitialPlayerResponse = {...}` (without var)
+   - Pattern 3: Brace-counting approach (most robust)
+   - Pattern 4: `JSON.parse(...)` wrapper
+   - Pattern 5: Direct `captionTracks` extraction
+
+4. If debug snippet shows ytInitialPlayerResponse exists but no pattern matches, YouTube may have changed their format - check the HTML structure
+
 #### "Model quality degraded"
 1. Check `trainingDataImpactService.ts` for problem data
 2. Review recently added insights

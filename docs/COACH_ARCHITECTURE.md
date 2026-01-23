@@ -34,7 +34,7 @@ We are actively training a local LLaMA model to replace Claude. This has major i
    | `skillRecommendationService` | ✅ | ❌ | Skill suggestions based on context |
    | `coachModeService` | ✅ | ❌ | Skill modes |
    | `safeguardService` | ✅ | ❌ | Safety checks |
-   | `cognitiveProfileService` | ✅ | ❌ | Cognitive patterns |
+   | `cognitiveProfileService` | ✅ | ✅ | Cognitive patterns (aphantasia, mental imagery) |
    | `socialConnectionHealthService` | ✅ | ❌ | Social context |
    | `exposureLadderService` | ✅ | ❌ | Anxiety exposure |
    | `patternService` | ✅ | ❌ | Lifestyle factors |
