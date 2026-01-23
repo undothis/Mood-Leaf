@@ -11,13 +11,14 @@ The MoodLeaf AI Training System is designed to create a specialized, human-like 
 1. [System Architecture](#1-system-architecture)
 2. [Data Collection Pipeline](#2-data-collection-pipeline)
 3. [Quality Control System](#3-quality-control-system)
-4. [Model Version Control](#4-model-version-control)
-5. [Data Persistence & Backup](#5-data-persistence--backup)
-6. [Training Data Impact Analysis](#6-training-data-impact-analysis)
-7. [Llama Integration](#7-llama-integration)
-8. [Status Monitoring](#8-status-monitoring)
-9. [Best Practices](#9-best-practices)
-10. [Troubleshooting](#10-troubleshooting)
+4. [Advanced Research Methods](#4-advanced-research-methods)
+5. [Model Version Control](#5-model-version-control)
+6. [Data Persistence & Backup](#6-data-persistence--backup)
+7. [Training Data Impact Analysis](#7-training-data-impact-analysis)
+8. [Llama Integration](#8-llama-integration)
+9. [Status Monitoring](#9-status-monitoring)
+10. [Best Practices](#10-best-practices)
+11. [Troubleshooting](#11-troubleshooting)
 
 ---
 
@@ -228,15 +229,216 @@ Overall Quality: 78/100
 
 ---
 
-## 4. Model Version Control
+## 4. Advanced Research Methods
 
-### 4.1 Overview
+**Service**: `advancedResearchService.ts`
+
+These are research-grade techniques for maximizing training data quality beyond basic filtering.
+
+### 11.1 Contrastive Examples
+
+Generate good vs bad response pairs to teach the model what TO do and what NOT to do.
+
+```typescript
+const pair = await generateContrastivePairs(insightId);
+// Returns:
+// {
+//   scenario: "User is feeling isolated",
+//   goodResponse: { text: "That loneliness sounds really heavy...", ... },
+//   badResponse: { text: "Just get out more!", whyBad: "Dismissive" },
+//   difficulty: "medium"
+// }
+```
+
+**Purpose**: Contrastive learning helps the model distinguish between helpful and harmful responses.
+
+### 11.2 Persona Diversity
+
+Ensure training data covers different demographics and life situations.
+
+| Persona | Description | Target Coverage |
+|---------|-------------|-----------------|
+| young_adult | Ages 18-25 | ~8% |
+| mid_career | Ages 26-40 | ~8% |
+| midlife | Ages 41-55 | ~8% |
+| senior | Ages 55+ | ~8% |
+| parent | Parents | ~8% |
+| single | Single people | ~8% |
+| lgbtq | LGBTQ+ | ~8% |
+| neurodivergent | ADHD, autism, etc. | ~8% |
+| grief | Grieving people | ~8% |
+| caregiver | Caregivers | ~8% |
+| immigrant | Immigrant/Expat | ~8% |
+| veteran | Veterans | ~8% |
+
+```typescript
+const coverage = await analyzePersonaCoverage();
+const underrep = await getUnderrepresentedPersonas();
+```
+
+### 11.3 Emotional Arc Coverage
+
+Ensure insights cover complete emotional journeys, not just isolated moments.
+
+**Tracked Arcs:**
+- **Grief to Recovery**: shock → denial → anger → bargaining → depression → acceptance → growth
+- **Anxiety to Calm**: trigger → escalation → peak → coping → regulation → calm → reflection
+- **Conflict to Resolution**: tension → conflict → escalation → turning_point → de-escalation → resolution → repair
+- **Joy Experience**: anticipation → experience → peak_joy → savoring → gratitude → memory → sharing
+- **Personal Growth**: comfort_zone → discomfort → challenge → struggle → breakthrough → integration → mastery
+- **Building Connection**: stranger → acquaintance → opening_up → vulnerability → deepening → trust → intimacy
+
+```typescript
+const arcs = await analyzeEmotionalArcCoverage();
+// Shows which stages are missing for each arc
+```
+
+### 11.4 Bias Detection
+
+Automatically scan for cultural, gender, age, socioeconomic, and ability biases.
+
+| Bias Type | Example Pattern | Severity |
+|-----------|-----------------|----------|
+| Gender | "man up", "boys don't cry" | High |
+| Cultural | "weird custom", "normal family" | Medium |
+| Age | "old people can't", "kids these days" | Medium |
+| Socioeconomic | "just travel", "everyone can afford therapy" | Medium |
+| Ability | "crazy", "insane", "lame" | High |
+
+```typescript
+const biasReports = await detectBias();
+const biasScore = await getBiasScore(); // Higher = less biased
+```
+
+### 11.5 Contradiction Detection
+
+Find conflicting advice in the training data.
+
+```typescript
+const contradictions = await detectContradictions();
+// Finds pairs like:
+// Insight 1: "Express anger openly"
+// Insight 2: "Suppress anger to avoid conflict"
+// Type: "direct contradiction"
+```
+
+**Resolution Options**: keep_both (if context-dependent), merge, remove_one, needs_review
+
+### 11.6 Evidence Grading
+
+Rate source credibility for each insight.
+
+| Source Type | Base Credibility |
+|-------------|------------------|
+| peer_reviewed | 90 |
+| expert_opinion | 80 |
+| lived_experience | 70 |
+| anecdotal | 50 |
+| unknown | 40 |
+
+```typescript
+const grade = await gradeEvidence(insightId);
+const lowEvidence = await getLowEvidenceInsights();
+```
+
+### 11.7 Sentiment Distribution
+
+Balance positive, negative, neutral, and mixed insights.
+
+**Target Distribution:**
+- Positive: ~30%
+- Negative: ~30%
+- Neutral: ~20%
+- Mixed: ~20%
+
+```typescript
+const distribution = await analyzeSentimentDistribution();
+// Returns: { balance: "good" | "too_positive" | "too_negative" | "too_neutral" }
+```
+
+### 11.8 Response Simulation
+
+Test how an insight would affect actual AI responses.
+
+```typescript
+const result = await simulateResponse(insightId, "I feel so alone", apiKey);
+// Returns:
+// {
+//   generatedResponse: "That loneliness sounds really heavy...",
+//   qualityScore: 85,
+//   humanlikeness: 80,
+//   helpfulness: 90,
+//   safetyScore: 95,
+//   issues: []
+// }
+```
+
+### 11.9 Expert Validation Queue
+
+Flag insights for domain expert review.
+
+**Auto-flagging triggers:**
+- Contains suicide/self-harm content → Flag for therapist
+- Contains research claims → Flag for researcher
+- Low AI confidence → Flag for general review
+
+```typescript
+await autoFlagForExpertReview();
+const queue = await getExpertQueue();
+```
+
+### 11.10 Advanced Scoring
+
+Multi-dimensional quality analysis for each insight:
+
+| Score | What It Measures |
+|-------|------------------|
+| Actionability | Can this be applied immediately? |
+| Memorability | Will this stick with users? |
+| Transferability | Does this apply across contexts? |
+| Emotional Safety | Deep harm prevention analysis |
+| Readability | Appropriate complexity level |
+| Cultural Sensitivity | Cross-cultural validity |
+
+```typescript
+const scores = await calculateAdvancedScores(insightId);
+```
+
+### 11.11 Synthetic Augmentation
+
+Generate variations of high-quality insights to expand training data.
+
+```typescript
+const { original, variations } = await generateInsightVariations(insightId, apiKey, 3);
+// Creates 3 variations of the insight with same core wisdom but different phrasing
+```
+
+### 11.12 Comprehensive Research Report
+
+```typescript
+const report = await generateResearchQualityReport();
+// Returns overall score and prioritized issues:
+// {
+//   overallScore: 78,
+//   priorities: [
+//     { priority: "critical", issue: "Bias detected", recommendation: "..." },
+//     { priority: "high", issue: "5 contradictions unresolved", ... },
+//     ...
+//   ]
+// }
+```
+
+---
+
+## 5. Model Version Control
+
+### 11.1 Overview
 
 **Service**: `modelVersionControlService.ts`
 
 Git-style version control for AI models. Every training creates a new version that can be tracked, tested, and rolled back.
 
-### 4.2 Version Lifecycle
+### 11.2 Version Lifecycle
 
 ```
 ┌─────────┐      ┌─────────┐      ┌─────────┐      ┌─────────┐
@@ -249,7 +451,7 @@ Git-style version control for AI models. Every training creates a new version th
                  └─────────┘                       └─────────┘
 ```
 
-### 4.3 Version States
+### 11.3 Version States
 
 | State | Description | Can Deploy? |
 |-------|-------------|-------------|
@@ -260,7 +462,7 @@ Git-style version control for AI models. Every training creates a new version th
 | rolled_back | Previously deployed, now replaced | No |
 | deprecated | Old version, archived | No |
 
-### 4.4 Safety Gates
+### 11.4 Safety Gates
 
 Before any version can be deployed, it must pass safety checks:
 
@@ -282,7 +484,7 @@ const DEFAULT_GATES = {
 };
 ```
 
-### 4.5 A/B Testing
+### 11.5 A/B Testing
 
 Compare two versions before full deployment:
 
@@ -295,7 +497,7 @@ After 100+ comparisons:
 - If unclear: Need more data
 ```
 
-### 4.6 Auto-Rollback Triggers
+### 11.6 Auto-Rollback Triggers
 
 System automatically rolls back if:
 
@@ -305,7 +507,7 @@ System automatically rolls back if:
 | userSatisfaction | <40% | Rollback |
 | errorRate | >5% | Rollback |
 
-### 4.7 Drift Detection
+### 11.7 Drift Detection
 
 Monitors for gradual quality degradation:
 
@@ -315,7 +517,7 @@ If trend is consistently downward: Warning
 If >20% below baseline: Auto-rollback consideration
 ```
 
-### 4.8 Branching
+### 11.8 Branching
 
 Create experimental branches without affecting production:
 
@@ -326,7 +528,7 @@ main (production)
 └── user-feedback/jan-2026 (based on user suggestions)
 ```
 
-### 4.9 Tagging
+### 11.9 Tagging
 
 Mark significant versions:
 
@@ -338,9 +540,9 @@ v1.2.0 - Stable with relationship insights
 
 ---
 
-## 5. Data Persistence & Backup
+## 6. Data Persistence & Backup
 
-### 5.1 Overview
+### 11.1 Overview
 
 **Service**: `dataPersistenceService.ts`
 
@@ -350,7 +552,7 @@ Multi-layer storage ensures training data survives:
 - Development resets
 - Device issues
 
-### 5.2 Storage Layers
+### 11.2 Storage Layers
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -378,7 +580,7 @@ Multi-layer storage ensures training data survives:
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 5.3 Automatic Backup
+### 11.3 Automatic Backup
 
 ```
 Every 5 minutes during active use:
@@ -388,7 +590,7 @@ Every 5 minutes during active use:
 4. Prune old backups
 ```
 
-### 5.4 Auto-Recovery
+### 11.4 Auto-Recovery
 
 On app start:
 ```
@@ -399,7 +601,7 @@ On app start:
    → Prompt user to restore
 ```
 
-### 5.5 Developer Commands
+### 11.5 Developer Commands
 
 ```typescript
 // Quick save during development
@@ -418,7 +620,7 @@ await importData(filePath);
 await runBackup();
 ```
 
-### 5.6 Data Categories Persisted
+### 11.6 Data Categories Persisted
 
 | Category | Description |
 |----------|-------------|
@@ -432,15 +634,15 @@ await runBackup();
 
 ---
 
-## 6. Training Data Impact Analysis
+## 7. Training Data Impact Analysis
 
-### 6.1 Overview
+### 11.1 Overview
 
 **Service**: `trainingDataImpactService.ts`
 
 When a model gets worse, this service helps identify WHAT caused the degradation.
 
-### 6.2 Data Lineage
+### 11.2 Data Lineage
 
 Every model version tracks:
 - Which insights were included
@@ -463,7 +665,7 @@ interface DataLineageEntry {
 }
 ```
 
-### 6.3 Source Impact Scoring
+### 11.3 Source Impact Scoring
 
 For each YouTube channel or data source:
 
@@ -476,7 +678,7 @@ Negative = Source hurts quality
 Flagged if: Impact < -10 AND Sample Size >= 2
 ```
 
-### 6.4 Insight Impact Scoring
+### 11.4 Insight Impact Scoring
 
 For each individual insight:
 
@@ -489,7 +691,7 @@ Flagged as problematic if:
 - Confidence >= 0.6 (enough data)
 ```
 
-### 6.5 Problem Data Analysis
+### 11.5 Problem Data Analysis
 
 When quality drops, run:
 
@@ -505,7 +707,7 @@ Report includes:
   - Flag problematic sources for review
   - Retrain without new data
 
-### 6.6 Data Diff
+### 11.6 Data Diff
 
 Compare any two versions:
 
@@ -521,15 +723,15 @@ const diff = await getDataDiff(versionA, versionB);
 
 ---
 
-## 7. Llama Integration
+## 8. Llama Integration
 
-### 7.1 Overview
+### 11.1 Overview
 
 **Service**: `llamaIntegrationService.ts`
 
 The app wraps the Llama LLM, controlling all inputs and outputs.
 
-### 7.2 Prompt Formatting
+### 11.2 Prompt Formatting
 
 Every user message is formatted with:
 
@@ -557,7 +759,7 @@ User: [Current Message]
 Moodling:
 ```
 
-### 7.3 Training Data Export
+### 11.3 Training Data Export
 
 Export approved insights for LoRA fine-tuning:
 
@@ -578,7 +780,7 @@ Each insight generates multiple training examples:
 2. Authentic quote usage
 3. Anti-pattern teaching
 
-### 7.4 Model Configuration
+### 11.4 Model Configuration
 
 ```typescript
 const config = {
@@ -594,7 +796,7 @@ const config = {
 };
 ```
 
-### 7.5 Future Implementation
+### 11.5 Future Implementation
 
 Currently a placeholder. Full implementation requires:
 - `react-native-llama-cpp` or similar binding
@@ -604,15 +806,15 @@ Currently a placeholder. Full implementation requires:
 
 ---
 
-## 8. Status Monitoring
+## 9. Status Monitoring
 
-### 8.1 Overview
+### 11.1 Overview
 
 **Services**: `trainingStatusService.ts` and `TrainingStatusIndicator.tsx`
 
 A persistent indicator shows training system health.
 
-### 8.2 Visual States
+### 11.2 Visual States
 
 | Color | State | Meaning |
 |-------|-------|---------|
@@ -621,7 +823,7 @@ A persistent indicator shows training system health.
 | Red | Error | Issues detected |
 | Gray | Inactive | No recent activity (24h+) |
 
-### 8.3 Status Information
+### 11.3 Status Information
 
 ```typescript
 interface TrainingStatus {
@@ -658,7 +860,7 @@ interface TrainingStatus {
 }
 ```
 
-### 8.4 Activity Logging
+### 11.4 Activity Logging
 
 All significant events are logged:
 - Insight added/approved/rejected
@@ -671,9 +873,9 @@ View recent activity by tapping the status indicator.
 
 ---
 
-## 9. Best Practices
+## 10. Best Practices
 
-### 9.1 Data Collection
+### 11.1 Data Collection
 
 **DO:**
 - Curate channels with diverse perspectives
@@ -689,7 +891,7 @@ View recent activity by tapping the status indicator.
 - Skip safety score reviews
 - Add channels without categorization
 
-### 9.2 Quality Maintenance
+### 11.2 Quality Maintenance
 
 **Weekly:**
 - Review quality metrics
@@ -703,7 +905,7 @@ View recent activity by tapping the status indicator.
 - Review flagged sources
 - Update training data export
 
-### 9.3 Version Control
+### 11.3 Version Control
 
 **Before Training:**
 1. Export current training data
@@ -723,7 +925,7 @@ View recent activity by tapping the status indicator.
 3. Review suspected data
 4. Either rollback or remove bad data and retrain
 
-### 9.4 Backup Strategy
+### 11.4 Backup Strategy
 
 **Development:**
 - Use `devQuickSave()` before major changes
@@ -737,9 +939,9 @@ View recent activity by tapping the status indicator.
 
 ---
 
-## 10. Troubleshooting
+## 11. Troubleshooting
 
-### 10.1 Common Issues
+### 11.1 Common Issues
 
 #### "Import button does nothing"
 The Import tab is a FORM. Fill in Title, Insight, and Coaching Implication, then scroll down to click "Import Insight".
@@ -764,7 +966,7 @@ The Import tab is a FORM. Fill in Title, Insight, and Coaching Implication, then
 #### "Can't find Developer Tools"
 Settings → scroll past Privacy → Developer Tools (near bottom)
 
-### 10.2 Emergency Rollback
+### 11.2 Emergency Rollback
 
 ```typescript
 import { rollback, getProductionVersion } from './modelVersionControlService';
@@ -778,7 +980,7 @@ if (lastGood) {
 }
 ```
 
-### 10.3 Data Recovery
+### 11.3 Data Recovery
 
 ```typescript
 import { recoverFromBackup, getBackupInfo } from './dataPersistenceService';
@@ -794,7 +996,7 @@ await recoverFromBackup();
 await recoverFromBackup('2026-01-20T10:00:00Z');
 ```
 
-### 10.4 Debugging Quality Issues
+### 11.4 Debugging Quality Issues
 
 ```typescript
 import { calculateAllQualityMetrics, getQualityRecommendations } from './trainingQualityService';
@@ -825,6 +1027,7 @@ console.log('Problem Insights:', problems);
 |------|---------|
 | `youtubeProcessorService.ts` | YouTube harvesting, transcript extraction, Claude insight extraction |
 | `trainingQualityService.ts` | Semantic dedup, balance, freshness, diversity, curriculum |
+| `advancedResearchService.ts` | Contrastive examples, persona diversity, bias detection, contradiction detection, evidence grading, sentiment analysis, response simulation, expert queue, synthetic augmentation |
 | `modelVersionControlService.ts` | Version control, safety gates, A/B testing, rollback |
 | `dataPersistenceService.ts` | Multi-layer storage, backup, recovery |
 | `trainingDataImpactService.ts` | Data lineage, source impact, problem analysis |
@@ -856,6 +1059,15 @@ console.log('Problem Insights:', problems);
 | `moodleaf_training_status` | Status | Current status |
 | `moodleaf_activity_log` | Status | Activity history |
 | `moodleaf_backup_index` | Persistence | Backup metadata |
+| `moodleaf_contrastive_pairs` | Advanced Research | Good/bad response pairs |
+| `moodleaf_persona_coverage` | Advanced Research | Demographic coverage |
+| `moodleaf_emotional_arcs` | Advanced Research | Emotional journey coverage |
+| `moodleaf_bias_reports` | Advanced Research | Bias detection results |
+| `moodleaf_contradictions` | Advanced Research | Conflicting insights |
+| `moodleaf_evidence_grades` | Advanced Research | Source credibility |
+| `moodleaf_simulation_results` | Advanced Research | Response test results |
+| `moodleaf_expert_queue` | Advanced Research | Expert review queue |
+| `moodleaf_advanced_scores` | Advanced Research | Multi-dimensional scores |
 
 ---
 
