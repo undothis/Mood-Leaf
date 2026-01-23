@@ -1514,6 +1514,22 @@ export default function SettingsScreen() {
           <Text style={[styles.faqArrow, { color: colors.textMuted }]}>→</Text>
         </TouchableOpacity>
 
+        <TouchableOpacity
+          style={[styles.faqItem, { backgroundColor: colors.background }]}
+          onPress={() => router.push('/admin/version-control')}
+        >
+          <Text style={styles.faqEmoji}>🔄</Text>
+          <View style={styles.faqContent}>
+            <Text style={[styles.faqTitle, { color: colors.text }]}>
+              Version Control
+            </Text>
+            <Text style={[styles.faqSubtitle, { color: colors.textSecondary }]}>
+              Model versions, rollback, deployment gates
+            </Text>
+          </View>
+          <Text style={[styles.faqArrow, { color: colors.textMuted }]}>→</Text>
+        </TouchableOpacity>
+
         <Text style={[styles.devNote, { color: colors.textMuted }]}>
           Tools for training the AI with human insights.
         </Text>
