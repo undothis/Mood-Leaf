@@ -460,6 +460,9 @@ export default function OnboardingScreen() {
     >
       {/* Progress bar */}
       <View style={styles.progressContainer}>
+        <Text style={[styles.stepCounter, { color: colors.textSecondary }]}>
+          {currentStep + 1} of {ONBOARDING_QUESTIONS.length}
+        </Text>
         <View style={[styles.progressBg, { backgroundColor: colors.border }]}>
           <View
             style={[
@@ -527,6 +530,11 @@ const styles = StyleSheet.create({
   skipText: {
     fontSize: 15,
     fontWeight: '500',
+  },
+  stepCounter: {
+    fontSize: 14,
+    fontWeight: '500',
+    minWidth: 55,
   },
   questionContainer: {
     flex: 1,
