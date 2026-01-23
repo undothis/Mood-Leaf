@@ -45,6 +45,9 @@ import {
   ActionOrientation,
   AdaptiveTrigger,
   resetOnboarding,
+  NameStyle,
+  NAME_STYLE_LABELS,
+  NAME_VARIANTS,
 } from '@/services/coachPersonalityService';
 
 // Selector options
@@ -217,6 +220,8 @@ export default function CoachSettingsScreen() {
 
   const renderPersonaCard = (persona: PersonaDefinition) => {
     const isSelected = settings.selectedPersona === persona.id;
+    // Use the name variant based on user's selected name style
+    const displayName = NAME_VARIANTS[persona.id][settings.nameStyle || 'classic'];
     return (
       <Pressable
         key={persona.id}
@@ -238,7 +243,7 @@ export default function CoachSettingsScreen() {
           <Text style={styles.personaEmoji}>{persona.emoji}</Text>
           <View style={styles.personaInfo}>
             <Text style={[styles.personaName, { color: colors.text }]}>
-              {persona.name}
+              {displayName}
             </Text>
             <Text style={[styles.personaTagline, { color: colors.textSecondary }]}>
               {persona.tagline}
@@ -398,6 +403,59 @@ export default function CoachSettingsScreen() {
           <Text style={[styles.nameHint, { color: colors.textSecondary }]}>
             Leave blank to use "{selectedPersona.name}"
           </Text>
+        </View>
+
+        {/* Name Style Selection */}
+        <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
+          <Text style={[styles.settingLabel, { color: colors.text }]}>
+            Name Style
+          </Text>
+          <Text style={[styles.nameHint, { color: colors.textSecondary, marginBottom: 12 }]}>
+            Choose which set of names feels right for you
+          </Text>
+          <View style={[styles.segmentedControl, { backgroundColor: colors.border }]}>
+            {(['classic', 'alternative'] as NameStyle[]).map((style) => {
+              const isSelected = settings.nameStyle === style;
+              const styleInfo = NAME_STYLE_LABELS[style];
+              return (
+                <Pressable
+                  key={style}
+                  style={[
+                    styles.segment,
+                    { flex: 1 },
+                    isSelected && { backgroundColor: colors.tint },
+                  ]}
+                  onPress={() => updateSettings({ nameStyle: style })}
+                >
+                  <Text
+                    style={[
+                      styles.segmentText,
+                      { color: isSelected ? '#fff' : colors.text },
+                    ]}
+                  >
+                    {styleInfo.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          <View style={styles.namePreviewContainer}>
+            <Text style={[styles.namePreviewLabel, { color: colors.textSecondary }]}>
+              Preview:
+            </Text>
+            <View style={styles.namePreviewRow}>
+              {Object.entries(NAME_VARIANTS).slice(0, 4).map(([persona, names]) => (
+                <View key={persona} style={[styles.namePreviewChip, { backgroundColor: colors.border }]}>
+                  <Text style={[styles.namePreviewText, { color: colors.text }]}>
+                    {names[settings.nameStyle || 'classic']}
+                  </Text>
+                </View>
+              ))}
+              <Text style={[styles.namePreviewMore, { color: colors.textSecondary }]}>
+                +3 more
+              </Text>
+            </View>
+          </View>
         </View>
 
         {/* Persona Selection */}
@@ -994,6 +1052,32 @@ const styles = StyleSheet.create({
   nameHint: {
     fontSize: 12,
     marginTop: 8,
+    fontStyle: 'italic',
+  },
+  namePreviewContainer: {
+    marginTop: 16,
+  },
+  namePreviewLabel: {
+    fontSize: 12,
+    marginBottom: 8,
+  },
+  namePreviewRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 8,
+  },
+  namePreviewChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  namePreviewText: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  namePreviewMore: {
+    fontSize: 12,
     fontStyle: 'italic',
   },
 });
