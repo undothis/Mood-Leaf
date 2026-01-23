@@ -477,7 +477,7 @@ export default function InterviewProcessorScreen() {
         const { transcript, error: transcriptError } = await fetchVideoTranscript(video.videoId);
 
         if (transcriptError || !transcript) {
-          addLog(`  ⚠ No transcript available, skipping`);
+          addLog(`  ⚠ No transcript: ${transcriptError || 'empty transcript'}`);
           videosSkipped++;
           setProgressState(prev => ({ ...prev, videosSkipped }));
           continue;
