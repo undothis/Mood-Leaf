@@ -548,6 +548,72 @@ Insights can:
 
 ---
 
+## Seeds Tab
+
+The Seeds tab is where you discover patterns about yourself. We call them "seeds" because insights grow stronger over time, just like plants.
+
+### Finding the Seeds Tab
+
+Look for the 🌰 or 🌱 icon in the bottom navigation bar (between Skills and Insights). When new patterns are discovered, you'll see a glowing green badge.
+
+### Growth Stages
+
+Each insight has a growth stage showing how established the pattern is:
+
+| Stage | Icon | What It Means |
+|-------|------|---------------|
+| Sprouting | 🌰 | Just noticed this pattern - needs more data |
+| Growing | 🌱 | Pattern is becoming clearer |
+| Flourishing | 🌿 | Strong, consistent pattern |
+| Rooted | 🌳 | Core understanding about yourself |
+
+### Pattern Categories
+
+Seeds can discover many types of patterns:
+
+- **🌊 Cycles** - Recurring patterns (weekly mood dips, monthly rhythms)
+- **🔗 Connections** - How things relate (sleep → mood, food → energy)
+- **💪 Activities** - What activities help or hurt
+- **🌙 Sleep** - Sleep patterns affecting your wellbeing
+- **🌅 Time** - When you feel best during the day
+- **🏔 Environment** - How places affect your mood
+- **🌀 Momentum** - Streak effects and habits
+- **🌧 Triggers** - What triggers certain moods
+- **💫 Recovery** - What helps you bounce back
+- **🦋 Body-Mind** - Physical-emotional connections
+- **🌱 Growth** - Your progress over time
+- **⚠️ Warnings** - Early warning signs
+
+### Responding to Seeds
+
+You can react to any insight:
+- **🌱 "This resonates"** - The pattern feels accurate
+- **🤔 "I'll watch for this"** - You're curious to observe
+- **🍂 "Not quite right"** - Doesn't match your experience
+
+Your reactions help Mood Leaf learn what insights are meaningful to you.
+
+### Where Patterns Come From
+
+Mood Leaf finds patterns by analyzing:
+- Your Twigs (mood logs)
+- Conversations with your guide
+- Calendar events (if you've given permission)
+- Health data (if connected)
+- Weather patterns
+- Other data sources you've enabled
+
+All analysis happens locally on your device by default - your data stays private.
+
+### Your Guide Knows Your Seeds
+
+Your AI guide is aware of your discovered patterns and may:
+- Mention relevant insights in conversation
+- Celebrate positive patterns you've developed
+- Reference your data when offering suggestions
+
+---
+
 ## Notifications
 
 ### Notification Types

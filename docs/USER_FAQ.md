@@ -849,6 +849,56 @@ Yes:
 
 ---
 
+## Seeds & Patterns
+
+### What is the Seeds tab?
+
+The Seeds tab shows patterns Mood Leaf has discovered about you. We call them "seeds" because insights grow stronger over time - starting as small observations and becoming deeper self-knowledge.
+
+### What do the plant icons mean?
+
+Each insight has a growth stage:
+- 🌰 **Sprouting** - Just noticed, needs more data
+- 🌱 **Growing** - Pattern becoming clearer
+- 🌿 **Flourishing** - Strong, consistent pattern
+- 🌳 **Rooted** - Core understanding about yourself
+
+### How does Mood Leaf find patterns?
+
+Mood Leaf analyzes your data locally on your device:
+- Twigs (mood entries)
+- Conversations with your guide
+- Calendar events (if permitted)
+- Health data (if connected)
+- Weather and other sources
+
+No data is sent to servers for pattern analysis - it all happens privately on your device.
+
+### What kinds of patterns can it find?
+
+Many types, including:
+- Sleep and mood connections
+- Activity effects on wellbeing
+- Time-of-day patterns
+- Weekly or monthly cycles
+- Trigger identification
+- Recovery patterns
+- Progress and growth
+
+### Can I disagree with a pattern?
+
+Yes! Tap any seed and choose 🍂 "Not quite right" if a pattern doesn't match your experience. This helps Mood Leaf learn what's meaningful to you.
+
+### Will my guide mention these patterns?
+
+Yes, your AI guide knows about your discovered patterns and may reference them naturally in conversation, celebrate positive patterns, or use them when offering suggestions.
+
+### How do I turn off pattern discovery?
+
+Go to **Settings** > **Privacy** > **Pattern Discovery** and toggle it off. Existing insights will be preserved but no new ones will be generated.
+
+---
+
 ## Crisis Support
 
 ### What happens if I mention self-harm or suicide?
