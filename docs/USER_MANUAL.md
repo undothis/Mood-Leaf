@@ -591,19 +591,50 @@ You can react to any insight:
 - **🤔 "I'll watch for this"** - You're curious to observe
 - **🍂 "Not quite right"** - Doesn't match your experience
 
-Your reactions help Mood Leaf learn what insights are meaningful to you.
+Your reactions help Mood Leaf learn what insights are meaningful to you. When you mark an insight as "Not quite right," Mood Leaf will:
+- Lower the priority of that insight
+- Stop mentioning it in conversations
+- Re-evaluate the pattern with future data
 
-### Where Patterns Come From
+### Data Sources for Pattern Discovery
 
-Mood Leaf finds patterns by analyzing:
-- Your Twigs (mood logs)
-- Conversations with your guide
-- Calendar events (if you've given permission)
-- Health data (if connected)
-- Weather patterns
-- Other data sources you've enabled
+Mood Leaf can analyze data from multiple sources to find patterns. Here's exactly what each source provides:
 
-All analysis happens locally on your device by default - your data stays private.
+| Data Source | What's Analyzed | Example Insights |
+|-------------|-----------------|------------------|
+| **Twigs (Mood Logs)** | Mood ratings, notes, tags, timestamps | "You feel better on days you journal" |
+| **Coach Conversations** | Topics discussed, themes, concerns | "Work stress comes up often on Mondays" |
+| **Calendar Events** | Meeting frequency, event types, scheduling | "Back-to-back meetings correlate with anxiety" |
+| **Contacts** | Social interaction frequency (not content) | "Mood improves after family calls" |
+| **Location** | Places visited, time spent outdoors | "You feel calmer after park visits" |
+| **Screen Time** | App usage patterns, phone pickups | "Late-night scrolling affects next-day mood" |
+| **Health Data** | Sleep, steps, heart rate, exercise | "Less than 6 hours sleep → harder days" |
+| **Weather** | Temperature, conditions, sunlight | "Cloudy days correlate with lower energy" |
+
+**Important Privacy Notes:**
+- All pattern analysis runs **locally on your device** by default
+- No data is sent to external servers for analysis
+- Each data source requires **explicit permission** before use
+- You can disable any source at any time in Settings > Privacy
+- Disabling a source removes it from future analysis (existing insights remain)
+
+### Controlling Data Permissions
+
+To manage which data Mood Leaf can access:
+
+1. Go to **Settings** > **Privacy** > **Data Sources**
+2. Toggle each source on or off:
+   - Calendar Access
+   - Contacts Access
+   - Location Access
+   - Screen Time Access
+   - HealthKit Access
+3. Weather doesn't require permission (uses general location only)
+
+You can also:
+- **Clear all insights**: Settings > Privacy > Clear Pattern Data
+- **Pause discovery**: Settings > Privacy > Pattern Discovery (toggle off)
+- **Export your data**: Settings > Privacy > Export My Data
 
 ### Your Guide Knows Your Seeds
 

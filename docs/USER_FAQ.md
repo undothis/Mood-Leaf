@@ -865,29 +865,53 @@ Each insight has a growth stage:
 
 ### How does Mood Leaf find patterns?
 
-Mood Leaf analyzes your data locally on your device:
-- Twigs (mood entries)
-- Conversations with your guide
-- Calendar events (if permitted)
-- Health data (if connected)
-- Weather and other sources
+Mood Leaf analyzes your data locally on your device using built-in pattern detection. No data is sent to external servers - all analysis happens privately on your phone.
 
-No data is sent to servers for pattern analysis - it all happens privately on your device.
+### What data does Mood Leaf collect for patterns?
+
+Here's exactly what each source provides:
+
+| Source | What's Used | Permission Needed |
+|--------|-------------|-------------------|
+| Twigs | Mood ratings, notes, tags | None (core feature) |
+| Conversations | Topics and themes discussed | None (core feature) |
+| Calendar | Meeting frequency, event types | Calendar access |
+| Contacts | Interaction frequency (not messages) | Contacts access |
+| Location | Places visited, outdoor time | Location access |
+| Screen Time | App usage patterns | Screen Time access |
+| Health Data | Sleep, steps, heart rate | HealthKit access |
+| Weather | Conditions, temperature | None (general location) |
+
+**Important:** You control which sources are enabled. Go to **Settings > Privacy > Data Sources** to manage permissions.
 
 ### What kinds of patterns can it find?
 
 Many types, including:
-- Sleep and mood connections
-- Activity effects on wellbeing
-- Time-of-day patterns
-- Weekly or monthly cycles
-- Trigger identification
-- Recovery patterns
-- Progress and growth
+- **Sleep-mood connections** - "Less than 6 hours sleep → harder days"
+- **Activity effects** - "Exercise correlates with better mood"
+- **Time patterns** - "You're more anxious on Monday mornings"
+- **Social patterns** - "Mood improves after family calls"
+- **Digital habits** - "Late-night scrolling affects next-day energy"
+- **Environmental** - "Outdoor time correlates with calm"
+- **Cycles** - "Weekly mood dip on Sundays"
+- **Triggers** - "Back-to-back meetings trigger stress"
+- **Recovery** - "Walking helps after difficult conversations"
 
 ### Can I disagree with a pattern?
 
-Yes! Tap any seed and choose 🍂 "Not quite right" if a pattern doesn't match your experience. This helps Mood Leaf learn what's meaningful to you.
+Yes! Tap any seed and choose 🍂 "Not quite right" if it doesn't match your experience.
+
+**What happens when you disagree:**
+- The insight is deprioritized
+- Your guide stops mentioning it
+- The pattern is re-evaluated with future data
+- If you keep disagreeing, the insight may be removed
+
+Your feedback directly improves the accuracy of future discoveries.
+
+### Is my pattern data shared anywhere?
+
+**No.** Pattern analysis runs entirely on your device. Your data is never sent to Anthropic, Apple, or any third party for pattern analysis. The only time data leaves your device is when you chat (messages go to Claude API), and that's separate from pattern discovery.
 
 ### Will my guide mention these patterns?
 
