@@ -256,9 +256,8 @@ export default function CoachTabScreen() {
 
       // Send to Claude
       const response: AIResponse = await sendMessage(messageText, {
-        conversationHistory: history,
+        recentMessages: history,
         toneStyles,
-        coachSettings: coachSettings || undefined,
       });
 
       const aiMessage: DisplayMessage = {
@@ -276,10 +275,10 @@ export default function CoachTabScreen() {
       }
     } catch (error) {
       console.error('Failed to send message:', error);
-      const fallback = getFallbackResponse(messageText);
+      const fallbackText = getFallbackResponse();
       const fallbackMessage: DisplayMessage = {
         id: `fallback_${Date.now()}`,
-        text: fallback.text,
+        text: fallbackText,
         source: 'fallback',
         timestamp: new Date(),
       };

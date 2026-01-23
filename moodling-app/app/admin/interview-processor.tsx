@@ -155,7 +155,7 @@ export default function InterviewProcessorScreen() {
         getPendingInsights(),
         getApprovedInsights(),
         getQualityStats(),
-        AsyncStorage.getItem('claude_api_key'),
+        AsyncStorage.getItem('moodling_claude_api_key'),
         AsyncStorage.getItem('youtube_api_key'),
       ]);
       setChannels(channelsData);
