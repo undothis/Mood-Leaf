@@ -360,6 +360,10 @@ export default function InterviewProcessorScreen() {
   const [lastBackupTime, setLastBackupTime] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
 
+  // Review grouping state
+  const [expandedChannels, setExpandedChannels] = useState<Set<string>>(new Set());
+  const [groupByChannel, setGroupByChannel] = useState(true);
+
   // Stats state
   const [qualityStats, setQualityStats] = useState<QualityStats | null>(null);
 
@@ -2610,16 +2614,166 @@ export default function InterviewProcessorScreen() {
         </View>
       )}
 
-      {/* Pending Insights */}
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>
-        Pending Review ({pendingInsights.length})
-      </Text>
+      {/* Pending Insights Header */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+        <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0 }]}>
+          Pending Review ({pendingInsights.length})
+        </Text>
+        <Pressable
+          style={[styles.bulkButton, { backgroundColor: colors.border }]}
+          onPress={() => setGroupByChannel(!groupByChannel)}
+        >
+          <Text style={{ color: colors.text, fontSize: 12 }}>
+            {groupByChannel ? '📁 By Channel' : '📋 Flat List'}
+          </Text>
+        </Pressable>
+      </View>
 
       {pendingInsights.length === 0 ? (
         <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
           No insights pending review. Process some videos first!
         </Text>
+      ) : groupByChannel ? (
+        // GROUPED BY CHANNEL VIEW
+        (() => {
+          // Group insights by channel
+          const groupedByChannel: Record<string, ExtractedInsight[]> = {};
+          pendingInsights.forEach(insight => {
+            const channel = insight.channelName || 'Unknown Channel';
+            if (!groupedByChannel[channel]) {
+              groupedByChannel[channel] = [];
+            }
+            groupedByChannel[channel].push(insight);
+          });
+
+          // Sort channels by insight count (most first)
+          const sortedChannels = Object.keys(groupedByChannel).sort(
+            (a, b) => groupedByChannel[b].length - groupedByChannel[a].length
+          );
+
+          return sortedChannels.map(channelName => {
+            const channelInsights = groupedByChannel[channelName];
+            const isExpanded = expandedChannels.has(channelName);
+            const selectedInChannel = channelInsights.filter(i => selectedInsightIds.has(i.id)).length;
+            const avgQuality = Math.round(
+              channelInsights.reduce((sum, i) => sum + i.qualityScore, 0) / channelInsights.length
+            );
+
+            return (
+              <View key={channelName} style={{ marginBottom: 12 }}>
+                {/* Channel Header */}
+                <Pressable
+                  style={[styles.card, {
+                    backgroundColor: colors.cardBackground,
+                    borderLeftWidth: 4,
+                    borderLeftColor: colors.tint,
+                    marginBottom: 0,
+                    paddingVertical: 10,
+                  }]}
+                  onPress={() => {
+                    setExpandedChannels(prev => {
+                      const newSet = new Set(prev);
+                      if (newSet.has(channelName)) {
+                        newSet.delete(channelName);
+                      } else {
+                        newSet.add(channelName);
+                      }
+                      return newSet;
+                    });
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.cardTitle, { color: colors.text, marginBottom: 2 }]}>
+                        {isExpanded ? '▼' : '▶'} {channelName}
+                      </Text>
+                      <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                        {channelInsights.length} insights • Avg: {avgQuality}%
+                        {selectedInChannel > 0 && ` • ${selectedInChannel} selected`}
+                      </Text>
+                    </View>
+                    <Pressable
+                      style={[styles.bulkButton, { backgroundColor: '#4CAF5020' }]}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        // Toggle select all in this channel
+                        const allSelected = channelInsights.every(i => selectedInsightIds.has(i.id));
+                        setSelectedInsightIds(prev => {
+                          const newSet = new Set(prev);
+                          channelInsights.forEach(i => {
+                            if (allSelected) {
+                              newSet.delete(i.id);
+                            } else {
+                              newSet.add(i.id);
+                            }
+                          });
+                          return newSet;
+                        });
+                      }}
+                    >
+                      <Text style={{ color: '#4CAF50', fontSize: 11 }}>
+                        {channelInsights.every(i => selectedInsightIds.has(i.id)) ? '☑ All' : '☐ All'}
+                      </Text>
+                    </Pressable>
+                  </View>
+                </Pressable>
+
+                {/* Expanded Insights */}
+                {isExpanded && channelInsights.map(insight => (
+                  <Pressable
+                    key={insight.id}
+                    style={[
+                      styles.insightCard,
+                      { backgroundColor: colors.cardBackground, marginLeft: 12, marginTop: 4 },
+                      selectedInsightIds.has(insight.id) && { borderColor: '#4CAF50', borderWidth: 2 }
+                    ]}
+                    onPress={() => setSelectedInsight(insight)}
+                    onLongPress={() => toggleInsightSelection(insight.id)}
+                  >
+                    <View style={styles.insightHeader}>
+                      <Pressable
+                        style={[
+                          styles.checkbox,
+                          { borderColor: colors.border },
+                          selectedInsightIds.has(insight.id) && { backgroundColor: '#4CAF50', borderColor: '#4CAF50' }
+                        ]}
+                        onPress={() => toggleInsightSelection(insight.id)}
+                      >
+                        {selectedInsightIds.has(insight.id) && (
+                          <Text style={{ color: '#fff', fontSize: 12 }}>✓</Text>
+                        )}
+                      </Pressable>
+                      <Text style={[styles.insightTitle, { color: colors.text, flex: 1 }]} numberOfLines={1}>
+                        {insight.title}
+                      </Text>
+                      <View style={[
+                        styles.qualityBadge,
+                        { backgroundColor: insight.qualityScore >= 80 ? '#4CAF5030' : insight.qualityScore >= 60 ? '#FF980030' : '#F4433630' }
+                      ]}>
+                        <Text style={{
+                          color: insight.qualityScore >= 80 ? '#4CAF50' : insight.qualityScore >= 60 ? '#FF9800' : '#F44336',
+                          fontSize: 11
+                        }}>
+                          {insight.qualityScore}%
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={[styles.insightText, { color: colors.textSecondary, marginLeft: 28 }]} numberOfLines={2}>
+                      {insight.insight}
+                    </Text>
+                    {insight.needsHumanReview && (
+                      <View style={[styles.reviewFlag, { backgroundColor: '#FF980020', marginLeft: 28 }]}>
+                        <Text style={{ color: '#FF9800', fontSize: 11 }}>⚠ Needs careful review</Text>
+                      </View>
+                    )}
+                  </Pressable>
+                ))}
+              </View>
+            );
+          });
+        })()
       ) : (
+        // FLAT LIST VIEW (original)
         pendingInsights.slice(0, 50).map(insight => (
           <Pressable
             key={insight.id}
@@ -2632,7 +2786,6 @@ export default function InterviewProcessorScreen() {
             onLongPress={() => toggleInsightSelection(insight.id)}
           >
             <View style={styles.insightHeader}>
-              {/* Checkbox */}
               <Pressable
                 style={[
                   styles.checkbox,
