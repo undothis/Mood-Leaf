@@ -1338,48 +1338,52 @@ async function fetchTranscriptViaInnerTube(
     }
 
     // Step 2: Fetch the caption content
-    // Add fmt=json3 for easier parsing
-    let captionUrl = selectedCaption.baseUrl;
-    if (!captionUrl.includes('fmt=')) {
-      captionUrl += '&fmt=json3';
-    }
+    // Try multiple formats - YouTube URLs sometimes work differently
+    const baseUrl = selectedCaption.baseUrl;
+    const urlsToTry = [
+      baseUrl, // Try original URL first
+      baseUrl.includes('fmt=') ? baseUrl : baseUrl + '&fmt=json3',
+      baseUrl.includes('fmt=') ? baseUrl.replace(/fmt=[^&]+/, 'fmt=srv3') : baseUrl + '&fmt=srv3',
+    ];
 
     // Rate limit before caption fetch
     await rateLimit();
 
-    // Log the caption URL for debugging (truncated)
-    const urlPreview = captionUrl.length > 100 ? captionUrl.substring(0, 100) + '...' : captionUrl;
-    log(`    Caption URL: ${urlPreview}`);
-    log(`    Fetching caption content...`);
+    let captionData = '';
+    for (const captionUrl of urlsToTry) {
+      if (captionData.length > 0) break;
 
-    // Try direct fetch first on native (caption URLs are already absolute)
-    let captionResponse: Response;
-    try {
-      captionResponse = await fetch(captionUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-          'Accept': '*/*',
-          'Accept-Language': 'en-US,en;q=0.9',
-        },
-        signal: AbortSignal.timeout(15000),
-      });
-    } catch (directErr) {
-      log(`    Direct fetch failed, trying with proxy...`);
-      captionResponse = await fetchWithProxyFallback(captionUrl, {
-        headers: Platform.OS === 'web' ? {} : {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-          'Accept': '*/*',
-          'Accept-Language': 'en-US,en;q=0.9',
-        },
-      }, 2);
-    }
-    if (!captionResponse.ok) {
-      log(`    ✗ Caption fetch failed: ${captionResponse.status}`);
-      return { transcript: '', segments: [], error: `[ERR_CAPTION_FETCH] Caption request returned ${captionResponse.status}` };
+      const urlPreview = captionUrl.length > 80 ? captionUrl.substring(0, 80) + '...' : captionUrl;
+      log(`    Trying: ${urlPreview}`);
+
+      try {
+        const captionResponse = await fetch(captionUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            'Accept': '*/*',
+            'Accept-Language': 'en-US,en;q=0.9',
+          },
+          signal: AbortSignal.timeout(10000),
+        });
+
+        if (captionResponse.ok) {
+          captionData = await captionResponse.text();
+          if (captionData.length > 0) {
+            log(`    ✓ Got caption data (${captionData.length} chars)`);
+            break;
+          }
+        } else {
+          log(`    Got HTTP ${captionResponse.status}`);
+        }
+      } catch (err) {
+        log(`    Failed: ${err instanceof Error ? err.message : err}`);
+      }
     }
 
-    const captionData = await captionResponse.text();
-    log(`    Got caption data (${captionData.length} chars)`);
+    if (captionData.length === 0) {
+      log(`    ✗ All caption URL formats returned empty`);
+      return { transcript: '', segments: [], error: 'Caption URLs returned empty content' };
+    }
 
     // Try to parse as JSON3 format
     if (captionData.startsWith('{')) {
