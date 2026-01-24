@@ -383,6 +383,11 @@ export default function InterviewProcessorScreen() {
     totalInsights: 0,
     totalVideosProcessed: 0,
     totalSkipped: 0,
+    // Per-channel progress
+    currentChannelName: '',
+    currentVideoInChannel: 0,
+    totalVideosInChannel: 0,
+    channelInsights: 0,
   });
   const batchProcessingRef = useRef(false);
   const batchPausedRef = useRef(false);
@@ -503,6 +508,10 @@ export default function InterviewProcessorScreen() {
       totalInsights: savedCheckpoint.totalInsights,
       totalVideosProcessed: savedCheckpoint.totalVideosProcessed,
       totalSkipped: savedCheckpoint.totalSkipped,
+      currentChannelName: '',
+      currentVideoInChannel: 0,
+      totalVideosInChannel: 0,
+      channelInsights: 0,
     });
 
     // Start processing from checkpoint
@@ -1008,6 +1017,15 @@ export default function InterviewProcessorScreen() {
         let channelVideosProcessed = 0;
         let channelSkipped = 0;
 
+        // Update progress with channel info
+        setBatchProgress(prev => ({
+          ...prev,
+          currentChannelName: channel.name,
+          currentVideoInChannel: 0,
+          totalVideosInChannel: videos.length,
+          channelInsights: 0,
+        }));
+
         // Determine starting video index (for resumed channel)
         const startVideoIndex = (channelIndex === checkpoint.currentChannelIndex)
           ? checkpoint.currentVideoIndex
@@ -1060,6 +1078,15 @@ export default function InterviewProcessorScreen() {
           addLog(`      ✓ ${insights.length} insights`);
           channelInsights += insights.length;
           channelVideosProcessed++;
+
+          // Update per-video progress
+          setBatchProgress(prev => ({
+            ...prev,
+            currentVideoInChannel: i + 1,
+            channelInsights: channelInsights,
+            totalInsights: totalInsightsAllChannels + channelInsights,
+            totalVideosProcessed: totalVideosAllChannels + channelVideosProcessed,
+          }));
 
           if (insights.length > 0) {
             await savePendingInsights(insights);
@@ -1167,6 +1194,10 @@ export default function InterviewProcessorScreen() {
       totalInsights: 0,
       totalVideosProcessed: 0,
       totalSkipped: 0,
+      currentChannelName: '',
+      currentVideoInChannel: 0,
+      totalVideosInChannel: 0,
+      channelInsights: 0,
     });
 
     let totalInsightsAllChannels = 0;
@@ -1248,6 +1279,15 @@ export default function InterviewProcessorScreen() {
         let channelVideosProcessed = 0;
         let channelSkipped = 0;
 
+        // Update progress with channel info
+        setBatchProgress(prev => ({
+          ...prev,
+          currentChannelName: channel.name,
+          currentVideoInChannel: 0,
+          totalVideosInChannel: videos.length,
+          channelInsights: 0,
+        }));
+
         // Process each video
         for (let i = 0; i < videos.length && batchProcessingRef.current; i++) {
           // Check for pause
@@ -1298,6 +1338,15 @@ export default function InterviewProcessorScreen() {
           addLog(`      ✓ ${insights.length} insights`);
           channelInsights += insights.length;
           channelVideosProcessed++;
+
+          // Update per-video progress
+          setBatchProgress(prev => ({
+            ...prev,
+            currentVideoInChannel: i + 1,
+            channelInsights: channelInsights,
+            totalInsights: totalInsightsAllChannels + channelInsights,
+            totalVideosProcessed: totalVideosAllChannels + channelVideosProcessed,
+          }));
 
           if (insights.length > 0) {
             await savePendingInsights(insights);
@@ -1928,7 +1977,7 @@ export default function InterviewProcessorScreen() {
             <View style={styles.progressSection}>
               <View style={styles.progressLabelRow}>
                 <Text style={[styles.progressLabel, { color: colors.text }]}>
-                  Channel {batchProgress.currentChannelIndex} of {batchQueue.length}
+                  Overall: Channel {batchProgress.currentChannelIndex} of {batchQueue.length}
                 </Text>
                 <Text style={[styles.progressPercent, { color: colors.tint }]}>
                   {queueProgress}%
@@ -1943,6 +1992,32 @@ export default function InterviewProcessorScreen() {
                 />
               </View>
             </View>
+
+            {/* Channel-level progress */}
+            {batchProgress.currentChannelName && (
+              <View style={[styles.progressSection, { marginTop: 12 }]}>
+                <View style={styles.progressLabelRow}>
+                  <Text style={[styles.progressLabel, { color: colors.textSecondary }]} numberOfLines={1}>
+                    {batchProgress.currentChannelName}: Video {batchProgress.currentVideoInChannel}/{batchProgress.totalVideosInChannel}
+                  </Text>
+                  <Text style={[styles.progressPercent, { color: '#4CAF50' }]}>
+                    {batchProgress.channelInsights} insights
+                  </Text>
+                </View>
+                <View style={[styles.progressBarLarge, { backgroundColor: colors.border, height: 6 }]}>
+                  <View
+                    style={[
+                      styles.progressFillLarge,
+                      {
+                        width: `${batchProgress.totalVideosInChannel > 0 ? Math.round((batchProgress.currentVideoInChannel / batchProgress.totalVideosInChannel) * 100) : 0}%`,
+                        backgroundColor: '#4CAF50',
+                        height: 6,
+                      }
+                    ]}
+                  />
+                </View>
+              </View>
+            )}
 
             <View style={styles.processingStats}>
               <View style={styles.processingStat}>
