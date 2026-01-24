@@ -1783,7 +1783,9 @@ function parseTranscriptXml(
  * 4. Direct YouTube page scraping
  */
 // Local transcript server URL - run transcript-server locally
-const TRANSCRIPT_SERVER_URL = 'http://localhost:3333';
+// For iOS Simulator: use localhost
+// For real iOS device: use your computer's IP (e.g., http://192.168.1.100:3333)
+const TRANSCRIPT_SERVER_URL = 'http://127.0.0.1:3333';
 
 export async function fetchVideoTranscript(
   videoId: string,
@@ -1797,7 +1799,7 @@ export async function fetchVideoTranscript(
 
   // Try Method 0: Local transcript server (most reliable - bypasses YouTube blocks)
   try {
-    log(`  → Trying local server...`);
+    log(`  → Trying local server (${TRANSCRIPT_SERVER_URL})...`);
     const serverResponse = await fetch(`${TRANSCRIPT_SERVER_URL}/transcript?v=${videoId}`, {
       signal: AbortSignal.timeout(30000),
     });
@@ -1811,15 +1813,19 @@ export async function fetchVideoTranscript(
           segments: data.segments || [],
         };
       }
+      log(`  ✗ Server returned empty transcript`);
     } else {
       const errorData = await serverResponse.json().catch(() => ({}));
-      log(`  ✗ Local server: ${errorData.error || `HTTP ${serverResponse.status}`}`);
+      log(`  ✗ Server error: ${errorData.error || `HTTP ${serverResponse.status}`}`);
     }
   } catch (error) {
-    if (error instanceof Error && error.message.includes('fetch')) {
-      log(`  ✗ Local server not running (start with: cd transcript-server && npm start)`);
+    const errMsg = error instanceof Error ? error.message : String(error);
+    if (errMsg.includes('Network request failed') || errMsg.includes('Load failed') || errMsg.includes('fetch')) {
+      log(`  ✗ Cannot connect to transcript server!`);
+      log(`    Make sure you ran: cd transcript-server && npm install && npm start`);
+      log(`    If on real device, update TRANSCRIPT_SERVER_URL to your computer's IP`);
     } else {
-      log(`  ✗ Local server error: ${error}`);
+      log(`  ✗ Server error: ${errMsg}`);
     }
   }
 
