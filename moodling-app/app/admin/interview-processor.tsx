@@ -130,6 +130,40 @@ const RECOMMENDED_CHANNELS = [
   { name: 'After Prison Show', handle: 'AfterPrisonShow', channelId: 'UCo2LGlvPwPJ_vD-dN8FdT8w', category: 'addiction_recovery' as ChannelCategory, trust: 'high' as const, description: 'Joe Guerrero - real talk about addiction, recovery, and life after prison' },
   { name: 'Recovery Elevator', handle: 'RecoveryElevator', channelId: 'UChvKBUy9eLU-5xVz2Rre7-g', category: 'addiction_recovery' as ChannelCategory, trust: 'high' as const, description: 'Paul Churchill - podcast about alcohol recovery, community-focused' },
   { name: 'Club Soda', handle: 'ClubSodaUK', channelId: 'UC8oCJLZ_DLu7e5Qu3qbqRQw', category: 'addiction_recovery' as ChannelCategory, trust: 'high' as const, description: 'Mindful drinking movement, harm reduction, choice without judgment' },
+
+  // === GRIEF & LOSS ===
+  { name: 'Refuge in Grief', handle: 'RefugeinGrief', channelId: 'UCwzQ3DPTgKmE6GUmfWuFxkQ', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Megan Devine - grief that doesn\'t need fixing, anti-toxic positivity' },
+  { name: 'The Grief Recovery Method', handle: 'GriefRecoveryMethod', channelId: 'UCiE6-nB-c9qB5n0f3Cq1uRQ', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Evidence-based grief recovery, practical tools' },
+  { name: 'What\'s Your Grief', handle: 'WhatsYourGrief', channelId: 'UCmQcjPmjwB7QmHM_NiP3EQg', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Practical grief education, normalizing all types of loss' },
+
+  // === AGING & MORTALITY ===
+  { name: 'Ask a Mortician', handle: 'AskAMortician', channelId: 'UCi5iiEyLwSLvlqnMi02u5gQ', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Caitlin Doughty - death positivity, confronting mortality with honesty' },
+  { name: 'Sixty and Me', handle: 'SixtyandMe', channelId: 'UCuEb_KLhBhZ_fQVZMbR2EJw', category: 'elderly_wisdom' as ChannelCategory, trust: 'high' as const, description: 'Women over 60 sharing wisdom, embracing aging' },
+
+  // === PARENTING ===
+  { name: 'Dr. Becky Kennedy', handle: 'drbeckyatgoodinside', channelId: 'UC2oF2TmQVzRCW3M6BQmwEFQ', category: 'relationships_love' as ChannelCategory, trust: 'high' as const, description: 'Good Inside parenting - repair over perfection, emotional regulation' },
+  { name: 'Janet Lansbury', handle: 'JanetLansbury', channelId: 'UC-pMWdv3GhJIBmYqAJWBQfQ', category: 'relationships_love' as ChannelCategory, trust: 'high' as const, description: 'RIE parenting approach - respect, observation, trust in children' },
+  { name: 'The Holderness Family', handle: 'TheHoldernessFamily', channelId: 'UCjMgq_nGK5dg6pVDvH5LW8Q', category: 'humor_comedy' as ChannelCategory, trust: 'medium' as const, description: 'Parenting humor, relatable family chaos, joy in imperfection' },
+
+  // === CHRONIC ILLNESS & DISABILITY ===
+  { name: 'Jessica Kellgren-Fozard', handle: 'JessicaKellgrenFozard', channelId: 'UCqZ3eDbxCaKBnE9W6w7xRGg', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'high' as const, description: 'Deaf, disabled LGBTQ+ advocate - joy and chronic illness can coexist' },
+  { name: 'Chronically Jaquie', handle: 'ChronicallyJaquie', channelId: 'UCKaX0dQwEUgTafzCZ2yEjUQ', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'medium' as const, description: 'Living with chronic illness - the messy reality' },
+
+  // === SPIRITUALITY (NON-DOGMATIC) ===
+  { name: 'Eckhart Tolle', handle: 'EckhartTolle', channelId: 'UCJ9rg3_ApZFpfIR0vftNPAA', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Presence, consciousness, peace - accessible spirituality' },
+  { name: 'Tara Brach', handle: 'TaraBrach', channelId: 'UCxNFlBjJtHXLhHIkqxzJ7Tw', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Buddhist psychology, radical self-compassion, mindfulness' },
+  { name: 'Ram Dass', handle: 'RamDassOrg', channelId: 'UCrmD3-ZZTJRfxAOxS1LHkkQ', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Be Here Now - love, service, aging, dying, consciousness' },
+
+  // === CREATIVITY & EXPRESSION ===
+  { name: 'The Art Assignment', handle: 'theartassignment', channelId: 'UCmQThz1OLYt8mb2PaGJSJeQ', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Art as emotional processing, creativity for everyone' },
+  { name: 'Austin Kleon', handle: 'AustinKleon', channelId: 'UCqQxXxW8qJw_9WqC8J8TfSQ', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Creative life, stealing like an artist, showing your work' },
+
+  // === BURNOUT & REST ===
+  { name: 'The Nap Ministry', handle: 'TheNapMinistry', channelId: 'UCwJlZ8L-aSPb-PVNGNZDe-g', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Tricia Hersey - rest as resistance, rejecting grind culture' },
+
+  // === LGBTQ+ EXPERIENCE ===
+  { name: 'Contrapoints', handle: 'ContraPoints', channelId: 'UCNvsIonJdJ5E4EXMa65VYpA', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Natalie Wynn - trans experience, philosophy, nuance, beauty' },
+  { name: 'Jammidodger', handle: 'Jammidodger', channelId: 'UCXc4jQMOy2wvVo_jK1EuLSQ', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'high' as const, description: 'Trans man experience - joy, education, authenticity' },
 ];
 
 export default function InterviewProcessorScreen() {
