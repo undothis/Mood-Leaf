@@ -41,7 +41,8 @@ Complete technical documentation for the Mood Leaf codebase.
 30. [Fidget Pad Game](#fidget-pad-game)
 31. [Food Tracking with AI Detection](#food-tracking-with-ai-detection)
 32. [Skills Progression Tab](#skills-progression-tab)
-33. [Future Enhancements](#future-enhancements)
+33. [Coach Access Registry](#coach-access-registry)
+34. [Future Enhancements](#future-enhancements)
 
 ---
 
@@ -2462,11 +2463,75 @@ interface CognitiveProfile {
   emotionalProcessing: 'feeler_first' | 'thinker_first' | 'integrated';
   sensitivityLevel: 'highly_sensitive' | 'moderate' | 'low';
   communicationStyle: 'direct' | 'reflective' | 'exploratory';
+
+  // Behavioral detection (not asked, observed)
+  decisionStyle: 'binary' | 'nuanced' | 'unknown';
 }
 
 // Storage
 const STORAGE_KEY = 'moodleaf_cognitive_profile';
 ```
+
+### Passive Behavioral Detection
+
+> **"We see ourselves through the lens of aspiration, not reality. That's why watching beats asking."**
+
+Some cognitive traits cannot be reliably measured through direct questions because users will mask their true nature:
+
+- **Binary thinkers** may answer "grey" to appear open-minded, flexible, accommodating
+- **Grey thinkers** may answer "binary" to appear confident, decisive, strong
+
+People answer as who they *want* to be, not who they *are*. Self-report fails because aspiration overrides honesty.
+
+**Solution:** Observe behavior silently over 5-10 interactions. Never ask directly.
+
+**How it works:**
+- Every message sent to the coach is silently observed
+- Tracks: response length, hedging words, decisive words, clarifying questions, mixed emotions
+- After 5+ observations, calculates decision style
+- Updates every 5 messages as more data comes in
+- User never sees a score or label - coach just naturally adapts
+
+#### Binary vs Nuanced Thinking
+
+| Trait | Binary Thinker | Nuanced/Grey Thinker |
+|-------|----------------|----------------------|
+| Decisions | Quick, definitive | Weighs options, slower |
+| Responses | Short, declarative | Longer, exploratory |
+| Emotions | Single label ("angry") | Mixed ("frustrated but relieved") |
+| Suggestions | "Yes" or "No" | "Maybe", "It depends" |
+| Questions | Rarely asks follow-ups | Asks clarifying questions |
+
+**Detection signals:**
+
+```typescript
+// Patterns that suggest binary thinking
+const binarySignals = [
+  shortResponseLength,        // < 20 words average
+  quickResponseTime,          // Fast replies
+  singleEmotionLabels,        // "I'm sad" not "I'm sad but also..."
+  decisiveLanguage,           // "I will", "I won't", "Definitely"
+  lowQuestionFrequency,       // Rarely asks "what do you mean?"
+];
+
+// Patterns that suggest nuanced thinking
+const nuancedSignals = [
+  longerResponses,            // > 50 words average
+  hedgingLanguage,            // "maybe", "kind of", "it depends"
+  multipleEmotions,           // "I feel X but also Y"
+  clarifyingQuestions,        // "What do you mean by...?"
+  exploratoryPhrases,         // "I'm not sure", "Let me think"
+];
+```
+
+**How coach adapts:**
+
+| User Style | Coach Behavior |
+|------------|----------------|
+| Binary | Give clear recommendations, decisive language, fewer options |
+| Nuanced | Present options, acknowledge complexity, help narrow down |
+
+**Important:** Never label the user. No scores shown. Coach just naturally adapts communication style based on observed patterns.
 
 **Adaptive behavior:** Questions adapt based on previous answers. If aphantasia detected, visualization questions are skipped.
 
@@ -4157,6 +4222,54 @@ Supports temporary switch with `--temp` flag: `/flint --temp`
 
 Skills are upgradeable capabilities that enhance how the coach interacts with users. Built for real-world skill transfer, not app dependency.
 
+### Skills Tab vs Coach Execution
+
+The Skills Tab serves as a **catalog/menu** for discovery, while **actual skill execution happens with the Coach**:
+
+| Component | Purpose |
+|-----------|---------|
+| **Skills Tab** | Browse available skills, read descriptions, see previews |
+| **Coach** | Guided execution, voice narration, inline overlays |
+
+**Skill Execution Categories:**
+
+| Skill Type | Execution Location |
+|------------|-------------------|
+| Breathing (box, 4-7-8, physiological sigh) | Transparent overlay in coach chat |
+| Grounding (5-4-3-2-1, ladder) | Overlay in coach chat |
+| Conversation Practice (all scenarios) | Direct roleplay with coach |
+| Games/Distraction | Navigate to game screen |
+| Reference (safety plan, etc.) | Navigate to dedicated screen |
+
+**Skill Overlay Architecture:**
+```typescript
+// When skill triggered in chat:
+interface SkillOverlayProps {
+  skillId: string;
+  onComplete: () => void;
+  onDismiss: () => void;
+  coachMessages: string[];  // Coach guidance appears in overlay
+}
+
+// Overlay renders over chat with transparency
+// Chat remains visible behind (grounding)
+// Coach can send messages that appear in overlay
+// Works with voice conversation mode
+```
+
+**Conversation Practice with Coach:**
+```typescript
+// No separate screen - coach becomes roleplay partner
+interface RoleplayMode {
+  scenario: string;        // e.g., 'asking_for_raise'
+  coachRole: string;       // e.g., 'your manager'
+  userGoal: string;        // e.g., 'request a salary increase'
+  feedbackMode: boolean;   // Coach can break character to give tips
+}
+
+// Coach stays in character, provides feedback, offers retries
+```
+
 ### Architecture
 
 **Files:**
@@ -4899,6 +5012,50 @@ SUPPORTED_LANGUAGES: LanguageOption[]
 // 4. Coach responds with TTS
 // 5. Auto-listen resumes (if enabled)
 ```
+
+### Continuous Voice Conversation Mode
+
+When `autoListen` and `speakResponses` are both enabled, the system enters a natural conversation flow:
+
+```
+TAP RECORD
+    ↓
+User speaks → [silence] → Auto-send
+    ↓
+Coach responds (text + TTS)
+    ↓
+[TTS completes] → Auto-record starts
+    ↓
+User speaks again... (cycle continues)
+    ↓
+END TRIGGERS:
+  - Re-tap record button
+  - Say: "bye", "goodbye", "see ya", "that's all"
+  - Long silence timeout
+```
+
+**End Phrase Detection**:
+```typescript
+const END_PHRASES = [
+  'bye', 'goodbye', 'good bye', 'see ya', 'see you',
+  'that\'s all', 'thats all', 'i\'m done', 'im done',
+  'talk later', 'later', 'thanks bye', 'okay bye'
+];
+
+// In onMessageReady callback:
+const lowerMessage = message.toLowerCase().trim();
+if (END_PHRASES.some(phrase => lowerMessage.includes(phrase))) {
+  endConversation();
+  return;
+}
+```
+
+**Integration with Skill Overlays**:
+When the coach triggers a skill during voice conversation:
+1. Skill overlay appears (transparent, over chat)
+2. Coach voice continues guiding through the skill
+3. User can still speak ("this is helping", "slower please")
+4. Conversation continues naturally after skill completes
 
 **Coach Screen Integration** (`app/coach/index.tsx`):
 ```typescript
@@ -6452,6 +6609,177 @@ const STORAGE_KEYS = {
   TOUR_STEP: 'moodleaf_guided_tour_step',
 };
 ```
+
+---
+
+## Coach Access Registry
+
+The Coach Access Registry (`coachAccessRegistry.ts`) is a **whitelist** that defines everything the AI coach can access. If something is not in this registry, the AI is blocked from accessing it.
+
+### Purpose
+
+- **Developer control** over what data flows to the AI
+- **Troubleshooting** by enabling/disabling specific data sources
+- **Security** by explicitly defining what's allowed vs blocked
+- **Visibility** into all AI capabilities in one place
+
+### How It Works
+
+```typescript
+import { isAccessAllowed, setAccessEnabled } from '@/services/coachAccessRegistry';
+
+// Check if AI can access something
+if (isAccessAllowed('journal_entries')) {
+  // Include journal data in prompt
+}
+
+// Toggle access (developer only)
+await setAccessEnabled('health_metrics', false);
+```
+
+### Access Categories
+
+| Category | Description | Examples |
+|----------|-------------|----------|
+| `core` | Required for coach to function | Ethical principles, personality, tone |
+| `user_data` | User's personal data | Name, preferences, cognitive profile |
+| `context` | Memories and life context | Memories, relationships, journal |
+| `tracking` | Mood and habit tracking | Quick logs, lifestyle factors, exposure |
+| `health` | Health and calendar data | HealthKit, correlations, calendar |
+| `therapeutic` | CBT/DBT modes | Coach modes |
+| `actions` | Things AI can trigger | Open/close skill overlay |
+
+### What's Allowed (Default Enabled)
+
+**Core (cannot disable):**
+- `core_principles` - Ethical tenets
+- `coach_personality` - Persona settings
+- `tone_preferences` - Communication style
+- `conversation_history` - Recent messages
+
+**User Data:**
+- `user_name` - User's name
+- `user_preferences` - General settings
+- `cognitive_profile` - How user thinks
+- `psychological_profile` - Psych patterns
+- `chronotype` - Sleep preferences
+
+**Context & Memories:**
+- `memory_context` - Past conversations
+- `life_context` - People, events, topics
+- `social_connections` - Relationship health
+- `journal_entries` - Recent entries (summarized)
+
+**Tracking:**
+- `quick_logs` - Mood, energy logs
+- `lifestyle_factors` - Sleep, caffeine, etc.
+- `exposure_progress` - Anxiety tracking
+- `accountability_data` - Limits
+- `skill_recommendations` - Suggested skills
+- `achievements` - Pending celebrations
+
+**Health (conditional):**
+- `health_metrics` - HealthKit data
+- `health_correlations` - Health-mood links
+- `calendar_events` - Upcoming events
+- `drink_pacing` - Drink tracking
+- `habit_timers` - Habit progress
+
+**Therapeutic:**
+- `coach_modes` - Active CBT/DBT modes
+
+**Actions:**
+- `action_open_skill` - Open skill overlay
+- `action_close_skill` - Close skill overlay
+
+### What's Blocked (Default Disabled)
+
+**Sensitive Data:**
+- `raw_journal_content` - Full unedited journals
+- `deleted_entries` - Deleted data
+- `api_keys` - Security tokens
+- `device_info` - Device details
+- `subscription_status` - Payment info
+- `export_history` - Export logs
+
+**Not Implemented:**
+- `location_data` - GPS location
+- `contacts` - Phone contacts
+- `photos` - Photo library
+
+**Tracking (blocked):**
+- `notifications` - Notification history
+- `app_usage` - Usage stats
+- `crash_logs` - Error logs
+- `network_requests` - API call history
+- `training_data` - Training data
+
+**Dangerous Actions:**
+- `action_delete_data` - Delete user data
+- `action_send_notification` - Send notifications
+- `action_make_purchase` - In-app purchases
+- `action_share_externally` - Share outside app
+- `action_navigate` - Navigate screens
+- `action_modify_settings` - Change settings
+- `action_access_clipboard` - Read clipboard
+
+### Admin Functions
+
+```typescript
+import {
+  getRegistrySummary,
+  getAllEntries,
+  getEntriesByCategory,
+  getAccessLogs,
+  debugPrintRegistry,
+} from '@/services/coachAccessRegistry';
+
+// Get overview
+const summary = getRegistrySummary();
+// { total: 45, enabled: 28, disabled: 17, required: 4 }
+
+// Get all entries with status
+const entries = getAllEntries();
+
+// Get entries by category
+const healthEntries = getEntriesByCategory('health');
+
+// View access logs (dev mode only)
+const logs = getAccessLogs(50);
+
+// Debug print to console
+debugPrintRegistry();
+```
+
+### Adding New Access Points
+
+When adding a new data source or action:
+
+1. Add entry to `COACH_ACCESS_REGISTRY` in `coachAccessRegistry.ts`
+2. Set `enabled: true` if AI should access it by default
+3. Set `required: true` if it cannot be disabled
+4. Add `conditional` if it depends on user settings
+5. Use `isAccessAllowed()` before including data in prompts
+
+```typescript
+new_data_source: {
+  id: 'new_data_source',
+  name: 'Human-Readable Name',
+  description: 'What this data contains',
+  service: 'serviceFileName',
+  category: 'user_data',
+  enabled: true,
+  required: false,
+  conditional: 'Only if feature X enabled',
+},
+```
+
+### Security Notes
+
+- **Required entries cannot be disabled** - Core safety principles must always be active
+- **Blocked entries are explicit** - Developer can see what AI cannot access
+- **Logs are dev-mode only** - Production doesn't log access
+- **Whitelist approach** - If not in registry, it's blocked
 
 ---
 

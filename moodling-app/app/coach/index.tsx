@@ -13,6 +13,7 @@ import {
   Animated,
   Modal,
   FlatList,
+  Alert,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -66,8 +67,9 @@ import {
   togglePersistentMode,
 } from '@/services/coachModeService';
 import { BreathingBall, BreathingPattern } from '@/components/BreathingBall';
+import { SkillOverlay, parseSkillTrigger, isOverlaySkill } from '@/components/SkillOverlay';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { generateProfileReveal } from '@/services/cognitiveProfileService';
+import { generateProfileReveal, observeUserMessage } from '@/services/cognitiveProfileService';
 import { startTour, isTourActive, subscribeTourState, resetTour } from '@/services/guidedTourService';
 
 // Initialize slash commands on module load
@@ -154,6 +156,7 @@ export default function CoachScreen() {
   const [voiceSupported, setVoiceSupported] = useState(false);
   const [silenceProgress, setSilenceProgress] = useState(0);
   const [autoSendEnabled, setAutoSendEnabled] = useState(true); // Toggle for auto-send on pause
+  const [continuousVoiceMode, setContinuousVoiceMode] = useState(false); // Continuous conversation mode
   const voiceControllerRef = useRef<VoiceChatController | null>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
@@ -172,6 +175,11 @@ export default function CoachScreen() {
   // Breathing ball state
   const [showBreathingBall, setShowBreathingBall] = useState(false);
   const [breathingPattern, setBreathingPattern] = useState<BreathingPattern>('box');
+
+  // Skill overlay state (for AI-triggered skills)
+  const [showSkillOverlay, setShowSkillOverlay] = useState(false);
+  const [activeSkillId, setActiveSkillId] = useState<string>('');
+  const [skillCoachMessage, setSkillCoachMessage] = useState<string>('');
 
   // Guided tour state - just track if active for hiding prompt
   const [tourActive, setTourActive] = useState(false);
@@ -339,6 +347,8 @@ export default function CoachScreen() {
     if (!voiceControllerRef.current) return;
 
     if (voiceState === 'idle') {
+      // Always enable continuous voice mode when starting voice
+      setContinuousVoiceMode(true);
       // Update mode based on autoSendEnabled
       await voiceControllerRef.current.updateSettings({
         mode: autoSendEnabled ? 'auto_detect' : 'push_to_talk',
@@ -346,6 +356,8 @@ export default function CoachScreen() {
       });
       await voiceControllerRef.current.startListening();
     } else if (voiceState === 'listening') {
+      // Tapping while listening stops continuous mode
+      setContinuousVoiceMode(false);
       const transcript = await voiceControllerRef.current.stopListening();
       if (transcript.trim() && !autoSendEnabled) {
         // Manual mode: put transcript in input box for review
@@ -515,9 +527,39 @@ export default function CoachScreen() {
     }
   };
 
+  // End phrases that stop continuous voice mode
+  const END_PHRASES = ['bye', 'goodbye', 'good bye', 'see ya', 'see you', 'later', 'talk later', 'gotta go', 'i\'m done', 'that\'s all', 'thanks bye', 'thank you bye'];
+
   const handleSend = async (text?: string) => {
     const messageText = text || inputText.trim();
     if (!messageText || isLoading) return;
+
+    // Check for end phrases to stop continuous voice mode
+    const lowerMessage = messageText.toLowerCase().trim();
+    const isEndPhrase = END_PHRASES.some(phrase =>
+      lowerMessage === phrase ||
+      lowerMessage.startsWith(phrase + ' ') ||
+      lowerMessage.endsWith(' ' + phrase)
+    );
+
+    if (isEndPhrase && continuousVoiceMode) {
+      setContinuousVoiceMode(false);
+      // Stop any ongoing listening
+      if (voiceControllerRef.current && voiceState === 'listening') {
+        voiceControllerRef.current.stopListening();
+      }
+    }
+
+    // Client-side skill close detection - close immediately without waiting for AI
+    const SKILL_CLOSE_PHRASES = ['close', 'stop', 'close the skill', 'close skill', 'done with', 'end the skill', 'end skill', 'stop the skill', 'im done', "i'm done", 'finished', 'close it', 'stop it'];
+    if (showSkillOverlay && SKILL_CLOSE_PHRASES.some(phrase => lowerMessage.includes(phrase))) {
+      setShowSkillOverlay(false);
+      setActiveSkillId(null);
+    }
+
+    // Observe user message for behavioral detection (silent, passive)
+    // "We see ourselves through the lens of aspiration, not reality"
+    observeUserMessage(messageText).catch(() => {}); // Fire and forget
 
     // Check if this is a slash command
     if (isSlashCommand(messageText)) {
@@ -593,8 +635,17 @@ export default function CoachScreen() {
         setAdditionalContext(undefined); // Clear after first use
       }
 
+      // Add skill overlay context so AI knows when to close it
+      if (showSkillOverlay && activeSkillId) {
+        fullMessage = `[SKILL_OVERLAY_OPEN: ${activeSkillId} - if user wants to close/stop/end the skill, include [CLOSE_SKILL] in your response]\n\n${fullMessage}`;
+      }
+
       // Send to Claude API
       const response = await sendMessage(fullMessage, context);
+
+      // Parse response for skill triggers (e.g., [OPEN_SKILL:breathing_orb] or [CLOSE_SKILL])
+      const { skillId, shouldClose, cleanText } = parseSkillTrigger(response.text);
+      const displayText = cleanText || response.text;
 
       // Remove typing indicator and add response
       setMessages((prev) => {
@@ -603,18 +654,46 @@ export default function CoachScreen() {
           ...filtered,
           {
             id: `ai-${Date.now()}`,
-            text: response.text,
+            text: displayText,
             source: response.source,
             timestamp: new Date(),
           },
         ];
       });
 
+      // If AI wants to close the skill overlay
+      if (shouldClose && showSkillOverlay) {
+        setTimeout(() => {
+          setShowSkillOverlay(false);
+        }, 300);
+      }
+
+      // If AI triggered a skill, show the overlay
+      if (skillId && isOverlaySkill(skillId)) {
+        // Small delay to let the message appear first
+        setTimeout(() => {
+          handleSkillTrigger(skillId, displayText);
+        }, 500);
+      }
+
       // Speak the response if TTS is enabled
       if (ttsEnabled && coachSettings?.selectedPersona) {
         setIsSpeaking(true);
-        speakCoachResponse(response.text, coachSettings.selectedPersona)
-          .finally(() => setIsSpeaking(false));
+        speakCoachResponse(displayText, coachSettings.selectedPersona)
+          .finally(() => {
+            setIsSpeaking(false);
+            // In continuous voice mode, auto-restart listening after AI finishes speaking
+            if (continuousVoiceMode && voiceControllerRef.current && voiceSupported) {
+              setTimeout(async () => {
+                await voiceControllerRef.current?.startListening();
+              }, 500);
+            }
+          });
+      } else if (continuousVoiceMode && voiceControllerRef.current && voiceSupported) {
+        // No TTS - still restart listening after a short delay for reading
+        setTimeout(async () => {
+          await voiceControllerRef.current?.startListening();
+        }, 1500); // Give user time to read the response
       }
 
       // Track turns for anti-dependency
@@ -688,6 +767,16 @@ export default function CoachScreen() {
       .replace(/\*\*([^*]+)\*\*/g, '$1') // **bold** -> bold
       .replace(/\*([^*]+)\*/g, '$1')     // *italic* -> italic
       .replace(/---/g, '—');              // --- -> em dash
+  };
+
+  // Handle AI-triggered skill overlay
+  // AI can include [OPEN_SKILL:skill_id] in response to trigger a skill
+  const handleSkillTrigger = (skillId: string, coachMessage?: string) => {
+    if (isOverlaySkill(skillId)) {
+      setActiveSkillId(skillId);
+      setSkillCoachMessage(coachMessage || '');
+      setShowSkillOverlay(true);
+    }
   };
 
   // Show first-time content automatically with tour option
@@ -870,6 +959,21 @@ export default function CoachScreen() {
 
         </ScrollView>
 
+        {/* Continuous Voice Mode Indicator */}
+        {continuousVoiceMode && (
+          <View style={[styles.continuousModeBar, { backgroundColor: colors.tint + '20' }]}>
+            <Ionicons name="chatbubbles" size={16} color={colors.tint} />
+            <Text style={[styles.continuousModeText, { color: colors.tint }]}>
+              Voice conversation active
+            </Text>
+            <TouchableOpacity onPress={() => setContinuousVoiceMode(false)}>
+              <Text style={[styles.continuousModeEnd, { color: colors.textMuted }]}>
+                Tap mic or say "bye" to end
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Voice Transcript Display */}
         {voiceState === 'listening' && voiceTranscript && (
           <View style={[styles.transcriptBar, { backgroundColor: colors.card }]}>
@@ -924,27 +1028,34 @@ export default function CoachScreen() {
             />
           </TouchableOpacity>
 
-          {/* Voice Button */}
-          {voiceSupported && (
-            <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-              <TouchableOpacity
-                style={[
-                  styles.voiceButton,
-                  {
-                    backgroundColor: voiceState === 'listening' ? colors.error : colors.border,
-                  },
-                ]}
-                onPress={handleVoicePress}
-                disabled={isLoading}
-              >
-                <Ionicons
-                  name={voiceState === 'listening' ? 'stop' : 'mic'}
-                  size={18}
-                  color={voiceState === 'listening' ? '#FFFFFF' : colors.text}
-                />
-              </TouchableOpacity>
-            </Animated.View>
-          )}
+          {/* Voice Button - always show, will alert if unsupported */}
+          <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+            <TouchableOpacity
+              style={[
+                styles.voiceButton,
+                {
+                  backgroundColor: voiceState === 'listening' ? colors.error : colors.border,
+                },
+              ]}
+              onPress={() => {
+                if (!voiceSupported) {
+                  Alert.alert(
+                    'Voice Not Supported',
+                    'Speech recognition is not available on this device or browser. Try using Safari on iOS or Chrome on desktop.'
+                  );
+                  return;
+                }
+                handleVoicePress();
+              }}
+              disabled={isLoading}
+            >
+              <Ionicons
+                name={voiceState === 'listening' ? 'stop' : 'mic'}
+                size={18}
+                color={voiceState === 'listening' ? '#FFFFFF' : colors.text}
+              />
+            </TouchableOpacity>
+          </Animated.View>
 
           <TextInput
             style={[styles.input, { color: colors.text }]}
@@ -1129,6 +1240,14 @@ export default function CoachScreen() {
           </TouchableOpacity>
         </View>
       )}
+
+      {/* Skill Overlay - AI-triggered skill display */}
+      <SkillOverlay
+        visible={showSkillOverlay}
+        skillId={activeSkillId}
+        onClose={() => setShowSkillOverlay(false)}
+        coachMessage={skillCoachMessage}
+      />
     </View>
   );
 }
@@ -1285,6 +1404,24 @@ const styles = StyleSheet.create({
   autoSendHint: {
     fontSize: 11,
     fontStyle: 'italic',
+  },
+  continuousModeBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginBottom: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    gap: 8,
+  },
+  continuousModeText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  continuousModeEnd: {
+    fontSize: 11,
   },
   autoSendToggle: {
     flexDirection: 'row',

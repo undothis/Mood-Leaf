@@ -215,6 +215,57 @@ export type ProductivityStyle =
   | 'energy_dependent';    // Completely depends on current energy
 
 /**
+ * Decision Style - Binary vs Nuanced thinking
+ *
+ * CRITICAL: This is NEVER asked directly. Only detected through behavior.
+ * "We see ourselves through the lens of aspiration, not reality."
+ *
+ * - Binary thinkers may claim to be nuanced (to seem open-minded)
+ * - Nuanced thinkers may claim to be binary (to seem decisive)
+ *
+ * Detection happens silently over 5-10 interactions by observing:
+ * - Response length and complexity
+ * - Use of hedging language ("maybe", "it depends")
+ * - Single vs multiple emotion labels
+ * - How they respond to suggestions
+ * - Whether they ask clarifying questions
+ */
+export type DecisionStyle =
+  | 'binary'     // Quick decisions, clear-cut, definitive language
+  | 'nuanced'    // Weighs options, sees complexity, exploratory
+  | 'contextual' // Depends on the situation (truly adaptive)
+  | 'unknown';   // Not enough data yet
+
+/**
+ * Behavioral observation data for passive detection
+ */
+export interface BehavioralObservations {
+  // Response patterns
+  averageResponseLength: number;        // Word count
+  responseLengthSamples: number[];      // Last N response lengths
+
+  // Language patterns
+  hedgingPhraseCount: number;           // "maybe", "it depends", "kind of"
+  decisivePhraseCount: number;          // "definitely", "I will", "absolutely"
+
+  // Emotional expression
+  singleEmotionCount: number;           // "I'm sad"
+  mixedEmotionCount: number;            // "I'm sad but also relieved"
+
+  // Interaction patterns
+  clarifyingQuestionCount: number;      // "What do you mean?"
+  directResponseCount: number;          // Just answers, no questions
+
+  // Suggestion responses
+  acceptedSuggestionsQuickly: number;   // Yes/No quickly
+  exploredSuggestionsFirst: number;     // Asked questions before deciding
+
+  // Metadata
+  totalObservations: number;
+  lastUpdated: string;
+}
+
+/**
  * The complete cognitive profile
  */
 export interface CognitiveProfile {
@@ -257,6 +308,11 @@ export interface CognitiveProfile {
 
   // Self-awareness
   selfAwarenessLevel: 'high' | 'moderate' | 'developing';
+
+  // === BEHAVIORAL DETECTION (Not asked, observed) ===
+  // "We see ourselves through the lens of aspiration, not reality"
+  decisionStyle: DecisionStyle;
+  behavioralObservations: BehavioralObservations | null;
 
   // Strengths discovered (updated over time)
   discoveredStrengths: string[];
@@ -1237,6 +1293,9 @@ const DEFAULT_PROFILE: CognitiveProfile = {
   structurePreference: 'structured_start',
   comfortWithAmbiguity: 'moderate',
   selfAwarenessLevel: 'moderate',
+  // Behavioral detection (not asked, observed)
+  decisionStyle: 'unknown',
+  behavioralObservations: null,
   discoveredStrengths: [],
   traditionalLearningFit: 'mixed',
   // Cognitive rhythms (default to steady, detect via onboarding)
@@ -2218,5 +2277,280 @@ export async function getCognitiveProfileContextForLLM(): Promise<string> {
     parts.push('\nNOTE: Traditional education didn\'t fit their mind - don\'t use school-style instruction');
   }
 
+  // Decision style (behavioral detection)
+  if (profile.decisionStyle && profile.decisionStyle !== 'unknown') {
+    const dsAdaptations = getDecisionStyleAdaptations(profile.decisionStyle);
+    parts.push(`\nDECISION STYLE (observed behavior, NOT self-reported): ${profile.decisionStyle.toUpperCase()}`);
+    parts.push(`- ${dsAdaptations.responseApproach}`);
+    parts.push(`- ${dsAdaptations.suggestionStyle}`);
+  }
+
   return parts.join('\n');
+}
+
+// ============================================
+// BEHAVIORAL DETECTION
+// "We see ourselves through the lens of aspiration, not reality.
+//  That's why watching beats asking."
+// ============================================
+
+const BEHAVIORAL_STORAGE_KEY = 'moodleaf_behavioral_observations';
+
+// Language patterns for detection
+const HEDGING_PHRASES = [
+  'maybe', 'perhaps', 'kind of', 'sort of', 'it depends',
+  'not sure', 'i think', 'possibly', 'might be', 'could be',
+  'i guess', 'probably', 'on one hand', 'on the other hand',
+  'to some extent', 'in a way', 'somewhat'
+];
+
+const DECISIVE_PHRASES = [
+  'definitely', 'absolutely', 'certainly', 'i will', 'i won\'t',
+  'yes', 'no', 'never', 'always', 'exactly', 'precisely',
+  'for sure', 'without a doubt', 'clearly', 'obviously'
+];
+
+const CLARIFYING_PATTERNS = [
+  'what do you mean', 'can you explain', 'how so', 'in what way',
+  'what exactly', 'could you clarify', 'i\'m not sure i understand',
+  'tell me more', 'what would that look like'
+];
+
+const MIXED_EMOTION_PATTERNS = [
+  'but also', 'and also', 'at the same time', 'on one hand',
+  'mixed feelings', 'part of me', 'conflicted', 'torn between',
+  'both', 'yet'
+];
+
+/**
+ * Get current behavioral observations
+ */
+export async function getBehavioralObservations(): Promise<BehavioralObservations> {
+  try {
+    const stored = await AsyncStorage.getItem(BEHAVIORAL_STORAGE_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (error) {
+    console.error('[BehavioralDetection] Failed to get observations:', error);
+  }
+
+  return {
+    averageResponseLength: 0,
+    responseLengthSamples: [],
+    hedgingPhraseCount: 0,
+    decisivePhraseCount: 0,
+    singleEmotionCount: 0,
+    mixedEmotionCount: 0,
+    clarifyingQuestionCount: 0,
+    directResponseCount: 0,
+    acceptedSuggestionsQuickly: 0,
+    exploredSuggestionsFirst: 0,
+    totalObservations: 0,
+    lastUpdated: new Date().toISOString()
+  };
+}
+
+/**
+ * Save behavioral observations
+ */
+async function saveBehavioralObservations(obs: BehavioralObservations): Promise<void> {
+  try {
+    obs.lastUpdated = new Date().toISOString();
+    await AsyncStorage.setItem(BEHAVIORAL_STORAGE_KEY, JSON.stringify(obs));
+  } catch (error) {
+    console.error('[BehavioralDetection] Failed to save observations:', error);
+  }
+}
+
+/**
+ * Analyze a user message and update behavioral observations
+ * Call this on every user message in coach chat
+ *
+ * @param message - The user's message text
+ * @param context - Optional context (was this a response to a suggestion?)
+ */
+export async function observeUserMessage(
+  message: string,
+  context?: {
+    wasResponseToSuggestion?: boolean;
+    responseTimeMs?: number;
+  }
+): Promise<void> {
+  const obs = await getBehavioralObservations();
+  const lowerMessage = message.toLowerCase();
+  const wordCount = message.split(/\s+/).filter(w => w.length > 0).length;
+
+  // Update response length tracking
+  obs.responseLengthSamples.push(wordCount);
+  if (obs.responseLengthSamples.length > 20) {
+    obs.responseLengthSamples.shift(); // Keep last 20
+  }
+  obs.averageResponseLength = obs.responseLengthSamples.reduce((a, b) => a + b, 0) / obs.responseLengthSamples.length;
+
+  // Check for hedging language
+  const hasHedging = HEDGING_PHRASES.some(phrase => lowerMessage.includes(phrase));
+  if (hasHedging) {
+    obs.hedgingPhraseCount++;
+  }
+
+  // Check for decisive language
+  const hasDecisive = DECISIVE_PHRASES.some(phrase => lowerMessage.includes(phrase));
+  if (hasDecisive) {
+    obs.decisivePhraseCount++;
+  }
+
+  // Check for clarifying questions
+  const hasClarifying = CLARIFYING_PATTERNS.some(pattern => lowerMessage.includes(pattern));
+  if (hasClarifying) {
+    obs.clarifyingQuestionCount++;
+  } else if (wordCount < 30 && !lowerMessage.includes('?')) {
+    obs.directResponseCount++;
+  }
+
+  // Check for mixed vs single emotions
+  const hasMixedEmotion = MIXED_EMOTION_PATTERNS.some(pattern => lowerMessage.includes(pattern));
+  if (hasMixedEmotion) {
+    obs.mixedEmotionCount++;
+  } else if (wordCount < 20) {
+    // Short responses without mixed emotion markers suggest single emotion
+    obs.singleEmotionCount++;
+  }
+
+  // Track suggestion responses
+  if (context?.wasResponseToSuggestion) {
+    const isQuickResponse = wordCount < 15;
+    const isExploratoryResponse = hasClarifying || hasHedging || lowerMessage.includes('?');
+
+    if (isQuickResponse && !isExploratoryResponse) {
+      obs.acceptedSuggestionsQuickly++;
+    } else if (isExploratoryResponse) {
+      obs.exploredSuggestionsFirst++;
+    }
+  }
+
+  obs.totalObservations++;
+  await saveBehavioralObservations(obs);
+
+  // After enough observations, update decision style
+  if (obs.totalObservations >= 5 && obs.totalObservations % 5 === 0) {
+    await updateDecisionStyleFromObservations(obs);
+  }
+}
+
+/**
+ * Determine decision style from accumulated observations
+ */
+async function updateDecisionStyleFromObservations(obs: BehavioralObservations): Promise<void> {
+  if (obs.totalObservations < 5) return; // Need minimum data
+
+  // Calculate ratios
+  const hedgingRatio = obs.hedgingPhraseCount / obs.totalObservations;
+  const decisiveRatio = obs.decisivePhraseCount / obs.totalObservations;
+  const clarifyingRatio = obs.clarifyingQuestionCount / obs.totalObservations;
+  const mixedEmotionRatio = obs.mixedEmotionCount / (obs.mixedEmotionCount + obs.singleEmotionCount + 1);
+
+  // Scoring: positive = nuanced, negative = binary
+  let nuancedScore = 0;
+
+  // Response length (longer = more nuanced)
+  if (obs.averageResponseLength > 40) nuancedScore += 2;
+  else if (obs.averageResponseLength > 25) nuancedScore += 1;
+  else if (obs.averageResponseLength < 15) nuancedScore -= 2;
+  else if (obs.averageResponseLength < 20) nuancedScore -= 1;
+
+  // Hedging vs decisive language
+  if (hedgingRatio > 0.3) nuancedScore += 2;
+  else if (hedgingRatio > 0.15) nuancedScore += 1;
+  if (decisiveRatio > 0.3) nuancedScore -= 2;
+  else if (decisiveRatio > 0.15) nuancedScore -= 1;
+
+  // Clarifying questions
+  if (clarifyingRatio > 0.2) nuancedScore += 2;
+  else if (clarifyingRatio > 0.1) nuancedScore += 1;
+
+  // Mixed emotions
+  if (mixedEmotionRatio > 0.3) nuancedScore += 2;
+  else if (mixedEmotionRatio > 0.15) nuancedScore += 1;
+
+  // Suggestion response pattern
+  const quickRatio = obs.acceptedSuggestionsQuickly / (obs.acceptedSuggestionsQuickly + obs.exploredSuggestionsFirst + 1);
+  if (quickRatio > 0.7) nuancedScore -= 1;
+  else if (quickRatio < 0.3) nuancedScore += 1;
+
+  // Determine style
+  let decisionStyle: DecisionStyle;
+  if (nuancedScore >= 3) {
+    decisionStyle = 'nuanced';
+  } else if (nuancedScore <= -3) {
+    decisionStyle = 'binary';
+  } else {
+    decisionStyle = 'contextual';
+  }
+
+  // Update profile
+  const profile = await getCognitiveProfile();
+  if (profile.decisionStyle !== decisionStyle) {
+    await saveCognitiveProfile({
+      decisionStyle,
+      behavioralObservations: obs
+    });
+    console.log(`[BehavioralDetection] Updated decision style: ${decisionStyle} (score: ${nuancedScore})`);
+  }
+}
+
+/**
+ * Get coach adaptations for decision style
+ */
+export function getDecisionStyleAdaptations(style: DecisionStyle): {
+  responseApproach: string;
+  suggestionStyle: string;
+  questionStyle: string;
+} {
+  switch (style) {
+    case 'binary':
+      return {
+        responseApproach: 'Be clear and direct. Give definitive recommendations.',
+        suggestionStyle: 'Offer one clear suggestion rather than multiple options.',
+        questionStyle: 'Ask yes/no or simple choice questions.'
+      };
+    case 'nuanced':
+      return {
+        responseApproach: 'Acknowledge complexity. Present multiple perspectives.',
+        suggestionStyle: 'Offer options and help them weigh pros/cons.',
+        questionStyle: 'Ask open-ended exploratory questions.'
+      };
+    case 'contextual':
+      return {
+        responseApproach: 'Adapt based on topic - some things need nuance, others clarity.',
+        suggestionStyle: 'Mix of direct suggestions and options depending on weight of decision.',
+        questionStyle: 'Vary between open and closed questions based on context.'
+      };
+    default:
+      return {
+        responseApproach: 'Use balanced approach until pattern emerges.',
+        suggestionStyle: 'Offer suggestions with brief rationale.',
+        questionStyle: 'Mix of question types.'
+      };
+  }
+}
+
+/**
+ * Get decision style context for LLM
+ */
+export async function getDecisionStyleContextForLLM(): Promise<string> {
+  const profile = await getCognitiveProfile();
+
+  if (profile.decisionStyle === 'unknown') {
+    return ''; // No adaptation yet
+  }
+
+  const adaptations = getDecisionStyleAdaptations(profile.decisionStyle);
+
+  return `
+DECISION STYLE (observed, not self-reported): ${profile.decisionStyle}
+- ${adaptations.responseApproach}
+- ${adaptations.suggestionStyle}
+- ${adaptations.questionStyle}
+`.trim();
 }

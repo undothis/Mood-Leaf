@@ -383,6 +383,11 @@ export default function InterviewProcessorScreen() {
     totalInsights: 0,
     totalVideosProcessed: 0,
     totalSkipped: 0,
+    // Per-channel progress
+    currentChannelName: '',
+    currentVideoInChannel: 0,
+    totalVideosInChannel: 0,
+    channelInsights: 0,
   });
   const batchProcessingRef = useRef(false);
   const batchPausedRef = useRef(false);
@@ -503,6 +508,10 @@ export default function InterviewProcessorScreen() {
       totalInsights: savedCheckpoint.totalInsights,
       totalVideosProcessed: savedCheckpoint.totalVideosProcessed,
       totalSkipped: savedCheckpoint.totalSkipped,
+      currentChannelName: '',
+      currentVideoInChannel: 0,
+      totalVideosInChannel: 0,
+      channelInsights: 0,
     });
 
     // Start processing from checkpoint
@@ -654,7 +663,7 @@ export default function InterviewProcessorScreen() {
       return;
     }
 
-    if (!apiKey) {
+    if (!apiKey || !apiKey.trim()) {
       Alert.alert('API Key Required', 'Please set your Claude API key in Settings → AI Coaching');
       return;
     }
@@ -911,7 +920,7 @@ export default function InterviewProcessorScreen() {
 
   // Start batch processing from checkpoint
   const startBatchProcessingFromCheckpoint = async (checkpoint: BatchCheckpoint) => {
-    if (!apiKey) {
+    if (!apiKey || !apiKey.trim()) {
       Alert.alert('API Key Required', 'Please set your Claude API key in Settings → AI Coaching');
       return;
     }
@@ -946,7 +955,7 @@ export default function InterviewProcessorScreen() {
 
       const channelInfo = queueItem.channel;
 
-      addLog(`\n[${channelIndex + 1}/${checkpoint.queue.length}] Processing: ${'name' in channelInfo ? channelInfo.name : channelInfo.name}`);
+      addLog(`\n[${channelIndex + 1}/${checkpoint.queue.length}] Processing: ${channelInfo.name}`);
 
       // Update queue item status
       setBatchQueue(prev => prev.map((item, i) =>
@@ -977,11 +986,12 @@ export default function InterviewProcessorScreen() {
           }
 
           const updatedChannels = await getCuratedChannels();
-          channel = updatedChannels.find(c => c.name === rec.name)!;
+          const foundChannel = updatedChannels.find(c => c.name === rec.name);
 
-          if (!channel) {
+          if (!foundChannel) {
             throw new Error('Channel was not added properly');
           }
+          channel = foundChannel;
         } else {
           channel = channelInfo as CuratedChannel;
         }
@@ -1007,6 +1017,15 @@ export default function InterviewProcessorScreen() {
         let channelInsights = 0;
         let channelVideosProcessed = 0;
         let channelSkipped = 0;
+
+        // Update progress with channel info
+        setBatchProgress(prev => ({
+          ...prev,
+          currentChannelName: channel.name,
+          currentVideoInChannel: 0,
+          totalVideosInChannel: videos.length,
+          channelInsights: 0,
+        }));
 
         // Determine starting video index (for resumed channel)
         const startVideoIndex = (channelIndex === checkpoint.currentChannelIndex)
@@ -1034,7 +1053,7 @@ export default function InterviewProcessorScreen() {
           const video = videos[i];
           addLog(`    [${i + 1}/${videos.length}] ${video.title.slice(0, 40)}...`);
 
-          const { transcript, error: transcriptError } = await fetchVideoTranscript(video.videoId);
+          const { transcript, error: transcriptError } = await fetchVideoTranscript(video.videoId, addLog);
 
           if (transcriptError || !transcript) {
             addLog(`      ⚠ No transcript, skipping`);
@@ -1060,6 +1079,15 @@ export default function InterviewProcessorScreen() {
           addLog(`      ✓ ${insights.length} insights`);
           channelInsights += insights.length;
           channelVideosProcessed++;
+
+          // Update per-video progress
+          setBatchProgress(prev => ({
+            ...prev,
+            currentVideoInChannel: i + 1,
+            channelInsights: channelInsights,
+            totalInsights: totalInsightsAllChannels + channelInsights,
+            totalVideosProcessed: totalVideosAllChannels + channelVideosProcessed,
+          }));
 
           if (insights.length > 0) {
             await savePendingInsights(insights);
@@ -1147,7 +1175,7 @@ export default function InterviewProcessorScreen() {
       return;
     }
 
-    if (!apiKey) {
+    if (!apiKey || !apiKey.trim()) {
       Alert.alert('API Key Required', 'Please set your Claude API key in Settings → AI Coaching');
       return;
     }
@@ -1167,6 +1195,10 @@ export default function InterviewProcessorScreen() {
       totalInsights: 0,
       totalVideosProcessed: 0,
       totalSkipped: 0,
+      currentChannelName: '',
+      currentVideoInChannel: 0,
+      totalVideosInChannel: 0,
+      channelInsights: 0,
     });
 
     let totalInsightsAllChannels = 0;
@@ -1184,7 +1216,7 @@ export default function InterviewProcessorScreen() {
       const queueItem = batchQueue[channelIndex];
       const channelInfo = queueItem.channel;
 
-      addLog(`\n[${ channelIndex + 1}/${batchQueue.length}] Processing: ${'name' in channelInfo ? channelInfo.name : channelInfo.name}`);
+      addLog(`\n[${ channelIndex + 1}/${batchQueue.length}] Processing: ${channelInfo.name}`);
 
       // Update queue item status
       setBatchQueue(prev => prev.map((item, i) =>
@@ -1217,11 +1249,12 @@ export default function InterviewProcessorScreen() {
 
           // Reload channels to get the newly added one
           const updatedChannels = await getCuratedChannels();
-          channel = updatedChannels.find(c => c.name === rec.name)!;
+          const foundChannel = updatedChannels.find(c => c.name === rec.name);
 
-          if (!channel) {
+          if (!foundChannel) {
             throw new Error('Channel was not added properly');
           }
+          channel = foundChannel;
         } else {
           channel = channelInfo as CuratedChannel;
         }
@@ -1248,6 +1281,15 @@ export default function InterviewProcessorScreen() {
         let channelVideosProcessed = 0;
         let channelSkipped = 0;
 
+        // Update progress with channel info
+        setBatchProgress(prev => ({
+          ...prev,
+          currentChannelName: channel.name,
+          currentVideoInChannel: 0,
+          totalVideosInChannel: videos.length,
+          channelInsights: 0,
+        }));
+
         // Process each video
         for (let i = 0; i < videos.length && batchProcessingRef.current; i++) {
           // Check for pause
@@ -1271,7 +1313,7 @@ export default function InterviewProcessorScreen() {
           addLog(`    [${i + 1}/${videos.length}] ${video.title.slice(0, 40)}...`);
 
           // Fetch transcript
-          const { transcript, error: transcriptError } = await fetchVideoTranscript(video.videoId);
+          const { transcript, error: transcriptError } = await fetchVideoTranscript(video.videoId, addLog);
 
           if (transcriptError || !transcript) {
             addLog(`      ⚠ No transcript, skipping`);
@@ -1298,6 +1340,15 @@ export default function InterviewProcessorScreen() {
           addLog(`      ✓ ${insights.length} insights`);
           channelInsights += insights.length;
           channelVideosProcessed++;
+
+          // Update per-video progress
+          setBatchProgress(prev => ({
+            ...prev,
+            currentVideoInChannel: i + 1,
+            channelInsights: channelInsights,
+            totalInsights: totalInsightsAllChannels + channelInsights,
+            totalVideosProcessed: totalVideosAllChannels + channelVideosProcessed,
+          }));
 
           if (insights.length > 0) {
             await savePendingInsights(insights);
@@ -1546,7 +1597,7 @@ export default function InterviewProcessorScreen() {
   // Auto-approve high quality insights (quality >= 85, safety >= 95)
   const handleAutoApproveHighQuality = async (minQuality: number = 85) => {
     const highQuality = pendingInsights.filter(
-      i => i.qualityScore >= minQuality && (i.safetyScore || 100) >= 95 && !i.needsHumanReview
+      i => i.qualityScore >= minQuality && (i.safetyScore ?? 100) >= 95 && !i.needsHumanReview
     );
 
     if (highQuality.length === 0) {
@@ -1928,7 +1979,7 @@ export default function InterviewProcessorScreen() {
             <View style={styles.progressSection}>
               <View style={styles.progressLabelRow}>
                 <Text style={[styles.progressLabel, { color: colors.text }]}>
-                  Channel {batchProgress.currentChannelIndex} of {batchQueue.length}
+                  Overall: Channel {batchProgress.currentChannelIndex} of {batchQueue.length}
                 </Text>
                 <Text style={[styles.progressPercent, { color: colors.tint }]}>
                   {queueProgress}%
@@ -1943,6 +1994,32 @@ export default function InterviewProcessorScreen() {
                 />
               </View>
             </View>
+
+            {/* Channel-level progress */}
+            {batchProgress.currentChannelName && (
+              <View style={[styles.progressSection, { marginTop: 12 }]}>
+                <View style={styles.progressLabelRow}>
+                  <Text style={[styles.progressLabel, { color: colors.textSecondary }]} numberOfLines={1}>
+                    {batchProgress.currentChannelName}: Video {batchProgress.currentVideoInChannel}/{batchProgress.totalVideosInChannel}
+                  </Text>
+                  <Text style={[styles.progressPercent, { color: '#4CAF50' }]}>
+                    {batchProgress.channelInsights} insights
+                  </Text>
+                </View>
+                <View style={[styles.progressBarLarge, { backgroundColor: colors.border, height: 6 }]}>
+                  <View
+                    style={[
+                      styles.progressFillLarge,
+                      {
+                        width: `${batchProgress.totalVideosInChannel > 0 ? Math.round((batchProgress.currentVideoInChannel / batchProgress.totalVideosInChannel) * 100) : 0}%`,
+                        backgroundColor: '#4CAF50',
+                        height: 6,
+                      }
+                    ]}
+                  />
+                </View>
+              </View>
+            )}
 
             <View style={styles.processingStats}>
               <View style={styles.processingStat}>
@@ -2576,7 +2653,7 @@ export default function InterviewProcessorScreen() {
                 disabled={bulkApproving}
               >
                 <Text style={{ color: '#fff', fontSize: 13 }}>
-                  ⭐ 90%+ ({pendingInsights.filter(i => i.qualityScore >= 90 && (i.safetyScore || 100) >= 95 && !i.needsHumanReview).length})
+                  ⭐ 90%+ ({pendingInsights.filter(i => i.qualityScore >= 90 && (i.safetyScore ?? 100) >= 95 && !i.needsHumanReview).length})
                 </Text>
               </Pressable>
               <Pressable
@@ -2585,7 +2662,7 @@ export default function InterviewProcessorScreen() {
                 disabled={bulkApproving}
               >
                 <Text style={{ color: '#fff', fontSize: 13 }}>
-                  ⚡ 85%+ ({pendingInsights.filter(i => i.qualityScore >= 85 && (i.safetyScore || 100) >= 95 && !i.needsHumanReview).length})
+                  ⚡ 85%+ ({pendingInsights.filter(i => i.qualityScore >= 85 && (i.safetyScore ?? 100) >= 95 && !i.needsHumanReview).length})
                 </Text>
               </Pressable>
               <Pressable
@@ -2594,7 +2671,7 @@ export default function InterviewProcessorScreen() {
                 disabled={bulkApproving}
               >
                 <Text style={{ color: '#fff', fontSize: 13 }}>
-                  ✓ 80%+ ({pendingInsights.filter(i => i.qualityScore >= 80 && (i.safetyScore || 100) >= 95 && !i.needsHumanReview).length})
+                  ✓ 80%+ ({pendingInsights.filter(i => i.qualityScore >= 80 && (i.safetyScore ?? 100) >= 95 && !i.needsHumanReview).length})
                 </Text>
               </Pressable>
             </View>
