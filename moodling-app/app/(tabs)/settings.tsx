@@ -12,6 +12,7 @@ import {
   Platform,
 } from 'react-native';
 import { router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '@/constants/Colors';
 import {
   getCoachSettings,
@@ -1293,6 +1294,28 @@ export default function SettingsScreen() {
             </Text>
           </View>
         )}
+
+        {/* Coach Access Registry Link */}
+        <View style={styles.faqDivider} />
+        <TouchableOpacity
+          style={[styles.faqItem, { backgroundColor: colors.background }]}
+          onPress={() => router.push('/settings/coach-access')}
+        >
+          <Text style={styles.faqEmoji}>🔐</Text>
+          <View style={styles.faqContent}>
+            <Text style={[styles.faqTitle, { color: colors.text }]}>
+              AI Data Access
+            </Text>
+            <Text style={[styles.faqSubtitle, { color: colors.textSecondary }]}>
+              Control what data your coach can use
+            </Text>
+          </View>
+          <Text style={[styles.faqArrow, { color: colors.textMuted }]}>→</Text>
+        </TouchableOpacity>
+
+        <Text style={[styles.coachNote, { color: colors.textMuted }]}>
+          Toggle individual data sources on or off to control what your AI coach knows about you.
+        </Text>
       </View>
 
       {/* Voice (TTS) Section */}
