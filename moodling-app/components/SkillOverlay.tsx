@@ -84,18 +84,31 @@ export const OVERLAY_SKILLS: Record<string, SkillConfig> = {
 };
 
 // Parse AI response for skill triggers
-// Format: [OPEN_SKILL:skill_id] or [SKILL:skill_id]
-export function parseSkillTrigger(text: string): { skillId: string | null; cleanText: string } {
-  const skillRegex = /\[(?:OPEN_)?SKILL:(\w+)\]/gi;
-  const match = skillRegex.exec(text);
+// Format: [OPEN_SKILL:skill_id] or [SKILL:skill_id] to open
+// Format: [CLOSE_SKILL] or [END_SKILL] to close
+export function parseSkillTrigger(text: string): {
+  skillId: string | null;
+  shouldClose: boolean;
+  cleanText: string;
+} {
+  const openRegex = /\[(?:OPEN_)?SKILL:(\w+)\]/gi;
+  const closeRegex = /\[(?:CLOSE|END)_SKILL\]/gi;
 
-  if (match) {
-    const skillId = match[1].toLowerCase();
-    const cleanText = text.replace(skillRegex, '').trim();
-    return { skillId, cleanText };
+  const openMatch = openRegex.exec(text);
+  const shouldClose = closeRegex.test(text);
+
+  // Clean both types of tags from text
+  let cleanText = text
+    .replace(/\[(?:OPEN_)?SKILL:\w+\]/gi, '')
+    .replace(/\[(?:CLOSE|END)_SKILL\]/gi, '')
+    .trim();
+
+  if (openMatch) {
+    const skillId = openMatch[1].toLowerCase();
+    return { skillId, shouldClose: false, cleanText };
   }
 
-  return { skillId: null, cleanText: text };
+  return { skillId: null, shouldClose, cleanText };
 }
 
 // Check if a skill ID is valid for overlay

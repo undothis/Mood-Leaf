@@ -627,8 +627,8 @@ export default function CoachScreen() {
       // Send to Claude API
       const response = await sendMessage(fullMessage, context);
 
-      // Parse response for skill triggers (e.g., [OPEN_SKILL:breathing_orb])
-      const { skillId, cleanText } = parseSkillTrigger(response.text);
+      // Parse response for skill triggers (e.g., [OPEN_SKILL:breathing_orb] or [CLOSE_SKILL])
+      const { skillId, shouldClose, cleanText } = parseSkillTrigger(response.text);
       const displayText = cleanText || response.text;
 
       // Remove typing indicator and add response
@@ -644,6 +644,13 @@ export default function CoachScreen() {
           },
         ];
       });
+
+      // If AI wants to close the skill overlay
+      if (shouldClose && showSkillOverlay) {
+        setTimeout(() => {
+          setShowSkillOverlay(false);
+        }, 300);
+      }
 
       // If AI triggered a skill, show the overlay
       if (skillId && isOverlaySkill(skillId)) {
