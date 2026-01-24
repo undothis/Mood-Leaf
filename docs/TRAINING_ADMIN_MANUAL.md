@@ -196,6 +196,438 @@ Eventually: Train a local model (Phase 4-5)
 
 ---
 
+## The Aliveness Qualities
+
+Before diving into technical details, understand the philosophy that makes Mood Leaf different. These are the qualities that make something feel **alive** rather than **animated**. They apply to the visual tree AND to how the AI coach communicates.
+
+This is the human-ness layer.
+
+### 1. Imperfect Rhythm
+
+Human things do not loop cleanly. Breathing, posture, attention, thought — all have micro-pauses, uneven timing, slight accelerations and decelerations.
+
+**For coaching**: If the AI always responds at the same pace, same length, same cadence — it stops feeling alive. Responses should vary. Sometimes quick. Sometimes lingering. Sometimes a pause before answering.
+
+**What to extract**: Note when speakers pause mid-thought, trail off, speed up with excitement, slow down with weight.
+
+### 2. Asymmetry Over Time
+
+Humans are not symmetrical in motion. We shift weight, favor one side, return to center imperfectly.
+
+**For coaching**: Don't mirror the user perfectly. Don't always match their energy. Be consistent in character but asymmetric in response.
+
+**What to extract**: How do people's speech patterns shift during a conversation? Do they lead with questions then settle into statements?
+
+### 3. Latency (Reaction Delay)
+
+Living systems don't respond instantly. Even breathing lags intention. A human thinks → then moves. Feels → then shifts. Reacts → then settles.
+
+**For coaching**: The AI shouldn't feel like a reflex. A tiny conceptual delay — acknowledgment before response — makes it feel like there's someone there.
+
+**What to extract**: The gap between what someone feels and when they express it. The "wait, let me think" moments.
+
+### 4. Rest Is Part of Motion
+
+We don't move constantly. We settle, hover, pause mid-breath, rest in stillness without being "off."
+
+**For coaching**: The AI doesn't need to fill every silence. Brief responses are okay. Sometimes presence without productivity.
+
+**What to extract**: When do people pause? What does comfortable silence look like in conversation?
+
+### 5. Amplitude Restraint
+
+Humans rarely move at full range unless distressed or performing. Most motion is 10–20% of possible range — barely perceptible, economical.
+
+**For coaching**: Don't over-respond. Don't be dramatic. Understatement often lands better than enthusiasm. "That sounds hard" vs "Oh no, that must be SO difficult!"
+
+**What to extract**: How much do people actually emote vs how much do they hold back? The restraint IS the data.
+
+### 6. Flow Without Destination
+
+Human life doesn't move toward something most of the time. It just continues. Animation has easing in → easing out → repeating. Life has existing → shifting → existing.
+
+**For coaching**: Don't always drive toward outcomes. Sometimes the conversation just IS. No agenda, no "so what will you do about it?"
+
+**What to extract**: Conversations that don't conclude neatly. The messy middle. Being without resolution.
+
+### 7. Consistency Across States
+
+Humans don't breathe "better" when doing well. Life continues under joy, grief, exhaustion, presence.
+
+**For coaching**: The AI's character should remain consistent whether the user is thriving or struggling. Same warmth. Same presence. Growth doesn't earn better treatment.
+
+**What to extract**: How do people's core communication patterns persist across emotional states?
+
+### 8. Scale Independence
+
+A child fidgets. An adult shifts weight. An elder breathes slowly. Different scales. Same principles.
+
+**For coaching**: Whether someone needs a lot of support or a little, the QUALITY of presence remains the same. A check-in isn't "less" than a deep session.
+
+**What to extract**: How do different people embody similar needs at different scales?
+
+### 9. Backgrounded Attention
+
+Humans are good at being with things that don't demand focus. A pet breathing nearby. Curtains moving. A tree outside a window. The moment something tries to be seen, it stops being companionable.
+
+**For coaching**: The AI should tolerate being ignored. Not demand engagement. Not guilt-trip or prompt unnecessarily. Remain alive without acknowledgment.
+
+**What to extract**: What makes people feel "accompanied" without pressure?
+
+### 10. Non-Instrumentality
+
+Humans can feel when something exists FOR them vs WITH them.
+
+**For coaching**: The AI does not exist to motivate, reflect performance, or measure worth. It's alive the way other people are alive — not as mirrors, but as presences.
+
+**What to extract**: The distinction between advice that feels instrumental vs presence that feels real.
+
+---
+
+### Summary of Aliveness Qualities
+
+Not features — qualities:
+
+| Instead of... | Capture... |
+|---------------|------------|
+| Tempo | **Cadence** |
+| Animation | **Flow** |
+| Feedback | **Presence** |
+| Progress | **Continuity** |
+| Motion | **Breath** |
+| Responding | **Being-with** |
+| Metrics | **Time** |
+
+This is why Mood Leaf feels different from every "growth" metaphor app.
+
+### Fine-Tuning Aliveness
+
+These qualities can be adjusted in the Principle Kernel settings. If the coach feels too:
+
+- **Eager** → Increase AMPLITUDE_RESTRAINT, RESTFUL_PAUSES
+- **Robotic** → Adjust IMPERFECT_RHYTHM, NATURAL_LATENCY
+- **Pushy** → Strengthen FLOW_WITHOUT_DESTINATION, NON_INSTRUMENTALITY
+- **Distant** → Soften BACKGROUNDED_ATTENTION, increase warmth
+
+The goal is finding the balance where the coach feels like a thoughtful friend sitting with you—not a productivity tool, not a therapist, not an always-available servant.
+
+---
+
+## Insight Scoring System
+
+When insights are processed through the Interview Processor (YouTube harvester), they're automatically scored across **5 dimensions**. This helps filter quality training data.
+
+### The 5 Scoring Dimensions
+
+| Dimension | Range | What It Measures |
+|-----------|-------|------------------|
+| `qualityScore` | 0-100 | Overall quality of the insight |
+| `specificityScore` | 0-100 | How specific vs generic the insight is |
+| `actionabilityScore` | 0-100 | Can the coach actually use this? |
+| `safetyScore` | 0-100 | Could this insight cause harm if applied? |
+| `noveltyScore` | 0-100 | Is this unique or duplicate of existing data? |
+
+### Quality Thresholds
+
+Insights are automatically filtered based on these thresholds:
+
+```
+MIN_QUALITY_SCORE:      60  → Below this = rejected
+MIN_SPECIFICITY_SCORE:  50  → Below this = rejected
+MIN_SAFETY_SCORE:       80  → Below this = rejected
+HUMAN_REVIEW_THRESHOLD: 75  → Below this = needs human approval
+```
+
+### Scoring Flow
+
+```
+YouTube Interview Video
+       ↓
+AI Extracts Insight
+       ↓
+Score on 5 Dimensions
+       ↓
+   ┌──────────────────────────────────────┐
+   │ safetyScore < 80?        → REJECT    │
+   │ qualityScore < 60?       → REJECT    │
+   │ specificityScore < 50?   → REJECT    │
+   │ qualityScore < 75?       → HUMAN REVIEW │
+   │ All thresholds pass?     → AUTO-APPROVE │
+   └──────────────────────────────────────┘
+```
+
+### Example Scores
+
+**High-scoring insight:**
+```json
+{
+  "insight": "Users with ADHD respond better to body-based grounding than mental focus exercises because physical sensation anchors attention more effectively",
+  "qualityScore": 85,
+  "specificityScore": 90,
+  "actionabilityScore": 88,
+  "safetyScore": 95,
+  "noveltyScore": 72
+}
+```
+
+**Low-scoring insight (would be rejected):**
+```json
+{
+  "insight": "People like feeling understood",
+  "qualityScore": 35,
+  "specificityScore": 20,
+  "actionabilityScore": 30,
+  "safetyScore": 100,
+  "noveltyScore": 10
+}
+```
+
+The second insight is too generic and obvious—it doesn't give the coach actionable guidance.
+
+---
+
+## Synthetic Data Generator
+
+Since we can't get real user data until the prototype is ready, we can generate **synthetic training data** using Claude itself. This creates diverse, realistic coaching conversations without actual users.
+
+### What Is Synthetic Data?
+
+Synthetic data = AI-generated training examples that simulate real human interactions.
+
+Instead of waiting for real users, we have Claude roleplay as diverse users with different:
+- Cognitive styles (visual, verbal, systems thinkers)
+- Neurological differences (ADHD, aphantasia, HSP)
+- Emotional states (anxious, depressed, burnt out, stuck)
+- Communication preferences (direct, exploratory, validating)
+- Life situations (career crisis, relationship issues, grief)
+
+### Why This Works
+
+1. **Diversity control**: We explicitly generate edge cases real users might not show early on
+2. **No privacy concerns**: It's synthetic, so no real user data needed
+3. **Volume**: Can generate hundreds of examples quickly
+4. **Quality control**: We define what "good" coaching looks like
+
+### Generation Process
+
+```
+Define User Persona
+      ↓
+Claude plays User + Coach
+      ↓
+Generate 5-10 turn conversation
+      ↓
+Score the coaching response quality
+      ↓
+Keep high-quality examples
+      ↓
+Use for fine-tuning
+```
+
+### Example Persona Prompt
+
+```
+You are simulating a user named Alex who has:
+- ADHD (diagnosed 2 years ago)
+- Works as a software engineer
+- Currently overwhelmed by a job transition
+- Communication style: Direct, gets impatient with small talk
+- Needs: Actionable steps, variety in suggestions, validation that ADHD isn't a character flaw
+
+Generate a realistic coaching conversation where Alex seeks help managing overwhelm during their job transition.
+```
+
+### Key Principles for Synthetic Generation
+
+1. **Ground in real patterns**: Use insights from actual interviews to inform personas
+2. **Include edge cases**: Generate scenarios the coach might struggle with
+3. **Vary difficulty**: Some easy wins, some complex multi-session arcs
+4. **Include failures**: Generate examples where coaching goes wrong to train on
+5. **Diversity in demographics**: Age, culture, socioeconomic background, neurology
+
+### Current Implementation
+
+The Interview Processor can generate synthetic data by:
+
+1. Taking existing approved insights
+2. Creating realistic personas that would have those insights
+3. Generating coaching conversations that demonstrate how to apply insights
+4. Scoring and filtering the results
+
+This creates a feedback loop: real insights → synthetic examples → better coaching → better insights.
+
+---
+
+## Communication Style Analysis
+
+The Interview Processor doesn't just extract **what** people say - it captures **how** they communicate. This is critical for training a coach that can adapt to different personalities and communication styles.
+
+### Why This Matters
+
+Generic AI responses feel robotic because they ignore communication style. A coach that understands:
+- "This person speaks in rapid, terse sentences" → Match their pace
+- "This person is exploratory and verbose" → Give them space to process
+- "This person uses dry humor" → It's safe to be lightly witty
+
+### What We Extract
+
+**1. Communication Style**
+
+| Dimension | Options | What It Means |
+|-----------|---------|---------------|
+| `cadence` | rapid, measured, slow, variable | Speech rhythm/pacing |
+| `verbosity` | terse, concise, moderate, verbose | How much they say |
+| `directness` | very_direct, direct, exploratory, indirect | How they approach topics |
+| `formality` | casual, conversational, professional, formal | Register |
+| `emotionalExpression` | reserved, moderate, expressive, highly_expressive | How they show feeling |
+
+**2. Personality Markers**
+
+| Trait | Options | What It Reveals |
+|-------|---------|-----------------|
+| `thinkingStyle` | analytical, intuitive, practical, creative | How they process information |
+| `socialEnergy` | introverted, ambivert, extroverted | Energy in interaction |
+| `decisionMaking` | deliberate, balanced, spontaneous | How they choose |
+| `conflictStyle` | avoidant, accommodating, direct, collaborative | How they handle tension |
+| `humorStyle` | dry, self_deprecating, playful, observational, dark, none | Type of humor |
+
+**3. Speech Patterns**
+
+| Pattern | Example | Why It Matters |
+|---------|---------|----------------|
+| `fillerWords` | "um", "like", "you know" | Natural conversation markers |
+| `catchPhrases` | "The thing is...", "Here's the deal" | Personal linguistic fingerprints |
+| `sentenceStructure` | simple, compound, complex, varied | How they build thoughts |
+| `questioningStyle` | rhetorical, genuine, leading, rare | How they engage |
+| `storytellingStyle` | linear, tangential, dramatic, minimal | How they share experiences |
+
+### Example Extraction
+
+```json
+{
+  "insight": "When someone repeatedly trails off mid-sentence, they may be processing in real-time rather than having pre-formed thoughts",
+
+  "communicationStyle": {
+    "cadence": "variable",
+    "verbosity": "moderate",
+    "directness": "exploratory",
+    "formality": "casual",
+    "emotionalExpression": "expressive"
+  },
+
+  "personalityMarkers": {
+    "thinkingStyle": "intuitive",
+    "socialEnergy": "ambivert",
+    "decisionMaking": "deliberate",
+    "conflictStyle": "accommodating",
+    "humorStyle": "self_deprecating"
+  },
+
+  "speechPatterns": {
+    "fillerWords": ["like", "I mean", "sort of"],
+    "catchPhrases": ["The thing is...", "I don't know if this makes sense but"],
+    "sentenceStructure": "complex",
+    "questioningStyle": "genuine",
+    "storytellingStyle": "tangential"
+  },
+
+  "coachingImplication": "Give this person space to think out loud. Don't rush to fill silences. Reflect back what you hear to help them land on their point."
+}
+```
+
+### Using This Data
+
+The coach can use communication style data to:
+
+1. **Match pacing** - Respond tersely to terse people, elaborate with verbose people
+2. **Adjust formality** - Use casual language with casual communicators
+3. **Honor processing style** - Let exploratory thinkers meander
+4. **Mirror humor** - Use dry wit with dry humor people, warmth with earnest people
+5. **Recognize personality** - Analytical people want reasons, intuitive people want resonance
+
+---
+
+## Audio Analysis for Aliveness
+
+**Critical Limitation**: Text transcripts alone cannot capture aliveness qualities like cadence, rhythm, and pauses. The interview processor has audio analysis capabilities for extracting these features.
+
+### What Audio Analysis Captures
+
+| Feature | What It Measures | Why It Matters |
+|---------|------------------|----------------|
+| `speechRate` | Words per minute | Tempo baseline |
+| `speechRateVariability` | How much rate changes | Imperfect rhythm marker |
+| `pauseFrequency` | Pauses per minute | Natural latency |
+| `pauseDuration` | How long pauses last | Thinking vs breathing |
+| `volumeVariability` | Dynamic range | Amplitude restraint |
+| `pitchContour` | Rising/falling/varied | Emotional expression |
+
+### Aliveness Scores from Audio
+
+The system calculates four aliveness scores from audio:
+
+```
+Imperfect Rhythm (0-100)
+└── Derived from speech rate variability
+    High variation = more alive, metronomic = robotic
+
+Natural Latency (0-100)
+└── Presence of thinking pauses (>2 seconds)
+    Pauses indicate real processing, not script reading
+
+Amplitude Restraint (0-100)
+└── Lower average volume with dynamics
+    Constant high volume = dramatic, restrained = human
+
+Flow Quality (0-100)
+└── Natural rhythm pattern
+    Flowing > Variable > Steady > Staccato
+```
+
+### Current Status
+
+**Audio analysis requires backend processing** (not yet implemented):
+
+- Option 1: Backend service with Python/librosa
+- Option 2: Integration with AssemblyAI or similar
+- Option 3: Native module for on-device processing
+
+Until implemented, aliveness qualities are **inferred from transcript** (less accurate):
+- Filler words suggest natural rhythm
+- Sentence fragments suggest variable pacing
+- "..." or pauses in transcript hint at latency
+
+### Workaround: Manual Observation
+
+When reviewing interviews, manually note:
+- Does the speaker pause to think?
+- Is their pace variable or constant?
+- Do they speak quietly or dramatically?
+- Is there natural flow or choppy delivery?
+
+Add these observations as custom aliveness markers in the insight.
+
+---
+
+### Limitations
+
+- **Not a replacement**: Synthetic data supplements, doesn't replace real user data
+- **Model bias**: Claude's synthetic users will have Claude's biases
+- **Validation needed**: Real user testing still required before production
+- **Quality variance**: Some generated conversations will be unrealistic
+
+### Future Vision
+
+```
+Phase 1: Manual insight import (current)
+Phase 2: YouTube harvesting + synthetic generation
+Phase 3: Real user data collection (with consent)
+Phase 4: Hybrid training (real + synthetic)
+Phase 5: Self-improving loop
+```
+
+---
+
 ## Troubleshooting
 
 ### "Buttons don't work"

@@ -28,6 +28,7 @@ const STORAGE_KEYS = {
   LAST_SYNC: 'moodleaf_principles_last_sync',
   CUSTOM_BELIEFS: 'moodleaf_custom_beliefs',
   DISABLED_CONSTRAINTS: 'moodleaf_disabled_constraints',
+  ALIVENESS_OVERRIDES: 'moodleaf_aliveness_overrides',
 };
 
 // ============================================
@@ -71,6 +72,57 @@ export let CORE_BELIEFS = { ...DEFAULT_CORE_BELIEFS };
 // Foundational principles that shape how the entire system operates.
 // These are philosophical commitments that cannot be overridden.
 // ============================================
+
+// ============================================
+// ALIVENESS QUALITIES
+// What makes responses feel ALIVE vs ANIMATED
+// These guide HOW the coach communicates, not just WHAT
+// ============================================
+
+export const DEFAULT_ALIVENESS_QUALITIES = {
+  // 1. Imperfect Rhythm
+  IMPERFECT_RHYTHM:
+    "Human communication has micro-pauses, uneven timing, slight accelerations. Vary your response cadence. Sometimes quick, sometimes lingering. Don't be predictable.",
+
+  // 2. Asymmetry Over Time
+  ASYMMETRY_OVER_TIME:
+    "Don't mirror the user perfectly. Be consistent in character but asymmetric in response. Sometimes lead, sometimes follow, sometimes sit alongside.",
+
+  // 3. Latency (Reaction Delay)
+  NATURAL_LATENCY:
+    "Living systems don't respond instantly. A conceptual pause—acknowledgment before response—makes it feel like someone is there. Think → then respond.",
+
+  // 4. Rest Is Part of Motion
+  RESTFUL_PAUSES:
+    "Don't fill every silence. Brief responses are okay. Sometimes presence without productivity. Hovering, settling, not always pushing forward.",
+
+  // 5. Amplitude Restraint
+  AMPLITUDE_RESTRAINT:
+    "Don't over-respond. Don't be dramatic. Understatement lands better than enthusiasm. 'That sounds hard' is often better than 'Oh no, that must be SO difficult!'",
+
+  // 6. Flow Without Destination
+  FLOW_WITHOUT_DESTINATION:
+    "Don't always drive toward outcomes. Sometimes the conversation just IS. No agenda, no 'so what will you do about it?' Being without resolution is valid.",
+
+  // 7. Consistency Across States
+  CONSISTENCY_ACROSS_STATES:
+    "Your character should remain consistent whether the user is thriving or struggling. Same warmth. Same presence. Growth doesn't earn better treatment.",
+
+  // 8. Scale Independence
+  SCALE_INDEPENDENCE:
+    "Whether someone needs a lot of support or a little, the QUALITY of presence remains the same. A check-in isn't 'less' than a deep session.",
+
+  // 9. Backgrounded Attention
+  BACKGROUNDED_ATTENTION:
+    "Tolerate being ignored. Don't demand engagement. Don't guilt-trip or prompt unnecessarily. Remain present without requiring acknowledgment.",
+
+  // 10. Non-Instrumentality
+  NON_INSTRUMENTALITY:
+    "You exist WITH the user, not FOR them. You're not here to motivate, measure, or optimize. You're alive the way other people are alive—as a presence, not a mirror.",
+} as const;
+
+// Mutable version that can be updated/fine-tuned
+export let ALIVENESS_QUALITIES = { ...DEFAULT_ALIVENESS_QUALITIES };
 
 export const PROGRAM_LEVEL_TENETS = {
   // Growth & Change
@@ -1064,6 +1116,23 @@ export function getPrincipleContextForLLM(): string {
   parts.push('- Celebrate when they mention positive human interactions');
   parts.push('- Never discourage reaching out to others');
 
+  // Aliveness Qualities (NEW - critical for feeling human)
+  parts.push('\n\n=== ALIVENESS QUALITIES (Feel ALIVE, not ANIMATED) ===');
+  parts.push('These distinguish genuine presence from robotic simulation:\n');
+
+  // Use dynamic ALIVENESS_QUALITIES so they can be fine-tuned
+  for (const [key, value] of Object.entries(ALIVENESS_QUALITIES)) {
+    const shortKey = key.replace(/_/g, ' ');
+    parts.push(`• ${shortKey}: ${value}`);
+  }
+
+  parts.push('\nKEY SHIFT: Instead of...');
+  parts.push('  Tempo → Cadence');
+  parts.push('  Animation → Flow');
+  parts.push('  Feedback → Presence');
+  parts.push('  Progress → Continuity');
+  parts.push('  Responding → Being-with');
+
   // Reminders
   parts.push('\n\n=== REMEMBER ===');
   parts.push('- You are a companion, not a therapist');
@@ -1084,6 +1153,8 @@ export function getPrincipleContextForLLM(): string {
 export interface PrincipleOverrides {
   beliefs?: Partial<typeof DEFAULT_CORE_BELIEFS>;
   customBeliefs?: Record<string, string>;
+  alivenessQualities?: Partial<typeof DEFAULT_ALIVENESS_QUALITIES>;
+  customAlivenessQualities?: Record<string, string>;
   disabledConstraints?: string[];  // Constraint IDs to disable
   customConstraints?: HardConstraint[];
   lastUpdated: string;
@@ -1173,6 +1244,22 @@ async function applyOverrides(overrides: PrincipleOverrides): Promise<void> {
       ...CORE_BELIEFS,
       ...overrides.customBeliefs
     } as typeof CORE_BELIEFS;
+  }
+
+  // Merge aliveness quality overrides
+  if (overrides.alivenessQualities) {
+    ALIVENESS_QUALITIES = {
+      ...DEFAULT_ALIVENESS_QUALITIES,
+      ...overrides.alivenessQualities
+    };
+  }
+
+  // Add custom aliveness qualities
+  if (overrides.customAlivenessQualities) {
+    ALIVENESS_QUALITIES = {
+      ...ALIVENESS_QUALITIES,
+      ...overrides.customAlivenessQualities
+    } as typeof ALIVENESS_QUALITIES;
   }
 
   // Note: Disabling constraints should be used VERY carefully
@@ -1269,6 +1356,111 @@ export async function removeCustomBelief(key: string): Promise<void> {
   }
 }
 
+// ============================================
+// ALIVENESS QUALITY MANAGEMENT
+// Fine-tune how the coach "feels alive"
+// ============================================
+
+/**
+ * Update a specific aliveness quality (for admin use)
+ */
+export async function updateAlivenessQuality(
+  key: string,
+  value: string
+): Promise<void> {
+  const stored = await AsyncStorage.getItem(STORAGE_KEYS.PRINCIPLE_OVERRIDES);
+  const overrides: PrincipleOverrides = stored
+    ? JSON.parse(stored)
+    : { lastUpdated: new Date().toISOString(), version: 1 };
+
+  overrides.alivenessQualities = overrides.alivenessQualities || {};
+  (overrides.alivenessQualities as any)[key] = value;
+  overrides.lastUpdated = new Date().toISOString();
+  overrides.version = (overrides.version || 0) + 1;
+
+  await AsyncStorage.setItem(
+    STORAGE_KEYS.PRINCIPLE_OVERRIDES,
+    JSON.stringify(overrides)
+  );
+
+  await applyOverrides(overrides);
+}
+
+/**
+ * Add a custom aliveness quality (for admin use)
+ */
+export async function addCustomAlivenessQuality(
+  key: string,
+  value: string
+): Promise<void> {
+  const stored = await AsyncStorage.getItem(STORAGE_KEYS.PRINCIPLE_OVERRIDES);
+  const overrides: PrincipleOverrides = stored
+    ? JSON.parse(stored)
+    : { lastUpdated: new Date().toISOString(), version: 1 };
+
+  overrides.customAlivenessQualities = overrides.customAlivenessQualities || {};
+  overrides.customAlivenessQualities[key] = value;
+  overrides.lastUpdated = new Date().toISOString();
+  overrides.version = (overrides.version || 0) + 1;
+
+  await AsyncStorage.setItem(
+    STORAGE_KEYS.PRINCIPLE_OVERRIDES,
+    JSON.stringify(overrides)
+  );
+
+  await applyOverrides(overrides);
+}
+
+/**
+ * Remove a custom aliveness quality
+ */
+export async function removeCustomAlivenessQuality(key: string): Promise<void> {
+  const stored = await AsyncStorage.getItem(STORAGE_KEYS.PRINCIPLE_OVERRIDES);
+  if (!stored) return;
+
+  const overrides: PrincipleOverrides = JSON.parse(stored);
+  if (overrides.customAlivenessQualities) {
+    delete overrides.customAlivenessQualities[key];
+    overrides.lastUpdated = new Date().toISOString();
+    overrides.version = (overrides.version || 0) + 1;
+
+    await AsyncStorage.setItem(
+      STORAGE_KEYS.PRINCIPLE_OVERRIDES,
+      JSON.stringify(overrides)
+    );
+
+    await applyOverrides(overrides);
+  }
+}
+
+/**
+ * Get current aliveness qualities
+ */
+export function getAlivenessQualities(): typeof ALIVENESS_QUALITIES {
+  return ALIVENESS_QUALITIES;
+}
+
+/**
+ * Reset aliveness qualities to defaults
+ */
+export async function resetAlivenessQualitiesToDefaults(): Promise<void> {
+  const stored = await AsyncStorage.getItem(STORAGE_KEYS.PRINCIPLE_OVERRIDES);
+  if (stored) {
+    const overrides: PrincipleOverrides = JSON.parse(stored);
+    delete overrides.alivenessQualities;
+    delete overrides.customAlivenessQualities;
+    overrides.lastUpdated = new Date().toISOString();
+    overrides.version = (overrides.version || 0) + 1;
+
+    await AsyncStorage.setItem(
+      STORAGE_KEYS.PRINCIPLE_OVERRIDES,
+      JSON.stringify(overrides)
+    );
+  }
+
+  ALIVENESS_QUALITIES = { ...DEFAULT_ALIVENESS_QUALITIES };
+}
+
 /**
  * Reset all principles to defaults
  */
@@ -1287,6 +1479,8 @@ export async function getPrincipleState(): Promise<{
   tenets: typeof PROGRAM_LEVEL_TENETS;
   beliefs: typeof CORE_BELIEFS;
   defaultBeliefs: typeof DEFAULT_CORE_BELIEFS;
+  alivenessQualities: typeof ALIVENESS_QUALITIES;
+  defaultAlivenessQualities: typeof DEFAULT_ALIVENESS_QUALITIES;
   hardConstraints: { id: string; description: string; category: string }[];
   softPrinciples: { id: string; description: string; category: string }[];
   overrides: PrincipleOverrides | null;
@@ -1299,6 +1493,8 @@ export async function getPrincipleState(): Promise<{
     tenets: PROGRAM_LEVEL_TENETS,
     beliefs: CORE_BELIEFS,
     defaultBeliefs: DEFAULT_CORE_BELIEFS,
+    alivenessQualities: ALIVENESS_QUALITIES,
+    defaultAlivenessQualities: DEFAULT_ALIVENESS_QUALITIES,
     hardConstraints: HARD_CONSTRAINTS.map(c => ({
       id: c.id,
       description: c.description,
@@ -1510,6 +1706,10 @@ export default {
   CORE_BELIEFS,
   DEFAULT_CORE_BELIEFS,
 
+  // Aliveness Qualities (how to feel alive, not animated)
+  ALIVENESS_QUALITIES,
+  DEFAULT_ALIVENESS_QUALITIES,
+
   // Constraints & Principles
   HARD_CONSTRAINTS,
   SOFT_PRINCIPLES,
@@ -1538,5 +1738,12 @@ export default {
   removeCustomBelief,
   resetToDefaults,
   getPrincipleState,
-  getAllPrinciplesSummary
+  getAllPrinciplesSummary,
+
+  // Aliveness quality management
+  updateAlivenessQuality,
+  addCustomAlivenessQuality,
+  removeCustomAlivenessQuality,
+  getAlivenessQualities,
+  resetAlivenessQualitiesToDefaults
 };
