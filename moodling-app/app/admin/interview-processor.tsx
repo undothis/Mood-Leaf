@@ -663,7 +663,7 @@ export default function InterviewProcessorScreen() {
       return;
     }
 
-    if (!apiKey) {
+    if (!apiKey || !apiKey.trim()) {
       Alert.alert('API Key Required', 'Please set your Claude API key in Settings → AI Coaching');
       return;
     }
@@ -920,7 +920,7 @@ export default function InterviewProcessorScreen() {
 
   // Start batch processing from checkpoint
   const startBatchProcessingFromCheckpoint = async (checkpoint: BatchCheckpoint) => {
-    if (!apiKey) {
+    if (!apiKey || !apiKey.trim()) {
       Alert.alert('API Key Required', 'Please set your Claude API key in Settings → AI Coaching');
       return;
     }
@@ -955,7 +955,7 @@ export default function InterviewProcessorScreen() {
 
       const channelInfo = queueItem.channel;
 
-      addLog(`\n[${channelIndex + 1}/${checkpoint.queue.length}] Processing: ${'name' in channelInfo ? channelInfo.name : channelInfo.name}`);
+      addLog(`\n[${channelIndex + 1}/${checkpoint.queue.length}] Processing: ${channelInfo.name}`);
 
       // Update queue item status
       setBatchQueue(prev => prev.map((item, i) =>
@@ -986,11 +986,12 @@ export default function InterviewProcessorScreen() {
           }
 
           const updatedChannels = await getCuratedChannels();
-          channel = updatedChannels.find(c => c.name === rec.name)!;
+          const foundChannel = updatedChannels.find(c => c.name === rec.name);
 
-          if (!channel) {
+          if (!foundChannel) {
             throw new Error('Channel was not added properly');
           }
+          channel = foundChannel;
         } else {
           channel = channelInfo as CuratedChannel;
         }
@@ -1052,7 +1053,7 @@ export default function InterviewProcessorScreen() {
           const video = videos[i];
           addLog(`    [${i + 1}/${videos.length}] ${video.title.slice(0, 40)}...`);
 
-          const { transcript, error: transcriptError } = await fetchVideoTranscript(video.videoId);
+          const { transcript, error: transcriptError } = await fetchVideoTranscript(video.videoId, addLog);
 
           if (transcriptError || !transcript) {
             addLog(`      ⚠ No transcript, skipping`);
@@ -1174,7 +1175,7 @@ export default function InterviewProcessorScreen() {
       return;
     }
 
-    if (!apiKey) {
+    if (!apiKey || !apiKey.trim()) {
       Alert.alert('API Key Required', 'Please set your Claude API key in Settings → AI Coaching');
       return;
     }
@@ -1215,7 +1216,7 @@ export default function InterviewProcessorScreen() {
       const queueItem = batchQueue[channelIndex];
       const channelInfo = queueItem.channel;
 
-      addLog(`\n[${ channelIndex + 1}/${batchQueue.length}] Processing: ${'name' in channelInfo ? channelInfo.name : channelInfo.name}`);
+      addLog(`\n[${ channelIndex + 1}/${batchQueue.length}] Processing: ${channelInfo.name}`);
 
       // Update queue item status
       setBatchQueue(prev => prev.map((item, i) =>
@@ -1248,11 +1249,12 @@ export default function InterviewProcessorScreen() {
 
           // Reload channels to get the newly added one
           const updatedChannels = await getCuratedChannels();
-          channel = updatedChannels.find(c => c.name === rec.name)!;
+          const foundChannel = updatedChannels.find(c => c.name === rec.name);
 
-          if (!channel) {
+          if (!foundChannel) {
             throw new Error('Channel was not added properly');
           }
+          channel = foundChannel;
         } else {
           channel = channelInfo as CuratedChannel;
         }
@@ -1311,7 +1313,7 @@ export default function InterviewProcessorScreen() {
           addLog(`    [${i + 1}/${videos.length}] ${video.title.slice(0, 40)}...`);
 
           // Fetch transcript
-          const { transcript, error: transcriptError } = await fetchVideoTranscript(video.videoId);
+          const { transcript, error: transcriptError } = await fetchVideoTranscript(video.videoId, addLog);
 
           if (transcriptError || !transcript) {
             addLog(`      ⚠ No transcript, skipping`);
@@ -1595,7 +1597,7 @@ export default function InterviewProcessorScreen() {
   // Auto-approve high quality insights (quality >= 85, safety >= 95)
   const handleAutoApproveHighQuality = async (minQuality: number = 85) => {
     const highQuality = pendingInsights.filter(
-      i => i.qualityScore >= minQuality && (i.safetyScore || 100) >= 95 && !i.needsHumanReview
+      i => i.qualityScore >= minQuality && (i.safetyScore ?? 100) >= 95 && !i.needsHumanReview
     );
 
     if (highQuality.length === 0) {
@@ -2651,7 +2653,7 @@ export default function InterviewProcessorScreen() {
                 disabled={bulkApproving}
               >
                 <Text style={{ color: '#fff', fontSize: 13 }}>
-                  ⭐ 90%+ ({pendingInsights.filter(i => i.qualityScore >= 90 && (i.safetyScore || 100) >= 95 && !i.needsHumanReview).length})
+                  ⭐ 90%+ ({pendingInsights.filter(i => i.qualityScore >= 90 && (i.safetyScore ?? 100) >= 95 && !i.needsHumanReview).length})
                 </Text>
               </Pressable>
               <Pressable
@@ -2660,7 +2662,7 @@ export default function InterviewProcessorScreen() {
                 disabled={bulkApproving}
               >
                 <Text style={{ color: '#fff', fontSize: 13 }}>
-                  ⚡ 85%+ ({pendingInsights.filter(i => i.qualityScore >= 85 && (i.safetyScore || 100) >= 95 && !i.needsHumanReview).length})
+                  ⚡ 85%+ ({pendingInsights.filter(i => i.qualityScore >= 85 && (i.safetyScore ?? 100) >= 95 && !i.needsHumanReview).length})
                 </Text>
               </Pressable>
               <Pressable
@@ -2669,7 +2671,7 @@ export default function InterviewProcessorScreen() {
                 disabled={bulkApproving}
               >
                 <Text style={{ color: '#fff', fontSize: 13 }}>
-                  ✓ 80%+ ({pendingInsights.filter(i => i.qualityScore >= 80 && (i.safetyScore || 100) >= 95 && !i.needsHumanReview).length})
+                  ✓ 80%+ ({pendingInsights.filter(i => i.qualityScore >= 80 && (i.safetyScore ?? 100) >= 95 && !i.needsHumanReview).length})
                 </Text>
               </Pressable>
             </View>

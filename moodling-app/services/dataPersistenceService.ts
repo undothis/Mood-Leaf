@@ -410,9 +410,11 @@ export async function exportAllData(): Promise<{
         mimeType: 'application/json',
         dialogTitle: 'Export Mood Leaf Data',
       });
+      return { success: true, filePath, message: `Exported ${keys.length} keys` };
+    } else {
+      // Sharing not available (e.g., on web without native share API)
+      return { success: true, filePath, message: `Exported ${keys.length} keys to ${filePath} (sharing not available on this platform)` };
     }
-
-    return { success: true, filePath, message: `Exported ${keys.length} keys` };
   } catch (error) {
     return {
       success: false,
