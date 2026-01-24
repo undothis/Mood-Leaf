@@ -624,6 +624,11 @@ export default function CoachScreen() {
         setAdditionalContext(undefined); // Clear after first use
       }
 
+      // Add skill overlay context so AI knows when to close it
+      if (showSkillOverlay && activeSkillId) {
+        fullMessage = `[SKILL_OVERLAY_OPEN: ${activeSkillId} - if user wants to close/stop/end the skill, include [CLOSE_SKILL] in your response]\n\n${fullMessage}`;
+      }
+
       // Send to Claude API
       const response = await sendMessage(fullMessage, context);
 
