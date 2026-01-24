@@ -288,8 +288,8 @@ const SERVICE_TESTERS: Record<string, () => Promise<{ success: boolean; data?: a
   // Social
   social_connection: async () => {
     try {
-      const { getSocialHealth } = await import('./socialConnectionHealthService');
-      const health = await getSocialHealth();
+      const { getConnectionHealth } = await import('./socialConnectionHealthService');
+      const health = await getConnectionHealth();
       return { success: true, data: { hasSocialData: !!health } };
     } catch (e: any) {
       return { success: false, error: e.message };

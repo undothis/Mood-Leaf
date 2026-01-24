@@ -248,6 +248,98 @@ export const FAQ_CONTENT: FAQItem[] = [
     question: 'Why does the app ask about pronouns?',
     answer: 'Your guide uses pronouns when reflecting back to you ("You mentioned you were feeling..."). Getting this right makes conversations feel natural and respectful. You can change this anytime in Settings.',
   },
+
+  // Games
+  {
+    category: 'features',
+    question: 'What are therapeutic games?',
+    answer: 'Therapeutic games are calming activities designed for wellness—not addiction or competition. They include fidget tools (bubble wrap, kinetic sand), focus games (memory match, pattern lock), grounding exercises (5-4-3-2-1 Quest, Body Map), relaxation (rain on window, breathing orb), and retro classics (snake, pong) redesigned for calm play.',
+  },
+  {
+    category: 'features',
+    question: 'How do games count as skills?',
+    answer: 'Games in Mood Leaf teach real wellness skills: fidget tools build sensory regulation, grounding games teach anxiety management techniques, focus games improve attention, and wisdom games build emotional intelligence. Progress in games contributes to your Skills section.',
+  },
+  {
+    category: 'features',
+    question: 'Why are games "therapeutic"?',
+    answer: 'Unlike commercial games designed to maximize engagement, therapeutic games are paced for wellness. No timers pressuring you, no competitive leaderboards, no addictive reward loops. They\'re tools for self-regulation, not entertainment that exploits your psychology.',
+  },
+  {
+    category: 'features',
+    question: 'What game categories are there?',
+    answer: 'Six categories: Focus (attention training), Grounding (anxiety management), Relaxation (calming activities), Knowledge (emotional intelligence), Wisdom (self-reflection), and Logic (pattern recognition). Each addresses different wellness needs.',
+  },
+
+  // Prosody & Voice
+  {
+    category: 'features',
+    question: 'What is prosody?',
+    answer: 'Prosody is the "music" of your voice—rhythm, tempo, pitch, and tone. When you record voice entries, Mood Leaf analyzes HOW you speak, not just what you say. This reveals emotional states that words alone can\'t capture.',
+  },
+  {
+    category: 'features',
+    question: 'What does voice analysis detect?',
+    answer: 'Voice analysis detects: speech tempo (rushing vs. dragging), emotional tone, distress signals (voice shaking, breath catching), pauses and hesitation, and overall rhythm patterns. This helps understand your true emotional state.',
+  },
+  {
+    category: 'privacy',
+    question: 'Is my voice data private?',
+    answer: 'Yes! Voice recordings and prosody analysis stay on your device. Only extracted patterns (tempo, rhythm, emotional indicators) may be included in AI context—never the actual audio. You can disable voice features entirely in Settings.',
+  },
+
+  // Mood Print
+  {
+    category: 'basics',
+    question: 'What is my Mood Print?',
+    answer: 'Your Mood Print is like a fingerprint for your mental health—a complete understanding of who you are: how you communicate, what stresses you, your patterns, your history, and what actually helps YOU. It builds from onboarding through ongoing use.',
+  },
+  {
+    category: 'basics',
+    question: 'How is my Mood Print built?',
+    answer: 'Four layers: 1) Onboarding answers (baseline), 2) Voice prosody (how you speak), 3) Pattern recognition (connecting mood to sleep, events, etc.), and 4) Ongoing learning (what helps, your language, your relationships). It gets more accurate over time.',
+  },
+
+  // AI Data Access
+  {
+    category: 'privacy',
+    question: 'What is AI Data Access?',
+    answer: 'AI Data Access (Coach Access Registry) controls exactly what information your AI guide can see. You choose categories: journal patterns, health data, calendar events, life context, and more. Each can be enabled or disabled independently.',
+  },
+  {
+    category: 'privacy',
+    question: 'How do I control what AI sees?',
+    answer: 'Go to Settings > AI Data Access. You\'ll see every data category with toggles. Enable what helps your guide understand you, disable what you want private. Changes take effect immediately. Your guide only sees what you allow.',
+  },
+  {
+    category: 'privacy',
+    question: 'Can I see what data is being shared?',
+    answer: 'Yes! In Settings > AI Data Access, tap any category to see exactly what data is included and sample prompts of how it\'s used. Complete transparency—no hidden data sharing.',
+  },
+
+  // Diagnostics
+  {
+    category: 'features',
+    question: 'What is Diagnostics & Self-Test?',
+    answer: 'A troubleshooting tool in Settings that tests all app services: storage, AI connection, health sync, calendar, and more. Run it if something isn\'t working—it shows exactly which service has an issue and helps identify fixes.',
+  },
+  {
+    category: 'features',
+    question: 'How do I run diagnostics?',
+    answer: 'Go to Settings > Help & FAQ > Diagnostics & Self-Test. Tap "Run All Tests" to check every service, or tap individual tests to check specific features. Green checks mean working, red X means an issue was found.',
+  },
+
+  // Skills
+  {
+    category: 'features',
+    question: 'What are Skills?',
+    answer: 'Skills are wellness techniques you learn and practice through the app: breathing exercises, grounding techniques, cognitive reframing, mindfulness practices, and therapeutic games. Track your progress and build a personal toolkit.',
+  },
+  {
+    category: 'features',
+    question: 'How do I track skill progress?',
+    answer: 'Each skill tracks: times practiced, total time spent, current streak, and personal best. The more you practice, the more "mastered" a skill becomes. Your Skills section shows all progress at a glance.',
+  },
 ];
 
 // ============================================
@@ -562,7 +654,7 @@ export const USER_MANUAL_CONTENT: ManualSection[] = [
       },
       {
         title: 'The 10 Cognitive Modes',
-        content: 'Your mind has a primary way of operating. Most people have 1-2 dominant modes:\n\n• Procedural-Sequential — "Show me the steps." Linear, rule-based\n• Analytical-Symbolic — "Let me analyze this." Logical, precise\n• Conceptual-Systems — "I see how this fits together." Patterns, big picture\n• Narrative-Meaning — "What\'s the story?" Identity-aware, meaning-seeking\n• Embodied-Somatic — "I know it in my body." Learns by doing\n• Associative-Divergent — "Everything connects." Creative leaps, nonlinear\n• Emotional-Relational — "How does this affect people?" Interpersonal\n• Visual-Spatial — "I see it." Thinks in images and spatial models\n• Temporal-Foresight — "Where does this lead?" Timelines, consequences\n• Integrative-Meta — "How do these interact?" Meta-cognition',
+        content: 'Your mind has a primary way of operating. Most people have 1-2 dominant modes:\n\n• Procedural-Sequential — "Show me the steps." Linear, rule-based\n• Analytical-Symbolic — "Let me analyze this." Logical, precise\n• Conceptual-Systems — "I see how this fits together." Patterns, big picture\n• Narrative-Meaning — "What\'s the story?" Identity-aware, meaning-seeking\n• Embodied-Somatic — "I know it in my body." Learns by doing\n• Associative-Divergent — "Everything connects." Creative leaps, nonlinear\n• Emotional-Relational — "How does this affect people?" Interpersonal\n• Visual-Spatial — "I see it." Thinks in images and spatial models\n• Temporal-Foresight — "Where does this lead?" Timelines, consequences\n• Integrative-Meta — "How do these interact?" Meta-cognition\n\nNote: These modes are inspired by cognitive science research including Multiple Intelligences theory (Gardner), embodied cognition, divergent thinking (Guilford), and metacognition studies. They\'re a practical framework for personalization, not a clinical diagnostic tool.',
       },
       {
         title: 'Neurological Differences',

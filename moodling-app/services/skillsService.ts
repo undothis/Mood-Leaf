@@ -38,7 +38,8 @@ export type SkillCategory =
   | 'coping'
   | 'growth'
   | 'social'
-  | 'advanced';
+  | 'advanced'
+  | 'games';
 
 export type SkillTier = 'free' | 'premium';
 
@@ -89,7 +90,9 @@ export type ExerciseType =
   | 'visualization'
   | 'journaling'
   | 'movement'
-  | 'social_prep';
+  | 'social_prep'
+  | 'game'
+  | 'fidget';
 
 export interface ExerciseStep {
   instruction: string;
@@ -166,6 +169,13 @@ export const SKILL_CATEGORIES: Record<SkillCategory, SkillCategoryInfo> = {
     emoji: '🔮',
     description: 'Deeper psychological exploration',
     color: '#7C3AED', // Purple
+  },
+  games: {
+    id: 'games',
+    name: 'Therapeutic Games',
+    emoji: '🎮',
+    description: 'Calming games that build skills',
+    color: '#14B8A6', // Teal
   },
 };
 
@@ -451,6 +461,168 @@ export const EXERCISES: Exercise[] = [
       { instruction: 'Pick ONE to try tonight.', duration: 20, visualType: 'text' },
     ],
   },
+
+  // ========== THERAPEUTIC GAMES ==========
+  {
+    id: 'fidget_pad',
+    name: 'Fidget Pad',
+    emoji: '🔘',
+    description: 'Sliders, switches, buttons with satisfying haptics',
+    duration: 0, // No set duration - use as needed
+    tier: 'free',
+    type: 'fidget',
+    tags: ['calm', 'fidget', 'tactile', 'sensory'],
+    skillType: 'calm',
+    rarity: 'common',
+    lore: 'Sometimes your hands just need something to do.',
+    steps: [
+      { instruction: 'Open the Fidget Pad and explore', visualType: 'text' },
+    ],
+  },
+  {
+    id: 'bubble_wrap',
+    name: 'Bubble Wrap',
+    emoji: '🫧',
+    description: 'Endless bubble popping with vibration feedback',
+    duration: 0,
+    tier: 'free',
+    type: 'fidget',
+    tags: ['calm', 'satisfying', 'sensory'],
+    skillType: 'calm',
+    rarity: 'common',
+    lore: 'Pop. Pop. Pop. Instant satisfaction.',
+    steps: [
+      { instruction: 'Pop bubbles to your heart\'s content', visualType: 'text' },
+    ],
+  },
+  {
+    id: 'kinetic_sand',
+    name: 'Kinetic Sand',
+    emoji: '🏖️',
+    description: 'Satisfying digital sand simulation',
+    duration: 0,
+    tier: 'free',
+    type: 'fidget',
+    tags: ['calm', 'sensory', 'satisfying'],
+    skillType: 'calm',
+    rarity: 'common',
+    lore: 'Watch it flow, watch it settle. Like thoughts.',
+    steps: [
+      { instruction: 'Touch and play with the sand', visualType: 'text' },
+    ],
+  },
+  {
+    id: 'retro_snake',
+    name: 'Mindful Snake',
+    emoji: '🐍',
+    description: 'Slow-paced snake with calming music',
+    duration: 0,
+    tier: 'free',
+    type: 'game',
+    tags: ['focus', 'classic', 'retro'],
+    skillType: 'focus',
+    rarity: 'common',
+    lore: 'A classic reimagined for calm, not competition.',
+    steps: [
+      { instruction: 'Guide the snake at your own pace', visualType: 'text' },
+    ],
+  },
+  {
+    id: 'retro_pong',
+    name: 'Gentle Pong',
+    emoji: '🏓',
+    description: 'Classic pong in slow motion',
+    duration: 0,
+    tier: 'free',
+    type: 'game',
+    tags: ['focus', 'classic', 'retro'],
+    skillType: 'focus',
+    rarity: 'common',
+    lore: 'The game that started it all. Now slower, gentler.',
+    steps: [
+      { instruction: 'Bounce the ball back and forth', visualType: 'text' },
+    ],
+  },
+  {
+    id: 'rain_on_window',
+    name: 'Rain Window',
+    emoji: '🌧️',
+    description: 'Watch rain on a pixel window, ambient calm',
+    duration: 0,
+    tier: 'free',
+    type: 'game',
+    tags: ['relax', 'ambient', 'sensory'],
+    skillType: 'restore',
+    rarity: 'uncommon',
+    lore: 'Rain falls. Time slows. Everything is temporary.',
+    steps: [
+      { instruction: 'Watch the rain, tap to interact', visualType: 'text' },
+    ],
+  },
+  {
+    id: 'maze_walker',
+    name: 'Maze Walker',
+    emoji: '🌀',
+    description: 'Navigate peaceful pixel mazes',
+    duration: 0,
+    tier: 'free',
+    type: 'game',
+    tags: ['focus', 'puzzle', 'calm'],
+    skillType: 'focus',
+    rarity: 'common',
+    lore: 'There is always a way through.',
+    steps: [
+      { instruction: 'Find your path through the maze', visualType: 'text' },
+    ],
+  },
+  {
+    id: 'memory_match',
+    name: 'Memory Match',
+    emoji: '🎴',
+    description: 'Classic card matching game',
+    duration: 0,
+    tier: 'free',
+    type: 'game',
+    tags: ['focus', 'memory', 'classic'],
+    skillType: 'focus',
+    rarity: 'common',
+    lore: 'Find the pairs. Train your memory. No pressure.',
+    steps: [
+      { instruction: 'Flip cards to find matching pairs', visualType: 'text' },
+    ],
+  },
+  {
+    id: 'kaleidoscope',
+    name: 'Kaleidoscope',
+    emoji: '✨',
+    description: 'Mesmerizing, ever-changing patterns',
+    duration: 0,
+    tier: 'free',
+    type: 'game',
+    tags: ['relax', 'visual', 'hypnotic'],
+    skillType: 'restore',
+    rarity: 'uncommon',
+    lore: 'Let the patterns pull you in. Let your thoughts drift.',
+    steps: [
+      { instruction: 'Watch and interact with the patterns', visualType: 'text' },
+    ],
+  },
+  {
+    id: 'untangle',
+    name: 'Untangle',
+    emoji: '🧵',
+    description: 'Untangle the lines, satisfying puzzle',
+    duration: 0,
+    tier: 'free',
+    type: 'game',
+    tags: ['focus', 'puzzle', 'satisfying'],
+    skillType: 'focus',
+    rarity: 'common',
+    lore: 'Start with chaos. End with clarity.',
+    steps: [
+      { instruction: 'Move nodes until no lines cross', visualType: 'text' },
+    ],
+  },
 ];
 
 // ============================================
@@ -537,6 +709,38 @@ export const SKILLS: Skill[] = [
     rarity: 'uncommon',
     lore: 'Connection is a skill, not a talent. And skills can be learned.',
     exercises: EXERCISES.filter((e) => e.type === 'social_prep'),
+  },
+
+  // ========== THERAPEUTIC GAMES ==========
+  {
+    id: 'fidget_tools',
+    name: 'Fidget & Sensory',
+    emoji: '🔘',
+    description: 'Tactile tools for restless moments',
+    category: 'games',
+    tier: 'free',
+    maxLevel: 5,
+    xpPerUse: 5,
+    xpPerLevel: 25,
+    skillType: 'calm',
+    rarity: 'common',
+    lore: 'Your hands have wisdom too. Give them something to do.',
+    exercises: EXERCISES.filter((e) => e.type === 'fidget'),
+  },
+  {
+    id: 'therapeutic_games',
+    name: 'Therapeutic Games',
+    emoji: '🎮',
+    description: 'Retro games designed for wellness, not addiction',
+    category: 'games',
+    tier: 'free',
+    maxLevel: 5,
+    xpPerUse: 10,
+    xpPerLevel: 50,
+    skillType: 'focus',
+    rarity: 'common',
+    lore: 'Play is healing. These games won\'t try to keep you forever.',
+    exercises: EXERCISES.filter((e) => e.type === 'game'),
   },
 ];
 
