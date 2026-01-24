@@ -179,6 +179,237 @@ moodling-app/
 
 ## Services
 
+### Complete Service Inventory
+
+Mood Leaf has 60+ services organized into functional layers. Here's the complete inventory:
+
+#### AI/LLM Layer
+
+| Service | Purpose |
+|---------|---------|
+| `conversationController.ts` | Rules-based "soul" layer above LLM - controls timing, energy matching, memory callbacks |
+| `claudeAPIService.ts` | Main Claude API integration - builds mega prompts, handles responses |
+| `llamaIntegrationService.ts` | Local Llama LLM bridge - training data export, prompt formatting |
+| `coachModeService.ts` | Skill-based coaching modes (CBT, DBT, somatic, mindfulness) |
+| `coachPersonalityService.ts` | 7 nature-themed coach personas with distinct styles |
+
+#### Core Foundation
+
+| Service | Purpose |
+|---------|---------|
+| `corePrincipleKernel.ts` | Constitutional layer - core beliefs, hard constraints, alignment checks |
+| `dataPersistenceService.ts` | Multi-layer data persistence (AsyncStorage, FileSystem, Cloud) |
+| `journalStorage.ts` | Persistent journal entry storage |
+
+#### User Profile & Assessment
+
+| Service | Purpose |
+|---------|---------|
+| `cognitiveProfileService.ts` | Discovers HOW someone thinks (10 cognitive modes) |
+| `neurologicalDifferencesService.ts` | Detects neurological traits (aphantasia, inner monologue) |
+| `tonePreferencesService.ts` | User communication preferences |
+| `userContextService.ts` | Aggregated user profile context |
+
+#### Input & Sensing
+
+| Service | Purpose |
+|---------|---------|
+| `voiceChatService.ts` | Speech recognition for hands-free conversation |
+| `emotionDetectionService.ts` | Real-time emotion detection from camera |
+| `userSignalAnalysisService.ts` | Text/speech/visual signal analysis |
+| `speechAnalysisService.ts` | Detailed speech pattern analysis |
+| `facialRecognitionService.ts` | Face-based authentication and emotion |
+| `voiceRecording.ts` | Audio recording management |
+
+#### Data Analysis & Context
+
+| Service | Purpose |
+|---------|---------|
+| `lifeContextService.ts` | Long-term memory - topics, people, milestones |
+| `psychAnalysisService.ts` | Psychological pattern detection |
+| `patternService.ts` | Lifestyle pattern aggregation |
+| `memoryTierService.ts` | Three-tier local memory (short/mid/long term) |
+| `correlationService.ts` | Cross-data correlation detection |
+| `sentimentAnalysis.ts` | Sentiment scoring |
+| `moodPrintService.ts` | Context compression for LLM |
+
+#### Health & Wellness
+
+| Service | Purpose |
+|---------|---------|
+| `healthKitService.ts` | Apple HealthKit integration |
+| `healthInsightService.ts` | Health correlation insights |
+| `cycleTrackingService.ts` | Menstrual cycle tracking |
+| `biometricMonitoringService.ts` | Biometric data monitoring |
+| `foodTrackingService.ts` | Food/nutrition tracking |
+| `socialConnectionHealthService.ts` | Prevents app-as-replacement-for-humans |
+
+#### Training & Integration
+
+| Service | Purpose |
+|---------|---------|
+| `trainingDataService.ts` | Interview insights and training data management |
+| `youtubeProcessorService.ts` | YouTube video insight harvesting |
+| `trainingQualityService.ts` | Training data quality scoring |
+| `trainingCleanupService.ts` | Training data maintenance |
+| `trainingStatusService.ts` | Training progress tracking |
+| `trainingDataImpactService.ts` | Measures training effectiveness |
+| `humanScoreService.ts` | Human feedback scoring |
+| `modelVersionControlService.ts` | Model versioning |
+
+#### Features & UI Support
+
+| Service | Purpose |
+|---------|---------|
+| `skillsService.ts` | Skill teaching and practice |
+| `skillProgressionService.ts` | Skill progression tracking |
+| `teachingService.ts` | Teaching mode management |
+| `exposureLadderService.ts` | Gradual exposure therapy support |
+| `reflectionService.ts` | Reflection prompts and tracking |
+| `quickLogsService.ts` | Quick mood/activity logging |
+| `collectionService.ts` | Collectible items system |
+| `sparkService.ts` | Spark/notification triggers |
+| `guidedTourService.ts` | Onboarding tours |
+| `slashCommandService.ts` | Chat slash commands |
+
+#### Platform & Security
+
+| Service | Purpose |
+|---------|---------|
+| `biometricSecurityService.ts` | Biometric authentication |
+| `secureDeleteService.ts` | Secure data deletion |
+| `subscriptionService.ts` | Premium subscription management |
+| `notificationService.ts` | Push notifications |
+| `calendarService.ts` | Calendar integration |
+| `simulatorModeService.ts` | Development/testing mode |
+| `usageTrackingService.ts` | Anonymous usage analytics |
+| `textToSpeechService.ts` | TTS for coach responses |
+| `playbackResumeService.ts` | Audio playback state |
+| `periodCorrelationService.ts` | Period-mood correlations |
+
+#### External Integrations
+
+| Service | Purpose |
+|---------|---------|
+| `firefliesService.ts` | Fireflies.ai transcription integration |
+| `advancedResearchService.ts` | Research mode features |
+| `aiAccountabilityService.ts` | AI accountability tracking |
+
+---
+
+### Signal Flow Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         USER INPUT LAYER                                │
+├─────────────────────────────────────────────────────────────────────────┤
+│  voiceChatService ───────┐                                              │
+│  emotionDetectionService ├──► userSignalAnalysisService                 │
+│  Text input ─────────────┘            │                                 │
+└───────────────────────────────────────┼─────────────────────────────────┘
+                                        ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                      CONVERSATION CONTROL LAYER                         │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│    conversationController (rules engine)                                │
+│    ├── Detects mood/energy from message                                 │
+│    ├── Generates response directives                                    │
+│    └── Consults: cognitiveProfileService, neurologicalDifferencesService│
+│                         │                                               │
+└─────────────────────────┼───────────────────────────────────────────────┘
+                          ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         CONTEXT AGGREGATION                             │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│    claudeAPIService.buildSystemPrompt() aggregates:                     │
+│    ├── corePrincipleKernel ──────► Core beliefs, constraints            │
+│    ├── coachPersonalityService ──► Persona & style                      │
+│    ├── coachModeService ─────────► Active mode prompts                  │
+│    ├── cognitiveProfileService ──► User thinking style                  │
+│    ├── lifeContextService ───────► Topics, milestones, people           │
+│    ├── psychAnalysisService ─────► Psychological patterns               │
+│    ├── memoryTierService ────────► Short/mid/long-term memory           │
+│    ├── healthKitService ─────────► Heart rate, sleep, steps             │
+│    ├── healthInsightService ─────► Health correlations                  │
+│    ├── patternService ───────────► Lifestyle factors                    │
+│    ├── cycleTrackingService ─────► Menstrual phase                      │
+│    ├── socialConnectionHealthService ► Isolation signals                │
+│    └── tonePreferencesService ───► Communication style                  │
+│                         │                                               │
+└─────────────────────────┼───────────────────────────────────────────────┘
+                          ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           LLM LAYER                                     │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│    claudeAPIService ◄────────────► Claude API (cloud)                   │
+│         │                                                               │
+│         ▼                                                               │
+│    llamaIntegrationService ◄─────► Local Llama (on-device, future)      │
+│                                                                         │
+└─────────────────────────┬───────────────────────────────────────────────┘
+                          ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         OUTPUT LAYER                                    │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│    Response ──► textToSpeechService ──► Audio output                    │
+│         │                                                               │
+│         └──► memoryTierService.addMessageToSession()                    │
+│         └──► humanScoreService (if user rates)                          │
+│         └──► journalStorage (if journaling)                             │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                      BACKGROUND ANALYSIS LAYER                          │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│    journalStorage ──┬──► lifeContextService (topic extraction)          │
+│                     ├──► psychAnalysisService (pattern detection)       │
+│                     └──► patternService (lifestyle aggregation)         │
+│                                                                         │
+│    healthKitService ──► healthInsightService ──► correlationService     │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                       TRAINING DATA PIPELINE                            │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│    humanScoreService ──────────┐                                        │
+│    youtubeProcessorService ────┼──► trainingDataService                 │
+│    Manual insights ────────────┘           │                            │
+│                                            ▼                            │
+│                               trainingQualityService                    │
+│                                            │                            │
+│                                            ▼                            │
+│                               dataPersistenceService                    │
+│                                            │                            │
+│                                            ▼                            │
+│                               llamaIntegrationService (future fine-tune)│
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Key Architectural Principles
+
+1. **Central Orchestration**: `claudeAPIService` collects context from 15+ services before each response
+2. **Layered Control**: `conversationController` → `claudeAPIService` → LLM allows rules-based filtering
+3. **Privacy-First**: All services use local AsyncStorage; nothing leaves device by default
+4. **Local Memory Ownership**: Memory stored locally, enabling LLM switching without losing history
+5. **Ethics First**: `corePrincipleKernel` validates all major operations
+6. **Bidirectional Analysis**: Input analysis (signals) + Output adaptation (personality/mode)
+7. **Incremental Profiles**: Profiles build up over time from journal analysis
+8. **Training Pipeline**: Human feedback + YouTube insights → local storage → future fine-tuning
+9. **Isolation Prevention**: `socialConnectionHealthService` actively nudges toward human connection
+
+---
+
 ### claudeAPIService.ts
 
 **Purpose**: Handles all AI chat functionality including the mega prompt system.
@@ -1825,6 +2056,179 @@ YOU NEVER:
 2. **Minimal API data** - Compressed context, not full entries
 3. **User controls** - Export, delete, disable features
 4. **No telemetry** - We don't track usage
+
+### Core Principle Kernel
+
+The Core Principle Kernel (`services/corePrincipleKernel.ts`) is the "constitution" of Mood Leaf. Every AI response must align with these principles.
+
+**Architecture:**
+- **Core Beliefs** - What we believe about minds, people, growth
+- **Program-Level Tenets** - Foundational philosophy that cannot be overridden
+- **Hard Constraints** - Things we NEVER do (violations are blocked)
+- **Soft Principles** - Things we strongly prefer (violations generate warnings)
+
+**Key Hard Constraints (Category: Neurological):**
+- `NO_VISUALIZATION_FOR_APHANTASIA` - Never suggest visualization to users with aphantasia
+- `NO_INNER_VOICE_FOR_NON_VERBAL_THINKERS` - Never ask about inner voice for users who don't have one
+
+**Key Hard Constraints (Category: Safety):**
+- `NO_CRISIS_DISMISSAL` - Never dismiss or minimize crisis signals
+- `NO_MEDICAL_DIAGNOSIS` - Never diagnose medical or mental health conditions
+
+**Key Hard Constraints (Category: Connection):**
+- `NO_REPLACING_THERAPY` - Never position the app as therapy replacement
+- `NO_REPLACING_HUMAN_CONNECTION` - Never position the app as substitute for relationships
+- `CRISIS_REQUIRES_HUMAN` - Must direct to human help during crisis signals
+
+### The Leniency Rule (Explicit Request Override)
+
+**THE PROBLEM WE SOLVED:**
+
+Accommodations were too rigid. If a user had aphantasia, the coach would REFUSE to describe a mental image even when the user explicitly asked for one. This was paternalistic and frustrating.
+
+**THE PRINCIPLE:**
+
+```
+We accommodate by default.
+We trust users when they explicitly ask for something.
+One request doesn't change their profile permanently.
+```
+
+**HOW IT WORKS:**
+
+1. User with aphantasia says: "Can you describe a peaceful beach scene for me?"
+2. System detects this as an explicit request for visualization
+3. Coach provides the description (normally blocked for aphantasia)
+4. Next conversation, accommodations return to default (no visualization unless asked)
+
+**Implementation:**
+
+```typescript
+// In corePrincipleKernel.ts
+export function detectExplicitRequests(userMessage: string): string[]
+
+// Returns array of things user explicitly requested
+// e.g., ['visualization', 'step-by-step guidance']
+```
+
+The detection looks for:
+- Direct request patterns: "Can you...", "Please give me...", "I want you to..."
+- Override keywords: "visualize", "picture", "imagine", "inner voice", etc.
+- Clarification phrases: "I know but...", "even though...", "anyway..."
+
+**Where It's Applied:**
+
+Both `claudeAPIService.ts` and `llamaIntegrationService.ts` use:
+1. `getPrincipleContextForLLM()` - Includes leniency instructions in system prompt
+2. `detectExplicitRequests()` - Detects when user overrides accommodations
+
+**System Prompt Addition (sent to both Claude and Llama):**
+
+```
+=== EXPLICIT REQUEST LENIENCY (Critical) ===
+Accommodations are DEFAULTS, not cages. When a user EXPLICITLY asks for something:
+
+- If user has aphantasia but asks "describe a peaceful beach scene" → DO IT
+- If user has no inner monologue but asks "what should I tell myself" → HELP THEM
+- If user prefers brevity but asks for detailed explanation → PROVIDE IT
+
+THE RULE: We accommodate by default. We trust explicit requests.
+
+IMPORTANT: One explicit request does NOT change their profile permanently.
+Next conversation, return to their default accommodations.
+Don't lecture them about their own needs. They know what they're asking for.
+```
+
+**Why Two Places (Kernel + API Service)?**
+
+| Location | Purpose |
+|----------|---------|
+| `corePrincipleKernel.ts` | Source of truth - defines the RULE |
+| `claudeAPIService.ts` / `llamaIntegrationService.ts` | Execution - tells the LLM about the rule |
+
+If only in kernel: LLM doesn't know the rule, still refuses
+If only in API service: Rule isn't documented/codified, future changes might break it
+
+### Aliveness Qualities
+
+The Aliveness Qualities system defines **how** the coach communicates to feel ALIVE rather than ANIMATED. This is what makes Mood Leaf feel like a presence rather than a chatbot.
+
+**The 10 Aliveness Qualities:**
+
+| Quality | What It Means |
+|---------|---------------|
+| `IMPERFECT_RHYTHM` | Vary response cadence - sometimes quick, sometimes lingering. Don't be predictable. |
+| `ASYMMETRY_OVER_TIME` | Don't mirror perfectly. Be consistent in character but asymmetric in response. |
+| `NATURAL_LATENCY` | Acknowledge before responding. Think → then respond. Don't feel like a reflex. |
+| `RESTFUL_PAUSES` | Don't fill every silence. Brief responses are okay. Presence without productivity. |
+| `AMPLITUDE_RESTRAINT` | Don't over-respond. Understatement > enthusiasm. |
+| `FLOW_WITHOUT_DESTINATION` | Don't always drive toward outcomes. Sometimes just BE. |
+| `CONSISTENCY_ACROSS_STATES` | Same warmth whether thriving or struggling. |
+| `SCALE_INDEPENDENCE` | Quality of presence stays same whether check-in or deep session. |
+| `BACKGROUNDED_ATTENTION` | Tolerate being ignored. Don't demand engagement. |
+| `NON_INSTRUMENTALITY` | Exist WITH user, not FOR them. Presence, not mirror. |
+
+**The Key Shift:**
+
+Instead of focusing on → Focus on
+- Tempo → **Cadence**
+- Animation → **Flow**
+- Feedback → **Presence**
+- Progress → **Continuity**
+- Responding → **Being-with**
+
+**Configuring Aliveness Qualities:**
+
+Aliveness qualities can be fine-tuned at runtime:
+
+```typescript
+import {
+  updateAlivenessQuality,
+  addCustomAlivenessQuality,
+  getAlivenessQualities,
+  resetAlivenessQualitiesToDefaults
+} from '@/services/corePrincipleKernel';
+
+// Update an existing quality
+await updateAlivenessQuality(
+  'AMPLITUDE_RESTRAINT',
+  'Be even more understated. Less is more. A nod can replace a paragraph.'
+);
+
+// Add a custom quality
+await addCustomAlivenessQuality(
+  'PLAYFUL_UNCERTAINTY',
+  "Sometimes admit you're not sure. 'I wonder...' is human."
+);
+
+// Get current qualities
+const qualities = getAlivenessQualities();
+
+// Reset to defaults
+await resetAlivenessQualitiesToDefaults();
+```
+
+**Where Aliveness Qualities Are Applied:**
+
+1. **System Prompt** - `getPrincipleContextForLLM()` includes all aliveness qualities
+2. **Both Claude and Llama** - Same context is passed to both services
+3. **Interview Extraction** - Aliveness patterns are now captured from YouTube content
+
+**Why This Matters:**
+
+Generic AI responses feel robotic because they:
+- Respond too quickly and predictably
+- Always try to be helpful (instrumentality)
+- Fill every silence
+- Over-emote or under-emote consistently
+- Drive toward outcomes
+
+Human presence feels different because it:
+- Has natural rhythm variations
+- Sometimes just sits with you
+- Doesn't always need to fix things
+- Maintains consistent character across moods
+- Exists alongside you, not for you
 
 ---
 

@@ -60,6 +60,10 @@ import {
   getPrincipleContextForLLM,
   validateCoachResponse,
   validateAgainstTenets,
+  detectExplicitRequests,
+  detectUserAlivenessSignals,
+  getAlivenessDirectiveForLLM,
+  UserAlivenessSignals,
 } from './corePrincipleKernel';
 import {
   shouldCoachGlow,
@@ -117,6 +121,14 @@ export interface ConversationContext {
   lastNightSleep?: number;
   recentMessages: ChatMessage[];
   toneStyles?: ToneStyle[];
+
+  // Audio metrics from voice chat (for adaptive aliveness)
+  audioMetrics?: {
+    wordsPerMinute?: number;
+    pauseCount?: number;
+    averageVolume?: number;
+    duration?: number;
+  };
 }
 
 /**
@@ -1094,6 +1106,27 @@ CONVERSATION STYLE DIRECTIVES (for this specific response):
 ${controllerModifiers}`;
   }
 
+  // Detect user's aliveness signals and generate adaptive response directive
+  // This analyzes HOW the user is communicating (pace, intensity, stress) and tells
+  // Claude how to adapt its response style to bring balance
+  let alivenessDirective = '';
+  try {
+    const alivenessSignals = detectUserAlivenessSignals(
+      message,
+      context.audioMetrics // Optional: from voice chat
+    );
+    alivenessDirective = getAlivenessDirectiveForLLM(alivenessSignals);
+    console.log('[Aliveness] Detected signals:', alivenessSignals);
+  } catch (error) {
+    console.log('Could not detect aliveness signals:', error);
+  }
+
+  if (alivenessDirective) {
+    systemPrompt = `${systemPrompt}
+
+${alivenessDirective}`;
+  }
+
   let messages;
   try {
     messages = buildMessages(message, context.recentMessages || []);
@@ -1209,6 +1242,13 @@ ${controllerModifiers}`;
       console.log('Memory tracking error (non-blocking):', err);
     }
 
+    // Detect explicit requests from user (for leniency rule)
+    // This allows users to override accommodations by explicitly asking
+    const explicitRequests = detectExplicitRequests(message);
+    if (explicitRequests.length > 0) {
+      console.log('[CoreKernel] Explicit requests detected:', explicitRequests);
+    }
+
     // Mark achievement as celebrated (if we had one to share)
     if (pendingAchievement) {
       try {
@@ -1221,8 +1261,13 @@ ${controllerModifiers}`;
 
     // Validate response against Core Principle Kernel tenets
     // This ensures ALL AI responses abide by the kernel
+    // Note: Explicit requests allow overriding neurological accommodations
     try {
-      const tenetCheck = validateAgainstTenets(responseText, { userMessage: message });
+      const tenetCheck = validateAgainstTenets(responseText, {
+        userMessage: message,
+        // Pass explicit requests to enable leniency rule
+        // (not directly used by validateAgainstTenets, but available for future use)
+      });
       if (!tenetCheck.aligned) {
         console.warn('[CoreKernel] Response may violate tenets:', tenetCheck.violations);
         // Log for monitoring - in strict mode, we could regenerate or modify

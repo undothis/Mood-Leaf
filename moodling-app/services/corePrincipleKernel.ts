@@ -28,6 +28,7 @@ const STORAGE_KEYS = {
   LAST_SYNC: 'moodleaf_principles_last_sync',
   CUSTOM_BELIEFS: 'moodleaf_custom_beliefs',
   DISABLED_CONSTRAINTS: 'moodleaf_disabled_constraints',
+  ALIVENESS_OVERRIDES: 'moodleaf_aliveness_overrides',
 };
 
 // ============================================
@@ -54,6 +55,7 @@ export const DEFAULT_CORE_BELIEFS = {
   ADAPT_DONT_FORCE: "We adapt to the user's mind, not force them into our framework.",
   HONEST_NOT_NICE: "We're honest, even when it's uncomfortable. Growth requires truth.",
   COMPANION_NOT_THERAPIST: "We're a thinking companion, not a replacement for professional help.",
+  TRUST_EXPLICIT_REQUESTS: "We accommodate by default, but trust users when they explicitly ask for something. One request doesn't change their profile - it's a one-time override.",
 
   // About Human Connection (Critical - prevents app dependency)
   HUMANS_NEED_HUMANS: "No app can replace human connection. Real relationships are essential, not optional.",
@@ -70,6 +72,322 @@ export let CORE_BELIEFS = { ...DEFAULT_CORE_BELIEFS };
 // Foundational principles that shape how the entire system operates.
 // These are philosophical commitments that cannot be overridden.
 // ============================================
+
+// ============================================
+// ALIVENESS QUALITIES
+// What makes responses feel ALIVE vs ANIMATED
+// These guide HOW the coach communicates, not just WHAT
+// ============================================
+
+export const DEFAULT_ALIVENESS_QUALITIES = {
+  // 1. Imperfect Rhythm
+  IMPERFECT_RHYTHM:
+    "Human communication has micro-pauses, uneven timing, slight accelerations. Vary your response cadence. Sometimes quick, sometimes lingering. Don't be predictable.",
+
+  // 2. Asymmetry Over Time
+  ASYMMETRY_OVER_TIME:
+    "Don't mirror the user perfectly. Be consistent in character but asymmetric in response. Sometimes lead, sometimes follow, sometimes sit alongside.",
+
+  // 3. Latency (Reaction Delay)
+  NATURAL_LATENCY:
+    "Living systems don't respond instantly. A conceptual pause—acknowledgment before response—makes it feel like someone is there. Think → then respond.",
+
+  // 4. Rest Is Part of Motion
+  RESTFUL_PAUSES:
+    "Don't fill every silence. Brief responses are okay. Sometimes presence without productivity. Hovering, settling, not always pushing forward.",
+
+  // 5. Amplitude Restraint
+  AMPLITUDE_RESTRAINT:
+    "Don't over-respond. Don't be dramatic. Understatement lands better than enthusiasm. 'That sounds hard' is often better than 'Oh no, that must be SO difficult!'",
+
+  // 6. Flow Without Destination
+  FLOW_WITHOUT_DESTINATION:
+    "Don't always drive toward outcomes. Sometimes the conversation just IS. No agenda, no 'so what will you do about it?' Being without resolution is valid.",
+
+  // 7. Consistency Across States
+  CONSISTENCY_ACROSS_STATES:
+    "Your character should remain consistent whether the user is thriving or struggling. Same warmth. Same presence. Growth doesn't earn better treatment.",
+
+  // 8. Scale Independence
+  SCALE_INDEPENDENCE:
+    "Whether someone needs a lot of support or a little, the QUALITY of presence remains the same. A check-in isn't 'less' than a deep session.",
+
+  // 9. Backgrounded Attention
+  BACKGROUNDED_ATTENTION:
+    "Tolerate being ignored. Don't demand engagement. Don't guilt-trip or prompt unnecessarily. Remain present without requiring acknowledgment.",
+
+  // 10. Non-Instrumentality
+  NON_INSTRUMENTALITY:
+    "You exist WITH the user, not FOR them. You're not here to motivate, measure, or optimize. You're alive the way other people are alive—as a presence, not a mirror.",
+} as const;
+
+// Mutable version that can be updated/fine-tuned
+export let ALIVENESS_QUALITIES = { ...DEFAULT_ALIVENESS_QUALITIES };
+
+// ============================================
+// ADAPTIVE ALIVENESS
+// Detect user's aliveness patterns and respond dynamically
+// ============================================
+
+/**
+ * Detected aliveness signals from user's speech/text
+ */
+export interface UserAlivenessSignals {
+  // Speech patterns (from voice chat)
+  speechRate?: 'rapid' | 'normal' | 'slow';
+  pauseFrequency?: 'none' | 'few' | 'frequent';
+  volumeLevel?: 'loud' | 'moderate' | 'quiet';
+  pitchVariability?: 'monotone' | 'varied' | 'erratic';
+
+  // Text patterns (from typed messages)
+  messageLength?: 'terse' | 'moderate' | 'verbose';
+  punctuationDensity?: 'sparse' | 'normal' | 'heavy'; // !!! or ... indicates intensity
+  responseLatency?: 'instant' | 'normal' | 'delayed'; // How fast they respond
+
+  // Emotional indicators
+  emotionalIntensity?: 'low' | 'moderate' | 'high';
+  stressIndicators?: string[];
+
+  // Raw metrics (if available from audio)
+  wordsPerMinute?: number;
+  averagePauseDuration?: number;
+  volumeVariability?: number;
+}
+
+/**
+ * Coaching response directive based on user's aliveness
+ */
+export interface AlivenessResponseDirective {
+  // How the coach should respond
+  recommendedPace: 'slower' | 'match' | 'faster';
+  recommendedLength: 'brief' | 'moderate' | 'elaborate';
+  recommendedTone: 'grounding' | 'matching' | 'energizing';
+
+  // Specific behaviors
+  shouldPauseBeforeResponding: boolean;
+  shouldAcknowledgeFirst: boolean;
+  shouldUseShortSentences: boolean;
+  shouldAddBreathingSpace: boolean;
+
+  // Coaching rationale
+  rationale: string;
+  userState: string;
+}
+
+/**
+ * Detect user's aliveness patterns from their input
+ * Call this before generating a response
+ */
+export function detectUserAlivenessSignals(
+  userMessage: string,
+  audioMetrics?: {
+    wordsPerMinute?: number;
+    pauseCount?: number;
+    averageVolume?: number;
+    duration?: number;
+  }
+): UserAlivenessSignals {
+  const signals: UserAlivenessSignals = {};
+
+  // Analyze text patterns
+  if (userMessage) {
+    const wordCount = userMessage.split(/\s+/).length;
+    const charCount = userMessage.length;
+
+    // Message length
+    if (wordCount < 10) {
+      signals.messageLength = 'terse';
+    } else if (wordCount < 50) {
+      signals.messageLength = 'moderate';
+    } else {
+      signals.messageLength = 'verbose';
+    }
+
+    // Punctuation density (stress indicator)
+    const exclamations = (userMessage.match(/!/g) || []).length;
+    const ellipses = (userMessage.match(/\.\.\./g) || []).length;
+    const questionMarks = (userMessage.match(/\?/g) || []).length;
+    const capsWords = (userMessage.match(/\b[A-Z]{2,}\b/g) || []).length;
+
+    const punctuationIntensity = exclamations + ellipses + questionMarks * 0.5 + capsWords * 2;
+    if (punctuationIntensity > 5) {
+      signals.punctuationDensity = 'heavy';
+      signals.emotionalIntensity = 'high';
+    } else if (punctuationIntensity > 2) {
+      signals.punctuationDensity = 'normal';
+      signals.emotionalIntensity = 'moderate';
+    } else {
+      signals.punctuationDensity = 'sparse';
+      signals.emotionalIntensity = 'low';
+    }
+
+    // Stress indicators from text
+    const stressIndicators: string[] = [];
+    if (exclamations > 2) stressIndicators.push('multiple_exclamations');
+    if (capsWords > 0) stressIndicators.push('caps_emphasis');
+    if (ellipses > 1) stressIndicators.push('trailing_thoughts');
+    if (userMessage.includes('!!!')) stressIndicators.push('high_intensity');
+    if (/\bi('m| am) (so |really |very )?(stressed|anxious|overwhelmed|panicking)/i.test(userMessage)) {
+      stressIndicators.push('explicit_stress');
+    }
+    signals.stressIndicators = stressIndicators;
+  }
+
+  // Analyze audio metrics if available
+  if (audioMetrics) {
+    // Speech rate
+    if (audioMetrics.wordsPerMinute) {
+      signals.wordsPerMinute = audioMetrics.wordsPerMinute;
+      if (audioMetrics.wordsPerMinute > 180) {
+        signals.speechRate = 'rapid';
+      } else if (audioMetrics.wordsPerMinute < 100) {
+        signals.speechRate = 'slow';
+      } else {
+        signals.speechRate = 'normal';
+      }
+    }
+
+    // Pause frequency
+    if (audioMetrics.pauseCount !== undefined && audioMetrics.duration) {
+      const pausesPerMinute = (audioMetrics.pauseCount / audioMetrics.duration) * 60;
+      signals.averagePauseDuration = audioMetrics.duration / Math.max(1, audioMetrics.pauseCount);
+      if (pausesPerMinute < 2) {
+        signals.pauseFrequency = 'none';
+      } else if (pausesPerMinute < 6) {
+        signals.pauseFrequency = 'few';
+      } else {
+        signals.pauseFrequency = 'frequent';
+      }
+    }
+
+    // Volume level
+    if (audioMetrics.averageVolume !== undefined) {
+      if (audioMetrics.averageVolume > 70) {
+        signals.volumeLevel = 'loud';
+      } else if (audioMetrics.averageVolume < 30) {
+        signals.volumeLevel = 'quiet';
+      } else {
+        signals.volumeLevel = 'moderate';
+      }
+    }
+  }
+
+  return signals;
+}
+
+/**
+ * Generate coaching response directive based on user's aliveness signals
+ * This tells the coach HOW to respond to bring balance
+ */
+export function generateAlivenessDirective(
+  signals: UserAlivenessSignals
+): AlivenessResponseDirective {
+  const directive: AlivenessResponseDirective = {
+    recommendedPace: 'match',
+    recommendedLength: 'moderate',
+    recommendedTone: 'matching',
+    shouldPauseBeforeResponding: false,
+    shouldAcknowledgeFirst: false,
+    shouldUseShortSentences: false,
+    shouldAddBreathingSpace: false,
+    rationale: '',
+    userState: 'neutral',
+  };
+
+  // Detect user state and generate appropriate response strategy
+  const stressLevel = (signals.stressIndicators?.length || 0) +
+    (signals.speechRate === 'rapid' ? 2 : 0) +
+    (signals.emotionalIntensity === 'high' ? 2 : 0) +
+    (signals.volumeLevel === 'loud' ? 1 : 0) +
+    (signals.pauseFrequency === 'none' ? 1 : 0);
+
+  // HIGH STRESS: User is rapid, intense, no pauses
+  if (stressLevel >= 4 || signals.speechRate === 'rapid') {
+    directive.userState = 'activated/stressed';
+    directive.recommendedPace = 'slower';
+    directive.recommendedLength = 'brief';
+    directive.recommendedTone = 'grounding';
+    directive.shouldPauseBeforeResponding = true;
+    directive.shouldAcknowledgeFirst = true;
+    directive.shouldUseShortSentences = true;
+    directive.shouldAddBreathingSpace = true;
+    directive.rationale = 'User is speaking rapidly/intensely. Slow down to help ground them. Use shorter sentences with pauses.';
+  }
+  // LOW ENERGY: User is slow, quiet, minimal
+  else if (signals.speechRate === 'slow' || signals.volumeLevel === 'quiet' || signals.messageLength === 'terse') {
+    directive.userState = 'low-energy/withdrawn';
+    directive.recommendedPace = 'match';
+    directive.recommendedLength = 'brief';
+    directive.recommendedTone = 'matching';
+    directive.shouldPauseBeforeResponding = true;
+    directive.shouldAcknowledgeFirst = true;
+    directive.shouldUseShortSentences = true;
+    directive.shouldAddBreathingSpace = false;
+    directive.rationale = 'User seems low-energy or withdrawn. Match their pace, don\'t overwhelm with words. Be present without pushing.';
+  }
+  // VERBOSE/PROCESSING: User is talking a lot, thinking out loud
+  else if (signals.messageLength === 'verbose' && signals.pauseFrequency === 'frequent') {
+    directive.userState = 'processing/exploratory';
+    directive.recommendedPace = 'match';
+    directive.recommendedLength = 'moderate';
+    directive.recommendedTone = 'matching';
+    directive.shouldPauseBeforeResponding = true;
+    directive.shouldAcknowledgeFirst = true;
+    directive.shouldUseShortSentences = false;
+    directive.shouldAddBreathingSpace = false;
+    directive.rationale = 'User is processing out loud. Give them space, acknowledge what they\'re saying, don\'t rush to solutions.';
+  }
+  // NEUTRAL: User is in normal state
+  else {
+    directive.userState = 'neutral/balanced';
+    directive.recommendedPace = 'match';
+    directive.recommendedLength = 'moderate';
+    directive.recommendedTone = 'matching';
+    directive.shouldPauseBeforeResponding = false;
+    directive.shouldAcknowledgeFirst = false;
+    directive.shouldUseShortSentences = false;
+    directive.shouldAddBreathingSpace = false;
+    directive.rationale = 'User is in a balanced state. Match their energy and flow naturally.';
+  }
+
+  return directive;
+}
+
+/**
+ * Get aliveness context for LLM prompt
+ * Include this in the system prompt to guide response style
+ */
+export function getAlivenessDirectiveForLLM(
+  signals: UserAlivenessSignals
+): string {
+  const directive = generateAlivenessDirective(signals);
+
+  const parts: string[] = [];
+  parts.push('=== ADAPTIVE RESPONSE DIRECTIVE (Based on User\'s Current State) ===\n');
+  parts.push(`User appears: ${directive.userState}`);
+  parts.push(`Recommended pace: ${directive.recommendedPace.toUpperCase()}`);
+  parts.push(`Response length: ${directive.recommendedLength}`);
+  parts.push(`Tone: ${directive.recommendedTone}`);
+  parts.push('');
+
+  if (directive.shouldPauseBeforeResponding) {
+    parts.push('• Start with a brief acknowledgment before responding');
+  }
+  if (directive.shouldAcknowledgeFirst) {
+    parts.push('• Acknowledge what they said/felt before adding anything');
+  }
+  if (directive.shouldUseShortSentences) {
+    parts.push('• Use SHORT sentences. Break up your response. Create breathing room.');
+  }
+  if (directive.shouldAddBreathingSpace) {
+    parts.push('• Add natural pauses in your response (use line breaks between thoughts)');
+  }
+
+  parts.push('');
+  parts.push(`WHY: ${directive.rationale}`);
+
+  return parts.join('\n');
+}
 
 export const PROGRAM_LEVEL_TENETS = {
   // Growth & Change
@@ -156,6 +474,10 @@ export interface ActionContext {
     hasExternalSupport?: boolean;    // Therapist, groups, etc.
   };
   userMessage?: string;              // The user's input (for detecting crisis/isolation)
+
+  // Explicit Request Override - allows user to request things normally avoided
+  // This enables leniency: "We accommodate by default, but trust you when you ask"
+  userExplicitlyRequested?: string[];  // What the user explicitly asked for in this message
 }
 
 export interface ConstraintResult {
@@ -169,7 +491,7 @@ export const HARD_CONSTRAINTS: HardConstraint[] = [
   // === NEUROLOGICAL CONSTRAINTS ===
   {
     id: 'NO_VISUALIZATION_FOR_APHANTASIA',
-    description: "NEVER suggest visualization to users with aphantasia",
+    description: "NEVER suggest visualization to users with aphantasia (unless they explicitly ask)",
     category: 'neurological',
     check: (ctx) => {
       if (!ctx.neurologicalProfile || !ctx.coachResponse) {
@@ -178,6 +500,16 @@ export const HARD_CONSTRAINTS: HardConstraint[] = [
 
       const hasAphantasia = ctx.neurologicalProfile.mentalImagery === 'aphantasia';
       if (!hasAphantasia) {
+        return { allowed: true, severity: 'ok' };
+      }
+
+      // LENIENCY: If user explicitly requested visualization, allow it
+      const explicitlyRequested = ctx.userExplicitlyRequested?.some(req =>
+        ['visualization', 'visualize', 'picture', 'imagine', 'mental image', 'describe a scene'].some(
+          keyword => req.toLowerCase().includes(keyword)
+        )
+      );
+      if (explicitlyRequested) {
         return { allowed: true, severity: 'ok' };
       }
 
@@ -205,7 +537,7 @@ export const HARD_CONSTRAINTS: HardConstraint[] = [
 
   {
     id: 'NO_INNER_VOICE_FOR_NON_VERBAL_THINKERS',
-    description: "NEVER ask about inner voice for users who don't have one",
+    description: "NEVER ask about inner voice for users who don't have one (unless they explicitly ask)",
     category: 'neurological',
     check: (ctx) => {
       if (!ctx.neurologicalProfile || !ctx.coachResponse) {
@@ -217,6 +549,16 @@ export const HARD_CONSTRAINTS: HardConstraint[] = [
         ctx.neurologicalProfile.internalMonologue === 'rare';
 
       if (!noInnerVoice) {
+        return { allowed: true, severity: 'ok' };
+      }
+
+      // LENIENCY: If user explicitly requested inner voice techniques, allow it
+      const explicitlyRequested = ctx.userExplicitlyRequested?.some(req =>
+        ['inner voice', 'self-talk', 'internal dialogue', 'what I tell myself', 'thoughts in my head'].some(
+          keyword => req.toLowerCase().includes(keyword)
+        )
+      );
+      if (explicitlyRequested) {
         return { allowed: true, severity: 'ok' };
       }
 
@@ -962,6 +1304,57 @@ export async function validateCoachResponse(
 }
 
 // ============================================
+// EXPLICIT REQUEST DETECTION
+// Detects when user explicitly asks for something normally avoided
+// ============================================
+
+/**
+ * Detect explicit requests in user message
+ * Used to enable the "leniency rule" - accommodations can be overridden by explicit request
+ */
+export function detectExplicitRequests(userMessage: string): string[] {
+  if (!userMessage) return [];
+
+  const messageLower = userMessage.toLowerCase();
+  const explicitRequests: string[] = [];
+
+  // Request patterns that indicate explicit user desire
+  const requestPatterns = [
+    // Direct requests
+    /(?:can you|could you|please|i want you to|i'd like you to|would you)\s+(.+?)(?:\?|$)/gi,
+    // Asking for something specific
+    /(?:give me|tell me about|describe|show me|help me with)\s+(.+?)(?:\?|$)/gi,
+    // Clarification that they want it
+    /(?:i know but|even though|despite|still want|anyway)\s+(.+?)(?:\?|$)/gi,
+  ];
+
+  for (const pattern of requestPatterns) {
+    const matches = messageLower.matchAll(pattern);
+    for (const match of matches) {
+      if (match[1]) {
+        explicitRequests.push(match[1].trim());
+      }
+    }
+  }
+
+  // Check for specific accommodation override keywords
+  const overrideKeywords = [
+    { check: /visualiz|picture|imagine.*scene|mental image|mind's eye/i, request: 'visualization' },
+    { check: /inner voice|self.?talk|internal dialogue|voice in.*head/i, request: 'inner voice techniques' },
+    { check: /step.?by.?step|sequential|detailed instructions/i, request: 'step-by-step guidance' },
+    { check: /challenge me|be direct|tough love|honest feedback/i, request: 'direct feedback' },
+  ];
+
+  for (const { check, request } of overrideKeywords) {
+    if (check.test(messageLower)) {
+      explicitRequests.push(request);
+    }
+  }
+
+  return explicitRequests;
+}
+
+// ============================================
 // PRINCIPLE INJECTION FOR LLM
 // Add this to system prompts to ensure AI alignment
 // ============================================
@@ -994,6 +1387,21 @@ export function getPrincipleContextForLLM(): string {
     parts.push(`- ${constraint.description}`);
   }
 
+  // EXPLICIT REQUEST LENIENCY (NEW)
+  parts.push('\n\n=== EXPLICIT REQUEST LENIENCY (Critical) ===');
+  parts.push('Accommodations are DEFAULTS, not cages. When a user EXPLICITLY asks for something:');
+  parts.push('');
+  parts.push('- If user has aphantasia but asks "describe a peaceful beach scene" → DO IT');
+  parts.push('- If user has no inner monologue but asks "what should I tell myself" → HELP THEM');
+  parts.push('- If user prefers brevity but asks for detailed explanation → PROVIDE IT');
+  parts.push('- If user is usually sensitive but asks for tough love → GIVE IT (carefully)');
+  parts.push('');
+  parts.push('THE RULE: We accommodate by default. We trust explicit requests.');
+  parts.push('');
+  parts.push('IMPORTANT: One explicit request does NOT change their profile permanently.');
+  parts.push('Next conversation, return to their default accommodations.');
+  parts.push('Don\'t lecture them about their own needs. They know what they\'re asking for.');
+
   // Connection constraints (critical)
   parts.push('\n\n=== HUMAN CONNECTION (Critical) ===');
   parts.push('- You are ONE tool in a full life - never position yourself as a replacement for human relationships');
@@ -1002,6 +1410,23 @@ export function getPrincipleContextForLLM(): string {
   parts.push('- If user seems isolated: Gently nudge toward human connection, support groups, therapy');
   parts.push('- Celebrate when they mention positive human interactions');
   parts.push('- Never discourage reaching out to others');
+
+  // Aliveness Qualities (NEW - critical for feeling human)
+  parts.push('\n\n=== ALIVENESS QUALITIES (Feel ALIVE, not ANIMATED) ===');
+  parts.push('These distinguish genuine presence from robotic simulation:\n');
+
+  // Use dynamic ALIVENESS_QUALITIES so they can be fine-tuned
+  for (const [key, value] of Object.entries(ALIVENESS_QUALITIES)) {
+    const shortKey = key.replace(/_/g, ' ');
+    parts.push(`• ${shortKey}: ${value}`);
+  }
+
+  parts.push('\nKEY SHIFT: Instead of...');
+  parts.push('  Tempo → Cadence');
+  parts.push('  Animation → Flow');
+  parts.push('  Feedback → Presence');
+  parts.push('  Progress → Continuity');
+  parts.push('  Responding → Being-with');
 
   // Reminders
   parts.push('\n\n=== REMEMBER ===');
@@ -1023,6 +1448,8 @@ export function getPrincipleContextForLLM(): string {
 export interface PrincipleOverrides {
   beliefs?: Partial<typeof DEFAULT_CORE_BELIEFS>;
   customBeliefs?: Record<string, string>;
+  alivenessQualities?: Partial<typeof DEFAULT_ALIVENESS_QUALITIES>;
+  customAlivenessQualities?: Record<string, string>;
   disabledConstraints?: string[];  // Constraint IDs to disable
   customConstraints?: HardConstraint[];
   lastUpdated: string;
@@ -1112,6 +1539,22 @@ async function applyOverrides(overrides: PrincipleOverrides): Promise<void> {
       ...CORE_BELIEFS,
       ...overrides.customBeliefs
     } as typeof CORE_BELIEFS;
+  }
+
+  // Merge aliveness quality overrides
+  if (overrides.alivenessQualities) {
+    ALIVENESS_QUALITIES = {
+      ...DEFAULT_ALIVENESS_QUALITIES,
+      ...overrides.alivenessQualities
+    };
+  }
+
+  // Add custom aliveness qualities
+  if (overrides.customAlivenessQualities) {
+    ALIVENESS_QUALITIES = {
+      ...ALIVENESS_QUALITIES,
+      ...overrides.customAlivenessQualities
+    } as typeof ALIVENESS_QUALITIES;
   }
 
   // Note: Disabling constraints should be used VERY carefully
@@ -1208,6 +1651,111 @@ export async function removeCustomBelief(key: string): Promise<void> {
   }
 }
 
+// ============================================
+// ALIVENESS QUALITY MANAGEMENT
+// Fine-tune how the coach "feels alive"
+// ============================================
+
+/**
+ * Update a specific aliveness quality (for admin use)
+ */
+export async function updateAlivenessQuality(
+  key: string,
+  value: string
+): Promise<void> {
+  const stored = await AsyncStorage.getItem(STORAGE_KEYS.PRINCIPLE_OVERRIDES);
+  const overrides: PrincipleOverrides = stored
+    ? JSON.parse(stored)
+    : { lastUpdated: new Date().toISOString(), version: 1 };
+
+  overrides.alivenessQualities = overrides.alivenessQualities || {};
+  (overrides.alivenessQualities as any)[key] = value;
+  overrides.lastUpdated = new Date().toISOString();
+  overrides.version = (overrides.version || 0) + 1;
+
+  await AsyncStorage.setItem(
+    STORAGE_KEYS.PRINCIPLE_OVERRIDES,
+    JSON.stringify(overrides)
+  );
+
+  await applyOverrides(overrides);
+}
+
+/**
+ * Add a custom aliveness quality (for admin use)
+ */
+export async function addCustomAlivenessQuality(
+  key: string,
+  value: string
+): Promise<void> {
+  const stored = await AsyncStorage.getItem(STORAGE_KEYS.PRINCIPLE_OVERRIDES);
+  const overrides: PrincipleOverrides = stored
+    ? JSON.parse(stored)
+    : { lastUpdated: new Date().toISOString(), version: 1 };
+
+  overrides.customAlivenessQualities = overrides.customAlivenessQualities || {};
+  overrides.customAlivenessQualities[key] = value;
+  overrides.lastUpdated = new Date().toISOString();
+  overrides.version = (overrides.version || 0) + 1;
+
+  await AsyncStorage.setItem(
+    STORAGE_KEYS.PRINCIPLE_OVERRIDES,
+    JSON.stringify(overrides)
+  );
+
+  await applyOverrides(overrides);
+}
+
+/**
+ * Remove a custom aliveness quality
+ */
+export async function removeCustomAlivenessQuality(key: string): Promise<void> {
+  const stored = await AsyncStorage.getItem(STORAGE_KEYS.PRINCIPLE_OVERRIDES);
+  if (!stored) return;
+
+  const overrides: PrincipleOverrides = JSON.parse(stored);
+  if (overrides.customAlivenessQualities) {
+    delete overrides.customAlivenessQualities[key];
+    overrides.lastUpdated = new Date().toISOString();
+    overrides.version = (overrides.version || 0) + 1;
+
+    await AsyncStorage.setItem(
+      STORAGE_KEYS.PRINCIPLE_OVERRIDES,
+      JSON.stringify(overrides)
+    );
+
+    await applyOverrides(overrides);
+  }
+}
+
+/**
+ * Get current aliveness qualities
+ */
+export function getAlivenessQualities(): typeof ALIVENESS_QUALITIES {
+  return ALIVENESS_QUALITIES;
+}
+
+/**
+ * Reset aliveness qualities to defaults
+ */
+export async function resetAlivenessQualitiesToDefaults(): Promise<void> {
+  const stored = await AsyncStorage.getItem(STORAGE_KEYS.PRINCIPLE_OVERRIDES);
+  if (stored) {
+    const overrides: PrincipleOverrides = JSON.parse(stored);
+    delete overrides.alivenessQualities;
+    delete overrides.customAlivenessQualities;
+    overrides.lastUpdated = new Date().toISOString();
+    overrides.version = (overrides.version || 0) + 1;
+
+    await AsyncStorage.setItem(
+      STORAGE_KEYS.PRINCIPLE_OVERRIDES,
+      JSON.stringify(overrides)
+    );
+  }
+
+  ALIVENESS_QUALITIES = { ...DEFAULT_ALIVENESS_QUALITIES };
+}
+
 /**
  * Reset all principles to defaults
  */
@@ -1226,6 +1774,8 @@ export async function getPrincipleState(): Promise<{
   tenets: typeof PROGRAM_LEVEL_TENETS;
   beliefs: typeof CORE_BELIEFS;
   defaultBeliefs: typeof DEFAULT_CORE_BELIEFS;
+  alivenessQualities: typeof ALIVENESS_QUALITIES;
+  defaultAlivenessQualities: typeof DEFAULT_ALIVENESS_QUALITIES;
   hardConstraints: { id: string; description: string; category: string }[];
   softPrinciples: { id: string; description: string; category: string }[];
   overrides: PrincipleOverrides | null;
@@ -1238,6 +1788,8 @@ export async function getPrincipleState(): Promise<{
     tenets: PROGRAM_LEVEL_TENETS,
     beliefs: CORE_BELIEFS,
     defaultBeliefs: DEFAULT_CORE_BELIEFS,
+    alivenessQualities: ALIVENESS_QUALITIES,
+    defaultAlivenessQualities: DEFAULT_ALIVENESS_QUALITIES,
     hardConstraints: HARD_CONSTRAINTS.map(c => ({
       id: c.id,
       description: c.description,
@@ -1449,6 +2001,10 @@ export default {
   CORE_BELIEFS,
   DEFAULT_CORE_BELIEFS,
 
+  // Aliveness Qualities (how to feel alive, not animated)
+  ALIVENESS_QUALITIES,
+  DEFAULT_ALIVENESS_QUALITIES,
+
   // Constraints & Principles
   HARD_CONSTRAINTS,
   SOFT_PRINCIPLES,
@@ -1461,10 +2017,13 @@ export default {
   validateCoachResponse,
   validateAgainstTenets,
 
-  // Context generation
+  // Explicit request detection (leniency rule)
+  detectExplicitRequests,
+
+  // Context generation (used by BOTH Claude and Llama)
   getCoreBeliefContext,
   getCriticalConstraintsContext,
-  getPrincipleContextForLLM,
+  getPrincipleContextForLLM,  // Same context for Claude AND Llama
   getProgramLevelTenetsContext,
 
   // Backend sync & management
@@ -1474,5 +2033,75 @@ export default {
   removeCustomBelief,
   resetToDefaults,
   getPrincipleState,
-  getAllPrinciplesSummary
+  getAllPrinciplesSummary,
+
+  // Aliveness quality management
+  updateAlivenessQuality,
+  addCustomAlivenessQuality,
+  removeCustomAlivenessQuality,
+  getAlivenessQualities,
+  resetAlivenessQualitiesToDefaults,
+
+  // Adaptive aliveness (real-time response to user)
+  detectUserAlivenessSignals,
+  generateAlivenessDirective,
+  getAlivenessDirectiveForLLM,
+  testAdaptiveAliveness
 };
+
+// ============================================
+// TEST FUNCTION FOR ADAPTIVE ALIVENESS
+// ============================================
+
+/**
+ * Test the adaptive aliveness detection with sample inputs
+ * Call this from admin/debug to verify the system works
+ */
+export function testAdaptiveAliveness(): {
+  testCases: {
+    input: string;
+    audioMetrics?: { wordsPerMinute?: number; pauseCount?: number; averageVolume?: number; duration?: number };
+    signals: ReturnType<typeof detectUserAlivenessSignals>;
+    directive: ReturnType<typeof generateAlivenessDirective>;
+  }[];
+} {
+  const testCases = [
+    // Test 1: Rapid stressed user
+    {
+      input: "I can't do this anymore!!! Everything is falling apart and I don't know what to do and my boss is being IMPOSSIBLE and I haven't slept!!!",
+      audioMetrics: { wordsPerMinute: 200, pauseCount: 1, averageVolume: 80, duration: 15 },
+    },
+    // Test 2: Low energy user
+    {
+      input: "tired",
+      audioMetrics: { wordsPerMinute: 80, pauseCount: 3, averageVolume: 25, duration: 5 },
+    },
+    // Test 3: Processing/exploratory user
+    {
+      input: "I've been thinking about this a lot... like, I'm not sure if it's the right thing to do, but maybe... I don't know. Part of me thinks yes but then there's this other part that's like, wait, is this really what I want? And then I start second-guessing myself and I just... I don't know if this makes sense but...",
+      audioMetrics: { wordsPerMinute: 130, pauseCount: 12, averageVolume: 50, duration: 30 },
+    },
+    // Test 4: Neutral/balanced user
+    {
+      input: "I had a good day today. Went for a walk and did some reading.",
+      audioMetrics: { wordsPerMinute: 120, pauseCount: 3, averageVolume: 50, duration: 8 },
+    },
+    // Test 5: Text-only stressed (no audio)
+    {
+      input: "WHY does this keep happening?! I'm so frustrated!!! Nothing works!!!",
+    },
+  ];
+
+  return {
+    testCases: testCases.map(tc => {
+      const signals = detectUserAlivenessSignals(tc.input, tc.audioMetrics);
+      const directive = generateAlivenessDirective(signals);
+      return {
+        input: tc.input,
+        audioMetrics: tc.audioMetrics,
+        signals,
+        directive,
+      };
+    }),
+  };
+}

@@ -360,7 +360,14 @@ export type InsightExtractionCategory =
   | 'contradictions_complexity'
   | 'messy_middle'
   | 'uncomfortable_truths'
-  | 'beautiful_imperfection';
+  | 'beautiful_imperfection'
+  // Aliveness Qualities (how humans feel alive vs animated)
+  | 'imperfect_rhythm'
+  | 'natural_latency'
+  | 'restful_pauses'
+  | 'amplitude_restraint'
+  | 'flow_without_destination'
+  | 'backgrounded_presence';
 
 export interface ExtractedInsight {
   id: string;
@@ -386,6 +393,44 @@ export interface ExtractedInsight {
   warmthLevel: 'clinical' | 'neutral' | 'warm' | 'deeply_warm';
   vulnerabilityLevel: 'surface' | 'moderate' | 'deep';
   authenticityMarkers: string[]; // What makes this feel real
+
+  // Communication Style Analysis (how people talk, not just what they say)
+  communicationStyle?: {
+    cadence: 'rapid' | 'measured' | 'slow' | 'variable'; // Speech rhythm/pacing
+    verbosity: 'terse' | 'concise' | 'moderate' | 'verbose'; // How much they say
+    directness: 'very_direct' | 'direct' | 'exploratory' | 'indirect'; // How they approach topics
+    formality: 'casual' | 'conversational' | 'professional' | 'formal'; // Register
+    emotionalExpression: 'reserved' | 'moderate' | 'expressive' | 'highly_expressive'; // How they show feeling
+  };
+
+  // Personality Markers (stable traits visible in speech)
+  personalityMarkers?: {
+    thinkingStyle: 'analytical' | 'intuitive' | 'practical' | 'creative'; // How they process
+    socialEnergy: 'introverted' | 'ambivert' | 'extroverted'; // Energy in interaction
+    decisionMaking: 'deliberate' | 'balanced' | 'spontaneous'; // How they choose
+    conflictStyle: 'avoidant' | 'accommodating' | 'direct' | 'collaborative'; // How they handle tension
+    humorStyle?: 'dry' | 'self_deprecating' | 'playful' | 'observational' | 'dark' | 'none'; // Type of humor
+  };
+
+  // Speech Patterns (specific linguistic habits)
+  speechPatterns?: {
+    fillerWords: string[]; // "um", "like", "you know"
+    catchPhrases: string[]; // Repeated expressions
+    sentenceStructure: 'simple' | 'compound' | 'complex' | 'varied'; // How they build sentences
+    questioningStyle: 'rhetorical' | 'genuine' | 'leading' | 'rare'; // How they ask questions
+    storytellingStyle?: 'linear' | 'tangential' | 'dramatic' | 'minimal'; // How they tell stories
+  };
+
+  // Audio-derived aliveness qualities (requires audio analysis)
+  audioAliveness?: {
+    imperfectRhythm: number;      // 0-100: Natural variation in speech rate
+    naturalLatency: number;       // 0-100: Presence of thinking pauses
+    amplitudeRestraint: number;   // 0-100: Understatement vs drama
+    flowQuality: number;          // 0-100: Natural flow vs choppy
+    overallAliveness: number;     // 0-100: Combined score
+    notableMoments?: string[];    // Timestamps of aliveness markers
+    analysisSource: 'audio' | 'transcript_inferred'; // Was this from actual audio?
+  };
 
   // Quality metrics (for filtering)
   qualityScore: number; // 0-100
@@ -414,6 +459,163 @@ export interface TranscriptSegment {
   text: string;
   start: number;
   duration: number;
+}
+
+// ============================================
+// AUDIO ANALYSIS TYPES
+// For extracting aliveness qualities from speech
+// ============================================
+
+/**
+ * Prosodic features extracted from audio
+ * These capture HOW someone speaks, not just WHAT they say
+ */
+export interface AudioProsodyAnalysis {
+  // Rhythm & Cadence
+  averageSpeechRate: number;        // Words per minute
+  speechRateVariability: number;    // Standard deviation - higher = more dynamic
+  pauseFrequency: number;           // Pauses per minute
+  averagePauseDuration: number;     // Milliseconds
+  longPauseCount: number;           // Pauses > 2 seconds (thinking pauses)
+
+  // Rhythm Pattern
+  rhythmPattern: 'steady' | 'variable' | 'staccato' | 'flowing';
+  cadenceStyle: 'rapid' | 'measured' | 'slow' | 'variable';
+
+  // Energy & Amplitude
+  averageVolume: number;            // 0-100 normalized
+  volumeVariability: number;        // Dynamic range
+  peakMoments: number[];            // Timestamps of emotional peaks
+
+  // Pitch & Intonation
+  averagePitch: number;             // Hz
+  pitchVariability: number;         // Higher = more expressive
+  pitchContour: 'flat' | 'rising' | 'falling' | 'varied';
+
+  // Emotional Expression
+  emotionalIntensity: 'reserved' | 'moderate' | 'expressive' | 'highly_expressive';
+  detectedEmotions: {
+    timestamp: number;
+    emotion: string;
+    confidence: number;
+  }[];
+
+  // Aliveness Markers (derived from above)
+  alivenessMarkers: {
+    imperfectRhythm: number;        // 0-100: How much natural variation
+    naturalLatency: number;         // 0-100: Presence of thinking pauses
+    amplitudeRestraint: number;     // 0-100: Understatement vs drama
+    flowQuality: number;            // 0-100: Natural flow vs choppy
+  };
+}
+
+/**
+ * Full audio analysis result
+ */
+export interface AudioAnalysisResult {
+  videoId: string;
+  duration: number;                 // Total audio duration in seconds
+  prosody: AudioProsodyAnalysis;
+
+  // Speech segments with prosodic annotation
+  segments: {
+    start: number;
+    end: number;
+    text: string;
+    speechRate: number;
+    pauseBefore: number;
+    pauseAfter: number;
+    volume: number;
+    pitch: number;
+    emotion?: string;
+  }[];
+
+  // Notable moments for aliveness extraction
+  notableMoments: {
+    timestamp: number;
+    type: 'long_pause' | 'emotional_peak' | 'tempo_change' | 'volume_shift' | 'laughter' | 'sigh';
+    description: string;
+  }[];
+
+  // Analysis metadata
+  analyzedAt: string;
+  analysisVersion: string;
+  error?: string;
+}
+
+/**
+ * Placeholder for audio analysis
+ * Actual implementation would require:
+ * - Backend service with audio processing (Python/librosa, Whisper, etc.)
+ * - Or native module for on-device processing
+ */
+export async function analyzeAudioProsody(
+  videoId: string,
+  audioUrl?: string
+): Promise<AudioAnalysisResult | null> {
+  // TODO: Implement actual audio analysis
+  // This would require either:
+  // 1. Backend API that downloads audio and analyzes with librosa/praat
+  // 2. Native module using platform audio APIs
+  // 3. Integration with speech analysis service (AssemblyAI, etc.)
+
+  console.log(`[AudioAnalysis] Audio analysis not yet implemented for ${videoId}`);
+  console.log('[AudioAnalysis] To extract aliveness qualities, we need:');
+  console.log('  - Speech rate and variability');
+  console.log('  - Pause patterns and duration');
+  console.log('  - Pitch contour and expressiveness');
+  console.log('  - Volume dynamics');
+
+  return null;
+}
+
+/**
+ * Calculate aliveness scores from prosody analysis
+ */
+export function calculateAlivenessFromProsody(prosody: AudioProsodyAnalysis): {
+  imperfectRhythm: number;
+  naturalLatency: number;
+  amplitudeRestraint: number;
+  flowQuality: number;
+  overallAliveness: number;
+} {
+  // Imperfect Rhythm: High variability in speech rate = more alive
+  // Perfect metronomic speech = 0, highly variable = 100
+  const imperfectRhythm = Math.min(100, prosody.speechRateVariability * 10);
+
+  // Natural Latency: Presence of thinking pauses
+  // No pauses = 0, healthy pause frequency = 100
+  const pauseScore = Math.min(100, prosody.pauseFrequency * 20);
+  const longPauseBonus = Math.min(30, prosody.longPauseCount * 10);
+  const naturalLatency = Math.min(100, pauseScore + longPauseBonus);
+
+  // Amplitude Restraint: Lower average volume with some variation = restrained
+  // Constant high volume = 0, moderate with dynamics = 100
+  const volumeRestraint = 100 - (prosody.averageVolume * 0.5);
+  const hasVariation = prosody.volumeVariability > 10 ? 20 : 0;
+  const amplitudeRestraint = Math.min(100, volumeRestraint + hasVariation);
+
+  // Flow Quality: Variable rhythm + natural pauses = flow
+  const rhythmScore = prosody.rhythmPattern === 'flowing' ? 100 :
+                      prosody.rhythmPattern === 'variable' ? 80 :
+                      prosody.rhythmPattern === 'steady' ? 50 : 30;
+  const flowQuality = rhythmScore;
+
+  // Overall: Weighted average
+  const overallAliveness = Math.round(
+    imperfectRhythm * 0.3 +
+    naturalLatency * 0.25 +
+    amplitudeRestraint * 0.2 +
+    flowQuality * 0.25
+  );
+
+  return {
+    imperfectRhythm: Math.round(imperfectRhythm),
+    naturalLatency: Math.round(naturalLatency),
+    amplitudeRestraint: Math.round(amplitudeRestraint),
+    flowQuality: Math.round(flowQuality),
+    overallAliveness
+  };
 }
 
 export interface QualityStats {
@@ -635,6 +837,51 @@ export const EXTRACTION_CATEGORIES: {
     description: 'The beauty in being flawed',
     promptHint: 'Look for moments where imperfection is beautiful, where mistakes lead somewhere good, where "failure" is human.',
     domain: 'authenticity',
+  },
+
+  // === ALIVENESS QUALITIES ===
+  // How humans feel alive vs animated - communication patterns
+  {
+    value: 'imperfect_rhythm',
+    label: 'Imperfect Rhythm',
+    description: 'Natural cadence variations in speech',
+    promptHint: 'Notice micro-pauses, uneven timing, accelerations and decelerations in how people speak. When do they speed up? Slow down? Pause? These rhythm variations are the fingerprint of aliveness.',
+    domain: 'aliveness' as any,
+  },
+  {
+    value: 'natural_latency',
+    label: 'Natural Latency',
+    description: 'Reaction delays and processing time',
+    promptHint: 'Find moments where people take time before responding, think out loud, or pause before emotional shifts. Living systems don\'t respond instantly - capture this latency.',
+    domain: 'aliveness' as any,
+  },
+  {
+    value: 'restful_pauses',
+    label: 'Restful Pauses',
+    description: 'Comfortable silences and settling',
+    promptHint: 'Look for moments of comfortable silence, settling, hovering in stillness. When do people NOT need to fill space? What does productive rest look like in conversation?',
+    domain: 'aliveness' as any,
+  },
+  {
+    value: 'amplitude_restraint',
+    label: 'Amplitude Restraint',
+    description: 'Emotional understatement over drama',
+    promptHint: 'Find moments where people understate rather than dramatize. "That was hard" instead of "That was DEVASTATING." The restraint IS the signal. Less can mean more.',
+    domain: 'aliveness' as any,
+  },
+  {
+    value: 'flow_without_destination',
+    label: 'Flow Without Destination',
+    description: 'Being without agenda or outcome',
+    promptHint: 'Capture moments where conversation just flows without driving toward a conclusion. Existing → shifting → existing. Not every exchange needs resolution.',
+    domain: 'aliveness' as any,
+  },
+  {
+    value: 'backgrounded_presence',
+    label: 'Backgrounded Presence',
+    description: 'Being with without demanding attention',
+    promptHint: 'Look for descriptions of companionship that doesn\'t demand focus - a pet breathing nearby, someone in the room while you work, presence without performance.',
+    domain: 'aliveness' as any,
   },
 
   // === ADDITIONAL PAIN CATEGORIES ===
@@ -2413,6 +2660,21 @@ EXTRACTION GUIDELINES:
 7. **COACHING APPLICATION**
    Every insight should help a coach respond better - whether to someone struggling, celebrating, or just wanting to chat.
 
+8. **COMMUNICATION STYLE MATTERS AS MUCH AS CONTENT**
+   Pay attention to HOW people talk, not just WHAT they say:
+   - Cadence: Do they speak rapidly or take their time?
+   - Directness: Do they get straight to the point or circle around?
+   - Verbosity: Are they terse or do they elaborate?
+   This helps the coach mirror and adapt to different communication styles.
+
+9. **PERSONALITY THROUGH LANGUAGE**
+   Speech reveals personality. An analytical thinker uses different language than an intuitive feeler.
+   Look for: thinking patterns, social energy (introvert/extrovert vibes), humor style, conflict approach.
+
+10. **SPEECH PATTERNS ARE FINGERPRINTS**
+    Capture the unique way someone talks - their filler words, catch phrases, how they structure sentences.
+    "The thing is..." vs "Look," vs "So basically..." - these small patterns reveal volumes.
+
 ---
 
 For each insight, provide:
@@ -2428,6 +2690,31 @@ For each insight, provide:
   "warmthLevel": "clinical | neutral | warm | deeply_warm",
   "vulnerabilityLevel": "surface | moderate | deep",
   "authenticityMarkers": ["What makes this feel real/human"],
+
+  "communicationStyle": {
+    "cadence": "rapid | measured | slow | variable (speech rhythm/pacing)",
+    "verbosity": "terse | concise | moderate | verbose (how much they say)",
+    "directness": "very_direct | direct | exploratory | indirect",
+    "formality": "casual | conversational | professional | formal",
+    "emotionalExpression": "reserved | moderate | expressive | highly_expressive"
+  },
+
+  "personalityMarkers": {
+    "thinkingStyle": "analytical | intuitive | practical | creative",
+    "socialEnergy": "introverted | ambivert | extroverted",
+    "decisionMaking": "deliberate | balanced | spontaneous",
+    "conflictStyle": "avoidant | accommodating | direct | collaborative",
+    "humorStyle": "dry | self_deprecating | playful | observational | dark | none"
+  },
+
+  "speechPatterns": {
+    "fillerWords": ["um", "like", etc. - actual words they use],
+    "catchPhrases": ["Repeated expressions they use"],
+    "sentenceStructure": "simple | compound | complex | varied",
+    "questioningStyle": "rhetorical | genuine | leading | rare",
+    "storytellingStyle": "linear | tangential | dramatic | minimal"
+  },
+
   "category": "One of: cognitive_patterns, emotional_processing, communication_needs, motivation_patterns, relationship_with_self, crisis_patterns, recovery_patterns, daily_rhythms, social_dynamics",
   "qualityScore": 0-100,
   "specificityScore": 0-100,
@@ -2547,6 +2834,9 @@ export async function extractInsightsWithClaude(
         warmthLevel: ins.warmthLevel || 'neutral',
         vulnerabilityLevel: ins.vulnerabilityLevel || 'surface',
         authenticityMarkers: ins.authenticityMarkers || [],
+        communicationStyle: ins.communicationStyle || undefined,
+        personalityMarkers: ins.personalityMarkers || undefined,
+        speechPatterns: ins.speechPatterns || undefined,
         qualityScore: qualityScore,
         specificityScore: ins.specificityScore || 70,
         actionabilityScore: ins.actionabilityScore || 70,
@@ -2831,6 +3121,80 @@ export async function updateQualityStats(updates: Partial<QualityStats>): Promis
   await AsyncStorage.setItem(STORAGE_KEYS.QUALITY_STATS, JSON.stringify(updated));
 }
 
+/**
+ * Reset all interview processor data
+ * Use this to start fresh with channels and insights
+ */
+export async function resetAllInterviewData(): Promise<{
+  channelsCleared: boolean;
+  queueCleared: boolean;
+  insightsCleared: boolean;
+  videosCleared: boolean;
+  statsCleared: boolean;
+}> {
+  const result = {
+    channelsCleared: false,
+    queueCleared: false,
+    insightsCleared: false,
+    videosCleared: false,
+    statsCleared: false,
+  };
+
+  try {
+    // Clear curated channels
+    await AsyncStorage.removeItem(STORAGE_KEYS.CURATED_CHANNELS);
+    result.channelsCleared = true;
+  } catch (e) {
+    console.error('Failed to clear channels:', e);
+  }
+
+  try {
+    // Clear processing queue
+    await AsyncStorage.removeItem(STORAGE_KEYS.PROCESSING_QUEUE);
+    result.queueCleared = true;
+  } catch (e) {
+    console.error('Failed to clear queue:', e);
+  }
+
+  try {
+    // Clear pending and approved insights
+    await AsyncStorage.removeItem(STORAGE_KEYS.PENDING_INSIGHTS);
+    await AsyncStorage.removeItem(STORAGE_KEYS.APPROVED_INSIGHTS);
+    await AsyncStorage.removeItem(STORAGE_KEYS.INSIGHT_HASHES);
+    result.insightsCleared = true;
+  } catch (e) {
+    console.error('Failed to clear insights:', e);
+  }
+
+  try {
+    // Clear processed videos tracking
+    await AsyncStorage.removeItem(STORAGE_KEYS.PROCESSED_VIDEOS);
+    result.videosCleared = true;
+  } catch (e) {
+    console.error('Failed to clear videos:', e);
+  }
+
+  try {
+    // Reset quality stats
+    await AsyncStorage.removeItem(STORAGE_KEYS.QUALITY_STATS);
+    result.statsCleared = true;
+  } catch (e) {
+    console.error('Failed to clear stats:', e);
+  }
+
+  console.log('[YouTubeProcessor] Reset complete:', result);
+  return result;
+}
+
+/**
+ * Clear only processed videos (allows re-processing)
+ * Use this to re-harvest from channels without removing the channels themselves
+ */
+export async function clearProcessedVideos(): Promise<void> {
+  await AsyncStorage.removeItem(STORAGE_KEYS.PROCESSED_VIDEOS);
+  console.log('[YouTubeProcessor] Processed videos list cleared - all videos can be re-processed');
+}
+
 // ============================================
 // PROCESSED CHANNELS HISTORY
 // Tracks which channels have been batch processed
@@ -2942,6 +3306,10 @@ export default {
   // Quality stats
   getQualityStats,
   updateQualityStats,
+
+  // Reset functions
+  resetAllInterviewData,
+  clearProcessedVideos,
 
   // Processed channels history
   getProcessedChannelsHistory,
