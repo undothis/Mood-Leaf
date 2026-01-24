@@ -2474,10 +2474,14 @@ const STORAGE_KEY = 'moodleaf_cognitive_profile';
 
 ### Passive Behavioral Detection
 
+> **"We see ourselves through the lens of aspiration, not reality. That's why watching beats asking."**
+
 Some cognitive traits cannot be reliably measured through direct questions because users will mask their true nature:
 
 - **Binary thinkers** may answer "grey" to appear open-minded, flexible, accommodating
 - **Grey thinkers** may answer "binary" to appear confident, decisive, strong
+
+People answer as who they *want* to be, not who they *are*. Self-report fails because aspiration overrides honesty.
 
 **Solution:** Observe behavior silently over 5-10 interactions. Never ask directly.
 

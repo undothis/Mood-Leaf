@@ -69,7 +69,7 @@ import {
 import { BreathingBall, BreathingPattern } from '@/components/BreathingBall';
 import { SkillOverlay, parseSkillTrigger, isOverlaySkill } from '@/components/SkillOverlay';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { generateProfileReveal } from '@/services/cognitiveProfileService';
+import { generateProfileReveal, observeUserMessage } from '@/services/cognitiveProfileService';
 import { startTour, isTourActive, subscribeTourState, resetTour } from '@/services/guidedTourService';
 
 // Initialize slash commands on module load
@@ -556,6 +556,10 @@ export default function CoachScreen() {
       setShowSkillOverlay(false);
       setActiveSkillId(null);
     }
+
+    // Observe user message for behavioral detection (silent, passive)
+    // "We see ourselves through the lens of aspiration, not reality"
+    observeUserMessage(messageText).catch(() => {}); // Fire and forget
 
     // Check if this is a slash command
     if (isSlashCommand(messageText)) {
