@@ -1368,9 +1368,17 @@ export default function InterviewProcessorScreen() {
         <View style={[styles.card, { backgroundColor: colors.cardBackground, borderLeftWidth: 4, borderLeftColor: '#FF9800' }]}>
           <Text style={[styles.cardTitle, { color: colors.text }]}>⚡ Transcript Server Required</Text>
           <Text style={[styles.helperText, { color: colors.textSecondary, marginBottom: 8 }]}>
-            Run this in a separate terminal to fetch YouTube transcripts:
+            1. Install yt-dlp (one time):
           </Text>
-          <View style={{ backgroundColor: isDark ? '#1a1a2e' : '#f5f5f5', padding: 12, borderRadius: 8, marginBottom: 8 }}>
+          <View style={{ backgroundColor: isDark ? '#1a1a2e' : '#f5f5f5', padding: 10, borderRadius: 8, marginBottom: 10 }}>
+            <Text style={{ fontFamily: 'monospace', fontSize: 12, color: colors.text }}>
+              brew install yt-dlp
+            </Text>
+          </View>
+          <Text style={[styles.helperText, { color: colors.textSecondary, marginBottom: 8 }]}>
+            2. Start server (separate terminal):
+          </Text>
+          <View style={{ backgroundColor: isDark ? '#1a1a2e' : '#f5f5f5', padding: 10, borderRadius: 8, marginBottom: 8 }}>
             <Text style={{ fontFamily: 'monospace', fontSize: 12, color: colors.text }}>
               cd transcript-server{'\n'}
               npm install{'\n'}
@@ -1378,7 +1386,7 @@ export default function InterviewProcessorScreen() {
             </Text>
           </View>
           <Text style={[styles.helperText, { color: colors.textSecondary, fontSize: 11 }]}>
-            Server runs on localhost:3333. Keep terminal open while processing.
+            Keep terminal open while processing. Server uses yt-dlp for reliable transcripts.
           </Text>
         </View>
 

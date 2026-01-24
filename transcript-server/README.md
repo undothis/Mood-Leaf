@@ -1,6 +1,13 @@
 # Transcript Server for Mood Leaf
 
-Local server that fetches YouTube transcripts reliably, bypassing YouTube's anti-scraping measures.
+Local server that fetches YouTube transcripts using **yt-dlp** (the gold standard for YouTube extraction).
+
+## Prerequisites
+
+**Install yt-dlp** (required):
+```bash
+brew install yt-dlp
+```
 
 ## Quick Start
 
@@ -14,18 +21,23 @@ Server runs on `http://localhost:3333`
 
 ## Why This Exists
 
-YouTube blocks direct transcript requests from mobile apps (React Native). This server runs on your computer where those restrictions don't apply.
+YouTube blocks direct transcript requests from mobile apps. This server runs on your computer using yt-dlp, which reliably extracts subtitles from YouTube videos.
 
 ## Usage
 
-1. **Start the server** (keep this terminal open):
+1. **Install yt-dlp** (one time):
+   ```bash
+   brew install yt-dlp
+   ```
+
+2. **Start the server** (keep this terminal open):
    ```bash
    cd transcript-server
    npm install   # only first time
    npm start
    ```
 
-2. **Use the app normally** - The interview processor will automatically use this server.
+3. **Use the app normally** - The interview processor will automatically use this server.
 
 ## API Endpoints
 
@@ -41,7 +53,6 @@ Response:
 {
   "videoId": "dQw4w9WgXcQ",
   "transcript": "Full transcript text...",
-  "segments": [...],
   "charCount": 1234
 }
 ```
@@ -57,22 +68,31 @@ curl -X POST http://localhost:3333/batch-transcripts \
 
 ## Troubleshooting
 
+**"yt-dlp not found"?**
+```bash
+brew install yt-dlp
+```
+
 **Server won't start?**
 ```bash
-# Make sure you're in the right directory
 cd transcript-server
-
-# Reinstall dependencies
 rm -rf node_modules
 npm install
 npm start
 ```
 
-**App says "Local server not running"?**
+**App says "Cannot connect to transcript server"?**
 - Make sure the server terminal is still open
-- Check it says "Running on http://localhost:3333"
-- Try opening http://localhost:3333 in your browser
+- Check it shows "Running on http://localhost:3333"
+- If on real iOS device (not simulator), edit `youtubeProcessorService.ts` to use your computer's IP
 
 **No transcript for a video?**
 - Some videos genuinely don't have captions
-- Try a different video to test
+- yt-dlp will show the reason in the server terminal
+
+## Updating yt-dlp
+
+YouTube changes often. Keep yt-dlp updated:
+```bash
+brew upgrade yt-dlp
+```
