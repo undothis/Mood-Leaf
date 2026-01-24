@@ -283,6 +283,34 @@ export const USER_MANUAL_CONTENT: ManualSection[] = [
     ],
   },
   {
+    id: 'why-different',
+    emoji: '💡',
+    title: 'Why Mood Leaf is Different',
+    content: 'Most mental health apps fall into categories that all share the same problem: they don\'t actually LEARN who you are. Generic chatbots, mood trackers, meditation apps—none of them build a true understanding of YOU.',
+    subsections: [
+      {
+        title: 'The Problem with Other Apps',
+        content: '• Generic Chatbots - Same responses for everyone, feel robotic\n• Mood Trackers - Data without understanding\n• Meditation Apps - One-size-fits-all, no conversation\n• Therapy Matching - Expensive, not daily support\n\nNone of them actually learn who you are.',
+      },
+      {
+        title: 'We Create Your "Mood Print"',
+        content: 'Just like a fingerprint is unique to you, your Mood Print is a complete understanding of:\n• How you communicate (fast, slow, emotional, analytical)\n• What makes you stressed vs. calm\n• Your patterns (sleep, energy, mood connections)\n• Your history (what you\'ve been through)\n• What actually helps YOU (not generic advice)',
+      },
+      {
+        title: 'We Listen to HOW You Speak',
+        content: 'Other apps only read your words. Mood Leaf understands:\n• Your voice rhythm - Are you rushing? Dragging? Steady?\n• Your emotional tone - Stressed? Sad? Hiding something?\n• Your distress signals - Voice shaking? Breath catching?\n\nThis is called prosody—the music of your voice. It reveals what words can\'t.',
+      },
+      {
+        title: 'We Remember Everything',
+        content: 'Other Apps vs Mood Leaf:\n• Remember last conversation: ❌ vs ✅\n• Remember your family: ❌ vs ✅\n• Remember your triggers: ❌ vs ✅\n• Connect patterns over months: ❌ vs ✅\n• Know your communication style: ❌ vs ✅\n• Adapt to YOUR needs: ❌ vs ✅',
+      },
+      {
+        title: 'We Want You to NOT Need Us',
+        content: 'This is the biggest difference. Most apps want you addicted—more time = more money for them.\n\nMood Leaf wants you independent. Our goal is to:\n• Build your self-awareness\n• Teach you to recognize your patterns\n• Give you skills you can use alone\n• Celebrate when you don\'t need us\n\nSuccess = you eventually close the app and handle things yourself.',
+      },
+    ],
+  },
+  {
     id: 'tree',
     emoji: '🌿',
     title: 'Your Tree',
@@ -509,48 +537,40 @@ export const USER_MANUAL_CONTENT: ManualSection[] = [
   {
     id: 'moodprint',
     emoji: '🧠',
-    title: 'Your MoodPrint',
-    content: 'MoodPrint is your unique cognitive fingerprint—a deep understanding of how YOUR mind works. Not personality labels. Not IQ. Just how you actually think, feel, and process the world.',
+    title: 'Your Mood Print',
+    content: 'Your Mood Print is Mood Leaf\'s complete understanding of who you are. It\'s built from multiple sources and creates a unique "fingerprint" of your emotional self—like a fingerprint for your mind.',
     subsections: [
       {
-        title: 'Why it matters',
-        content: 'Most apps treat everyone the same. Generic advice. One-size-fits-all. But minds work differently—not better or worse, just differently. MoodPrint captures YOUR way of thinking so your guide can actually help you, not give you advice that works for someone else.',
+        title: 'The 4 Layers of Your Mood Print',
+        content: 'Your Mood Print is created from four layers:\n\nLayer 1: Onboarding (Foundation)\nWhat you tell us directly—your preferences, communication style, what you\'re working on.\n\nLayer 2: Prosody Analysis (How You Communicate)\nHow you speak—your rhythm, speed, pitch, and distress signals. This reveals what words can\'t.\n\nLayer 3: Pattern Recognition (Connections)\nPatterns we discover over time—mood ↔ sleep, stress ↔ people, energy ↔ activity.\n\nLayer 4: Ongoing Learning (Evolution)\nEvery conversation refines your Mood Print. Corrections, changes, and growth are all tracked.',
       },
       {
-        title: 'How it\'s built',
-        content: 'During onboarding, we ask questions about how you learn, how you feel, how insights arrive for you. There are no "right" answers—each response reveals something about how your unique mind operates. The more you share, the more personalized your experience becomes.',
+        title: 'Layer 1: What You Tell Us',
+        content: 'During onboarding, we learn:\n• Communication preference — Do you like direct advice or gentle exploration?\n• Energy patterns — Are you a morning person? Night owl?\n• What you\'re working on — Anxiety? Depression? Relationships? Growth?\n• Support style — Do you want cheerleading or challenge?\n• Triggers — What topics need extra sensitivity?\n• Background — Life situation, responsibilities, context',
+      },
+      {
+        title: 'Layer 2: How You Communicate',
+        content: 'As you use voice features or chat, we analyze:\n• Speaking speed — Stress level, energy, confidence\n• Voice pitch — Emotional state, anxiety, excitement\n• Rhythm patterns — Natural vs. forced, comfortable vs. struggling\n• Pause patterns — Thinking, hesitation, emotional processing\n• Distress markers — When you\'re struggling, even if you don\'t say it\n\nExample: If you normally speak at 140 words/min but today you\'re at 180, something\'s different—even if you say "I\'m fine."',
+      },
+      {
+        title: 'Layer 3: Pattern Recognition',
+        content: 'Over time, Mood Leaf discovers patterns unique to YOU:\n• Mood ↔ Sleep — "Bad mood days often follow < 6 hours sleep"\n• Stress ↔ People — "Mentions of [person] often come with anxiety"\n• Energy ↔ Activity — "More steps yesterday = better mood today"\n• Triggers ↔ Time — "Sunday nights often bring work anxiety"\n• Coping ↔ Success — "Walking helps you more than meditation"',
+      },
+      {
+        title: 'Layer 4: Ongoing Learning',
+        content: 'Your Mood Print isn\'t static. It evolves:\n• Corrections — When we get something wrong, you tell us\n• Changes — Your life changes, your Mood Print updates\n• Growth — As you develop new skills, we track that\n• Preferences — What you respond well to vs. what falls flat\n\nYour Mood Print becomes more "you" with every conversation.',
       },
       {
         title: 'The 10 Cognitive Modes',
-        content: 'Your mind has a primary way of operating. Most people have 1-2 dominant modes:\n\n• Procedural-Sequential — "Show me the steps." Linear, rule-based, process-oriented\n• Analytical-Symbolic — "Let me analyze this." Logical, precise, comfortable with abstraction\n• Conceptual-Systems — "I see how this fits together." Patterns, frameworks, big picture\n• Narrative-Meaning — "What\'s the story?" Identity-aware, meaning-seeking, story-driven\n• Embodied-Somatic — "I know it in my body." Learns by doing, sensation-focused\n• Associative-Divergent — "Everything connects." Rapid connections, creative leaps, nonlinear\n• Emotional-Relational — "How does this affect people?" Attuned to others, interpersonal\n• Visual-Spatial — "I see it." Thinks in images and spatial models\n• Temporal-Foresight — "Where does this lead?" Timelines, consequences, long arcs\n• Integrative-Meta — "How do these interact?" Meta-cognition, holds contradictions',
+        content: 'Your mind has a primary way of operating. Most people have 1-2 dominant modes:\n\n• Procedural-Sequential — "Show me the steps." Linear, rule-based\n• Analytical-Symbolic — "Let me analyze this." Logical, precise\n• Conceptual-Systems — "I see how this fits together." Patterns, big picture\n• Narrative-Meaning — "What\'s the story?" Identity-aware, meaning-seeking\n• Embodied-Somatic — "I know it in my body." Learns by doing\n• Associative-Divergent — "Everything connects." Creative leaps, nonlinear\n• Emotional-Relational — "How does this affect people?" Interpersonal\n• Visual-Spatial — "I see it." Thinks in images and spatial models\n• Temporal-Foresight — "Where does this lead?" Timelines, consequences\n• Integrative-Meta — "How do these interact?" Meta-cognition',
       },
       {
-        title: 'How your guide adapts',
-        content: 'Once your MoodPrint is built, everything changes:\n\n• Systems Thinkers get framing first, not steps\n• Procedural Thinkers get clear, logical sequences\n• Emotional Processors get validation before solutions\n• Visual Thinkers get spatial metaphors and imagery\n• Embodied Learners get action-oriented, grounded prompts\n\nYour guide speaks YOUR cognitive language.',
-      },
-      {
-        title: 'Neurological differences',
-        content: 'MoodPrint also detects important neurological differences:\n\n• Aphantasia — If you can\'t visualize (mind\'s eye is "blind"), we NEVER ask you to "picture" anything\n• Internal monologue — If you don\'t think in words, we use feelings/sensations instead of "self-talk"\n• Audio imagination — If you can\'t "hear" music in your head, no audio-based techniques\n\nMany coaching techniques assume abilities not everyone has. MoodPrint ensures we only use techniques that work for YOUR brain.',
-      },
-      {
-        title: 'Cognitive rhythms',
-        content: 'Your energy and clarity fluctuate. MoodPrint tracks your pattern:\n\n• Steady State — Consistent day to day\n• Cyclical Mild — Some waves, manageable\n• Cyclical Pronounced — Clear high/low phases\n• Burst-Recovery — Intense sprints then crashes\n\nCritical insight: Low phases are NOT failure—they\'re integration and recovery. Your guide adapts to wherever you are in your rhythm.',
-      },
-      {
-        title: 'Daily energy patterns',
-        content: 'When is your mind sharpest?\n\n• Morning Person — Peak early, fades by evening\n• Night Owl — Slow start, comes alive late\n• Afternoon Peak — Midday is best\n• Unpredictable — No clear pattern\n\nYour guide suggests hard tasks during YOUR peak time and respects your natural rhythm.',
-      },
-      {
-        title: 'Discovered strengths',
-        content: 'As you answer questions, MoodPrint identifies your unique strengths:\n\n• Pattern recognition\n• Deep intuition\n• Systems thinking\n• Rapid connections\n• Burst productivity\n• Non-verbal thinking\n• High emotional intelligence\n\nThese aren\'t labels—they\'re real capabilities your mind has that traditional systems might not have recognized.',
-      },
-      {
-        title: 'Traditional education',
-        content: 'If school didn\'t work for you, that says NOTHING about your intelligence. Traditional education rewards one type of mind. MoodPrint recognizes that your mind might work differently—and that\'s actually valuable, not a deficiency.',
+        title: 'Neurological Differences',
+        content: 'MoodPrint detects important neurological differences:\n\n• Aphantasia — If you can\'t visualize, we NEVER ask you to "picture" anything\n• Internal monologue — If you don\'t think in words, we use feelings/sensations\n• Audio imagination — If you can\'t "hear" music in your head, no audio-based techniques\n\nMany coaching techniques assume abilities not everyone has. We only use techniques that work for YOUR brain.',
       },
       {
         title: 'Privacy',
-        content: 'Your MoodPrint stays on your device. Only compressed summaries (like "systems thinker, needs validation first") are shared with your AI guide during chats. Raw profile data never leaves your phone.',
+        content: 'Everything stays on your device. Your Mood Print is:\n✅ Stored locally only\n✅ Never uploaded to servers\n✅ Never shared with anyone\n✅ Never used to train other AI\n✅ Deletable at any time\n✅ Exportable if you want to see it\n\nWhen you chat, only relevant parts are sent to Claude\'s API—and nothing is stored.',
       },
     ],
   },
@@ -606,11 +626,11 @@ export const USER_MANUAL_CONTENT: ManualSection[] = [
     id: 'skills',
     emoji: '🎯',
     title: 'Skills & Exercises',
-    content: 'Skills are capabilities you develop through practice. Unlike streaks that punish missed days, skills celebrate every attempt. Each skill has a type and rarity, giving a collectible card game feel.',
+    content: 'Skills are capabilities you develop through practice. Unlike streaks that punish missed days, skills celebrate every attempt. Each skill has a type and rarity, giving a collectible card game feel. Skills include exercises, techniques, AND therapeutic games.',
     subsections: [
       {
         title: 'Skill Types',
-        content: '🌊 Calm — Breathing, relaxation\n🦶 Ground — Anchoring, presence\n🎯 Focus — Attention, concentration\n💪 Challenge — Thought work, CBT\n🤝 Connect — Social skills\n✨ Restore — Recovery, healing',
+        content: '🌊 Calm — Breathing, relaxation\n🦶 Ground — Anchoring, presence\n🎯 Focus — Attention, concentration\n💪 Challenge — Thought work, CBT\n🤝 Connect — Social skills\n✨ Restore — Recovery, healing\n🎮 Games — Therapeutic games that build skills',
       },
       {
         title: 'Rarity System',
@@ -622,43 +642,83 @@ export const USER_MANUAL_CONTENT: ManualSection[] = [
       },
       {
         title: 'Grounding Exercises',
-        content: '🖐️ 5-4-3-2-1 — Name things you see, hear, touch, smell, taste (/ground)\n👣 Feet on Floor — Simple physical anchoring\n🧊 Ice Cube — Intense grounding for strong emotions',
+        content: '🖐️ 5-4-3-2-1 — Name things you see, hear, touch, smell, taste (/ground)\n👣 Feet on Floor — Simple physical anchoring\n🧊 Ice Cube — Intense grounding for strong emotions\n🎮 5-4-3-2-1 Quest — Gamified grounding RPG style',
       },
       {
         title: 'Body & Thought Work',
-        content: '🔍 Quick Body Scan — 2-minute check-in (/body)\n💆 Progressive Relaxation — Tense and release muscles\n🧠 Thought Record — CBT technique for negative thinking\n🎈 Thought Defusion — Create distance from thoughts',
+        content: '🔍 Quick Body Scan — 2-minute check-in (/body)\n💆 Progressive Relaxation — Tense and release muscles\n🧠 Thought Record — CBT technique for negative thinking\n🎈 Thought Defusion — Create distance from thoughts\n🎮 Thought Maze — Navigate maze by evaluating thoughts',
       },
       {
         title: 'Social Skills',
         content: '🎉 Event Preparation — Mental rehearsal before events (/prep)\n💬 Conversation Starters — Practice social openers',
       },
       {
+        title: 'Game Skills',
+        content: 'Therapeutic games count as skills too! These games help you practice:\n\n• Focus — Pixel Hunt, Pattern Lock, Word Stream\n• Grounding — 5-4-3-2-1 Quest, Body Map, Anchor Drop\n• Relaxation — Breath Waves, Rain Window, Star Connect\n• Cognitive — Thought Maze, Odd One Out, Reframe Puzzle\n• Emotional — Emotion Explorer, Coping Cards, Perspective Shift\n\nType /games to browse all 50+ therapeutic games.',
+      },
+      {
+        title: 'Fidget & Sensory Tools',
+        content: 'Quick relief tools also count toward skill progress:\n\n🔘 Fidget Pad — Sliders, switches, buttons (/fidget)\n🫧 Bubble Wrap — Endless popping (/bubbles)\n🏖️ Kinetic Sand — Satisfying sand simulation (/sand)\n💧 Water Ripples — Calming ripple creation\n🌀 Kaleidoscope — Mesmerizing patterns (/kaleidoscope)',
+      },
+      {
         title: 'Skill Progress',
-        content: 'Each skill has 5 levels:\n■□□□□ Beginner — Just starting\n■■■□□ Practicing — Building habit\n■■■■■ Mastery — Made it your own\n\nProgress never decreases. No streaks to maintain. Every attempt counts.',
+        content: 'Each skill has 5 levels:\n■□□□□ Beginner — Just starting\n■■■□□ Practicing — Building habit\n■■■■■ Mastery — Made it your own\n\nProgress never decreases. No streaks to maintain. Every attempt counts—whether it\'s an exercise OR a game!',
       },
     ],
   },
   {
     id: 'games',
     emoji: '🎮',
-    title: 'Mindful Games',
-    content: 'Games designed to calm, ground, and build skills—not to addict. Type /games to browse.',
+    title: 'Therapeutic Games',
+    content: 'Games designed to calm, ground, and build skills—not to addict. All games have a retro pixel aesthetic and are paced for wellness, not engagement. Type /games to browse, or use /snake, /pong, /fidget for quick access.',
     subsections: [
       {
-        title: 'Grounding Games',
-        content: '🫧 Breathing Bubble — Pop bubbles by breathing\n🔍 Grounding Quest — Find items around you\n📷 I Spy AI — Camera finds objects for scavenger hunt (Premium)\n🎯 Color Finder — Find 5 blue things, 4 red...',
+        title: 'Why These Games Are Different',
+        content: 'Unlike commercial games designed to maximize screen time:\n\n• No timers — Take as long as you need\n• No points pressure — Progress is personal\n• No ads or distractions — Just you and the experience\n• Genuine therapeutic benefit — Each game serves a purpose\n• Retro aesthetic — Calming pixel art, not overstimulating',
       },
       {
-        title: 'Calming Games',
-        content: '🎨 Color Sort — Sort objects by color\n🧩 Calm Puzzles — Jigsaw with nature images\n🖍️ Mood Coloring — Color mandalas\n✨ Flow Drawing — Draw with flowing particles',
+        title: 'Game Categories (50+ Games)',
+        content: '🎯 Focus (4) — Sharpen attention and concentration\n🌍 Grounding (4) — Connect with the present moment\n🌊 Relaxation (4) — Calm your mind and body\n📚 Knowledge (4) — Learn about emotions and coping\n🦉 Wisdom (4) — Gain perspective and insight\n🧩 Logic - Therapeutic (10) — Restructure thoughts through puzzles\n🎮 Logic - Classic (4) — Brain training at calming pace\n👾 Retro Arcade (10+) — Classic games, mindful versions\n🔘 Fidget Tools (6+) — Tactile relief tools',
       },
       {
-        title: 'Classic Games (Mindful Versions)',
-        content: '🐍 Mindful Snake — Slow, with calming music\n🧱 Zen Blocks — Tetris with no game over\n🔢 Calm Sudoku — Hints and no timer\n🏓 Gentle Pong — Slow motion',
+        title: 'Focus Games 🎯',
+        content: '• Pixel Hunt — Find subtle differences in two retro scenes → Attention to detail\n• Pattern Lock — Remember and repeat growing sequences (like Simon) → Working memory\n• Word Stream — Tap target words as they scroll → Selective attention\n• Color Sort — Categorize falling items by color/shape → Processing speed',
       },
       {
-        title: 'Fidget Tools',
-        content: '🔘 Fidget Pad — Sliders, switches, dials (/fidget)\n🔵 Bubble Wrap — Endless popping\n🌀 Fidget Spinner — Watch it spin',
+        title: 'Grounding Games 🌍',
+        content: '• 5-4-3-2-1 Quest — Gamified sensory grounding, RPG quest style → Present-moment awareness (/games/54321-quest)\n• Body Map — Tap where you feel tension, watch it dissolve → Body awareness\n• Earth Touch — Haptic rhythm game, feel the beat → Embodiment\n• Anchor Drop — Visualization, guide anchor down to present → Grounding',
+      },
+      {
+        title: 'Relaxation Games 🌊',
+        content: '• Breath Waves — Guide a pixel boat with your breath → Breath regulation\n• Cloud Garden — Slow-paced planting, watch things grow → Patience, nurturing\n• Rain Window — Watch/interact with rain on pixel window → Ambient calm (/rain)\n• Star Connect — Slowly connect stars to make constellations → Meditative focus',
+      },
+      {
+        title: 'Knowledge Games 📚',
+        content: '• Emotion Explorer — Identify emotions from scenarios → Emotional literacy\n• Coping Cards — Match situations to healthy strategies → Coping skill knowledge\n• Thought Bubbles — Identify cognitive distortions, pop unhelpful thoughts → Distortion recognition\n• Body Signals — Learn what physical sensations mean emotionally → Interoceptive awareness',
+      },
+      {
+        title: 'Wisdom Games 🦉',
+        content: '• Perspective Shift — See same scenario from different viewpoints → Cognitive flexibility\n• Future Self — Make choices, see long-term pixel consequences → Consequence awareness\n• Values Quest — Prioritize values in different scenarios → Values clarification\n• The Pause — Practice STOP technique, freeze-frame puzzle → Impulse control',
+      },
+      {
+        title: 'Logic Games - Therapeutic 🧩',
+        content: '• Thought Maze — Navigate by answering "is this thought helpful?" → Cognitive restructuring\n• Chain Reaction — Connect cause → effect → feeling → behavior → Understanding patterns\n• Odd One Out — Find the unhelpful thought among helpful ones → Spotting distortions\n• Logic Gates — If/then puzzles about emotions → Conditional thinking\n• Sequence Builder — Put coping steps in the right order → Problem-solving\n• Balance Scale — Weigh evidence for/against a worry → CBT evidence gathering\n• Path Finder — Choose paths based on values, see outcomes → Decision making\n• Pattern Breaker — Identify and break repeating unhelpful patterns → Habit awareness\n• Reframe Puzzle — Rearrange word tiles to turn negative → positive → Cognitive reframing\n• What Comes Next? — Predict next step in emotional sequences → Emotional intelligence',
+      },
+      {
+        title: 'Logic Games - Classic 🎮',
+        content: '• Pixel Sudoku — Classic sudoku, no timer, calming pace\n• Nonogram — Picture logic puzzles, reveal pixel art\n• Minesweeper Zen — Slow-paced minesweeper, no timer\n• Tower of Hanoi — Move discs between towers, builds patience',
+      },
+      {
+        title: 'Retro Arcade Games 👾',
+        content: 'Classic arcade games reimagined for wellness:\n\n• Mindful Snake — Slow-paced snake with calming music (/snake)\n• Gentle Pong — Classic pong in slow motion (/pong)\n• Zen Asteroids — Destroy asteroids, no game over stress (/asteroids)\n• Calm Breakout — Brick-breaking at peaceful pace (/breakout)\n• Peaceful Space Invaders — Slow invaders, zen mode (/space-invaders)\n• Mindful Frogger — Help the frog cross, no rush (/frogger)\n• 2048 — Number merge puzzle, satisfying combos (/2048)\n• Memory Match — Classic card matching game (/memory)\n• Maze Walker — Navigate peaceful pixel mazes (/maze)\n• Untangle — Untangle the lines, satisfying puzzle (/untangle)',
+      },
+      {
+        title: 'Fidget & Sensory Tools 🔘',
+        content: 'Quick tactile relief for restless moments:\n\n• Fidget Pad — Sliders, switches, buttons with satisfying haptics (/fidget)\n• Bubble Wrap — Endless bubble popping with vibration feedback (/bubbles)\n• Kinetic Sand — Satisfying digital sand simulation (/sand)\n• Sand Flow — Watch sand flow and pile up (/sand-flow)\n• Water Ripples — Touch to create calming ripples (/water-ripples)\n• Kaleidoscope — Mesmerizing, ever-changing patterns (/kaleidoscope)\n• Breathing Orb — Visual breathing guide with expanding orb',
+      },
+      {
+        title: 'Slash Commands for Games',
+        content: 'Quick access to any game:\n\n/games — Browse all therapeutic games\n/fidget — Open fidget pad\n/snake — Mindful snake\n/pong — Gentle pong\n/asteroids — Zen asteroids\n/breakout — Calm breakout\n/2048 — Number puzzle\n/memory — Memory match\n/bubbles — Bubble wrap\n/sand — Kinetic sand\n/rain — Rain on window\n/kaleidoscope — Mesmerizing patterns\n/maze — Maze walker\n/untangle — Untangle puzzle',
       },
     ],
   },
@@ -863,6 +923,110 @@ export const USER_MANUAL_CONTENT: ManualSection[] = [
       {
         title: 'Privacy',
         content: 'All accountability data stays on your device:\n• Twigs and entries stored locally\n• Calendar events go to YOUR calendar\n• Contacts go to YOUR address book\n• No data sent to external servers',
+      },
+    ],
+  },
+  {
+    id: 'prosody',
+    emoji: '🎵',
+    title: 'How Your Coach Understands Your Voice',
+    content: 'Prosody is the "music" of your voice—the melody, rhythm, beat, and volume. It\'s not just WHAT you say that matters, it\'s HOW you say it. Your AI coach listens for all these clues to understand how you\'re really feeling.',
+    subsections: [
+      {
+        title: 'What is Prosody?',
+        content: 'Imagine words are just lyrics to a song. Prosody is everything else—the melody, rhythm, beat, volume!\n\nThink about it: "I\'m fine" can mean very different things:\n• Said fast and high → "I\'m actually stressed!"\n• Said slow and quiet → "I\'m really sad..."\n• Said with cracking voice → "I\'m trying not to cry"\n• Said flat and bored → "I don\'t want to talk about it"',
+      },
+      {
+        title: 'Rhythm & Beat (Metrical Feet)',
+        content: 'Just like music has beats, your voice has rhythm! We track special patterns called metrical feet:\n\n• Iamb (da-DUM) — "to-DAY", "a-LIVE" — Natural speech\n• Trochee (DUM-da) — "HAP-py", "PAN-da" — Emphasizing first syllable\n• Anapest (da-da-DUM) — "un-der-STAND" — Building up\n• Dactyl (DUM-da-da) — "BEAU-ti-ful" — Strong start\n• Spondee (DUM-DUM) — "HEART-BREAK" — Force, emphasis\n• Pyrrhic (da-da) — "of the" — Quiet, uncertain\n\nWhat patterns reveal:\n• Lots of Iambs → Speaking naturally\n• Lots of Spondees → Upset, making a point\n• Irregular → Emotional, distressed\n• Very regular → Calm or hiding feelings',
+      },
+      {
+        title: 'Tempo (Speaking Speed)',
+        content: 'Your speaking speed tells a story:\n\n• Very Slow (<100 wpm) — Careful, tired, or sad\n• Slow (100-130 wpm) — Relaxed, thoughtful\n• Moderate (130-160 wpm) — Normal conversation\n• Fast (160-190 wpm) — Excited or stressed\n• Very Fast (>190 wpm) — Anxious, rushing\n\nSpeed changes matter too:\n• Stable → Calm and steady\n• Speeding up → Getting anxious or excited\n• Slowing down → Tired, sad, or relaxing\n• All over the place → Very emotional',
+      },
+      {
+        title: 'Cadence (Ups and Downs)',
+        content: 'Cadence is how your voice goes UP and DOWN in pitch:\n\n• Declarative — Voice goes DOWN ⬇️ "I went to the store."\n• Interrogative — Voice goes UP ⬆️ "Did you go?"\n• Exclamatory — Big ups and downs! "That\'s AMAZING!"\n• Flat — Stays the same... ➡️ "whatever..."\n• Uptalk — Goes UP even for statements? (uncertain)\n\nWhat it means:\n• Normal ups/downs → Feeling okay, engaged\n• Very flat → Numb, depressed, or holding back\n• Too much up/down → Very emotional, stressed\n• Always going UP → Uncertain, seeking approval',
+      },
+      {
+        title: 'Voice Quality',
+        content: 'Your voice has a special "texture" that changes with how you feel:\n\n• Breathy — Lots of air escaping → Intimate, tired\n• Creaky (vocal fry) — Low rumbling → Bored, tired\n• Nasal — Sound through nose → Sick, complaining\n• Clear — Easy to understand → Confident, energetic\n• Shaky/Trembling — Voice wobbles → Nervous, scared\n• Strained — Sounds tight → Stressed, angry\n\nVolume patterns:\n• Staying loud → Confident, angry, or excited\n• Staying quiet → Shy, sad, or tired\n• Getting quieter → Energy fading\n• Jumping around → Very emotional, distressed',
+      },
+      {
+        title: 'Communication Styles',
+        content: 'Everyone has their own way of talking. Your coach learns YOUR style:\n\n• Warm & Supportive — Friendly, encouraging\n• Professional — Calm, clear, balanced\n• Direct — Straight to the point, honest\n• Soft & Nurturing — Gentle, caring, patient\n• Energetic — Excited, enthusiastic, fast!\n• Calm & Measured — Slow, steady, peaceful\n• Curious — Lots of questions, interested\n• Guiding — Like a teacher, wise\n\nYour coach adapts to match YOUR style—if you\'re energetic, it won\'t be boring. If you\'re calm, it won\'t be hyper!',
+      },
+      {
+        title: 'Distress Signals',
+        content: 'Your coach recognizes when you\'re having a hard time:\n\nCrying signals:\n• Tearful — Voice getting wobbly, sniffling\n• Sobbing — Can\'t talk, big breaths\n• Suppressed — Trying to hold it in, voice catches\n\nVoice choking:\n• Mild catch — Quick pause, swallow\n• Gulping — Big swallow, trying to continue\n• Full choke — Can\'t speak at all\n\nOther signs:\n• Voice trembling — Very anxious or scared\n• Shallow quick breaths — Panicking\n• Long sighs — Exhausted or giving up\n• Holding breath — Bracing for something bad\n\nWhen your coach notices these, it responds with extra care.',
+      },
+      {
+        title: 'What Your Coach Tracks',
+        content: 'Over time, your coach builds a picture of YOUR unique voice patterns:\n\n• Your normal speed — To notice when you\'re rushing or dragging\n• Your usual pitch — To notice when you\'re higher (anxious) or lower (sad)\n• Your natural rhythm — To notice when something feels "off"\n• Your speaking style — To match how YOU like to communicate\n• Your emotional patterns — To learn what helps YOU feel better\n\nThis creates personalized understanding that\'s just for YOU.',
+      },
+      {
+        title: 'Privacy',
+        content: 'Even with all this voice understanding:\n\n• Everything stays on YOUR device—nothing goes to the cloud\n• No one else can hear your recordings—they\'re processed locally\n• Your voice patterns aren\'t shared—they\'re just for your coach\n• You can turn off voice analysis anytime in Settings > AI Data Access',
+      },
+    ],
+  },
+  {
+    id: 'ai-data-access',
+    emoji: '🔐',
+    title: 'AI Data Access Settings',
+    content: 'Control exactly what information your AI coach can use. You\'re in charge of what data powers your personalized experience.',
+    subsections: [
+      {
+        title: 'Finding AI Data Access',
+        content: 'Go to Settings > AI Data Access to see all data sources your coach can use.',
+      },
+      {
+        title: 'Master Toggle',
+        content: 'At the top, there\'s a master switch for "AI Coach Access":\n\n• ON — Your coach uses your data to personalize conversations\n• OFF — Your coach becomes generic, no personalization at all\n\nWhen OFF, your coach won\'t know anything about you—conversations will be like talking to a stranger.',
+      },
+      {
+        title: 'Data Categories',
+        content: 'Your data is organized into categories that can be toggled independently:\n\n👤 Core User Data — Preferences, cognitive profile, tone settings\n🧠 Context & Memories — Conversation memories, life context, psych profile\n📊 Tracking & Logging — Quick logs, journal entries, game progress\n💚 Health Data — HealthKit data, sleep, heart rate\n📅 Calendar — Upcoming events, schedule context\n📍 Location — Time zone, weather, general location\n👥 Social — Social connection patterns\n🌱 Therapeutic — Exposure therapy progress, active skills\n💬 Communication Style — How you communicate, adaptive style\n🔧 Diagnostics — App usage patterns, session context',
+      },
+      {
+        title: 'Required Sources',
+        content: 'Two sources cannot be disabled:\n\n• Core Principles — Safety rules and ethical guidelines\n• Crisis Safeguards — Crisis detection and safety responses\n\nThese ensure your coach always responds safely.',
+      },
+      {
+        title: 'Privacy Note',
+        content: 'All your data stays on your device. When you chat with the coach, only conversation context is sent to Claude\'s API—and it\'s never stored. Toggling sources off here means that data won\'t be included in coach conversations.',
+      },
+    ],
+  },
+  {
+    id: 'diagnostics',
+    emoji: '🔧',
+    title: 'Diagnostics & Self-Test',
+    content: 'Test your data connections and view logs for troubleshooting. This helps you verify everything is working correctly.',
+    subsections: [
+      {
+        title: 'Finding Diagnostics',
+        content: 'Go to Settings > Diagnostics to run tests and view logs.',
+      },
+      {
+        title: 'Running Self-Tests',
+        content: 'Tap "Run All Tests" to test every data source:\n\n✅ Passed — Source is working correctly (Green)\n❌ Failed — Source has an error (Red)\n⚠️ Warning — Needs attention, e.g., permission required (Orange)\n⏭️ Skipped — No test available for this source (Gray)',
+      },
+      {
+        title: 'Understanding Results',
+        content: 'After running tests, you\'ll see:\n\n• Summary — "12 passed, 2 warnings, 1 failed"\n• Each source with its status and details\n• Response time — How fast each source responded',
+      },
+      {
+        title: 'What Gets Tested',
+        content: 'Each data source is tested to verify:\n\n• The service file exists\n• The function can be called\n• Data can be retrieved (or error is captured)\n• Permissions are granted (if required)',
+      },
+      {
+        title: 'Diagnostic Logs',
+        content: 'Expand the Diagnostic Logs section to see detailed logs:\n\n• INFO — Normal operation\n• WARN — Something to check\n• ERROR — Something failed\n\nActions:\n• Copy Logs — Copy all diagnostic logs to clipboard (for sharing with support)\n• Clear Logs — Delete all diagnostic logs',
+      },
+      {
+        title: 'When to Use Diagnostics',
+        content: 'Run diagnostics if:\n\n• Your coach seems to be missing context\n• A feature isn\'t working as expected\n• You granted a permission but it\'s not being used\n• You want to verify everything is connected',
       },
     ],
   },
