@@ -293,32 +293,67 @@ export interface ProcessingJob {
 // ============================================
 
 export type InsightExtractionCategory =
-  // Understanding Pain
+  // Understanding Pain & Struggle
   | 'emotional_struggles'
   | 'coping_strategies'
   | 'what_helps_hurts'
   | 'vulnerability'
   | 'mental_health_patterns'
   | 'trauma_recovery'
-  // Understanding Joy
+  | 'shame_guilt'
+  | 'anger_frustration'
+  | 'grief_loss'
+  | 'fear_anxiety'
+  | 'depression_hopelessness'
+  // Understanding Joy & Flourishing
   | 'humor_wit'
   | 'joy_celebration'
   | 'excitement_passion'
   | 'playfulness'
   | 'gratitude_appreciation'
-  // Understanding Connection
+  | 'contentment_peace'
+  | 'hope_optimism'
+  | 'pride_accomplishment'
+  | 'awe_wonder'
+  // Understanding Connection & Relationships
   | 'companionship'
   | 'friendship_dynamics'
   | 'romantic_love'
   | 'family_bonds'
   | 'belonging_community'
   | 'loneliness_isolation'
-  // Understanding Growth
+  | 'parenting'
+  | 'boundaries'
+  | 'conflict_repair'
+  | 'trust_betrayal'
+  | 'communication_patterns'
+  | 'caregiving'
+  // Understanding Growth & Development
   | 'self_discovery'
   | 'growth_moments'
   | 'life_lessons'
   | 'wisdom_perspective'
   | 'meaning_purpose'
+  | 'regret_forgiveness'
+  | 'life_transitions'
+  | 'identity_formation'
+  | 'values_beliefs'
+  | 'decision_making'
+  // Body & Physical Experience
+  | 'aging_mortality'
+  | 'body_health'
+  | 'rest_burnout'
+  | 'embodied_emotion'
+  | 'neurodivergent_experience'
+  | 'sleep_energy'
+  | 'addiction_recovery'
+  // Context & Identity
+  | 'cultural_identity'
+  | 'spirituality_faith'
+  | 'work_career'
+  | 'money_scarcity'
+  | 'gender_sexuality'
+  | 'creativity_expression'
   // Human Authenticity
   | 'real_quotes'
   | 'contradictions_complexity'
@@ -400,7 +435,7 @@ export const EXTRACTION_CATEGORIES: {
   label: string;
   description: string;
   promptHint: string;
-  domain: 'pain' | 'joy' | 'connection' | 'growth' | 'authenticity';
+  domain: 'pain' | 'joy' | 'connection' | 'growth' | 'authenticity' | 'body' | 'context';
 }[] = [
   // === UNDERSTANDING PAIN ===
   {
@@ -599,6 +634,249 @@ export const EXTRACTION_CATEGORIES: {
     description: 'The beauty in being flawed',
     promptHint: 'Look for moments where imperfection is beautiful, where mistakes lead somewhere good, where "failure" is human.',
     domain: 'authenticity',
+  },
+
+  // === ADDITIONAL PAIN CATEGORIES ===
+  {
+    value: 'shame_guilt',
+    label: 'Shame & Guilt',
+    description: 'The weight of shame vs. guilt',
+    promptHint: 'Find how people describe shame (I am bad) vs guilt (I did bad). How do these emotions block or motivate change?',
+    domain: 'pain',
+  },
+  {
+    value: 'anger_frustration',
+    label: 'Anger & Frustration',
+    description: 'Healthy and unhealthy anger',
+    promptHint: 'Look for how people express, suppress, or channel anger. What does healthy anger look like? When is it protective?',
+    domain: 'pain',
+  },
+  {
+    value: 'grief_loss',
+    label: 'Grief & Loss',
+    description: 'Processing death, endings, letting go',
+    promptHint: 'Find how people grieve - not just death but any significant loss. The waves, the unexpected triggers, the gradual integration.',
+    domain: 'pain',
+  },
+  {
+    value: 'fear_anxiety',
+    label: 'Fear & Anxiety',
+    description: 'Specific fears and anxiety patterns',
+    promptHint: 'Capture the texture of fear and anxiety - physical sensations, thought patterns, what makes it better or worse.',
+    domain: 'pain',
+  },
+  {
+    value: 'depression_hopelessness',
+    label: 'Depression & Hopelessness',
+    description: 'When nothing seems worth it',
+    promptHint: 'Find honest descriptions of depression and hopelessness. What helps? What doesn\'t? What does it actually feel like inside?',
+    domain: 'pain',
+  },
+
+  // === ADDITIONAL JOY CATEGORIES ===
+  {
+    value: 'contentment_peace',
+    label: 'Contentment & Peace',
+    description: 'Quiet satisfaction, being enough',
+    promptHint: 'Look for peaceful moments - not excitement but quiet contentment. The feeling of "this is good" without needing more.',
+    domain: 'joy',
+  },
+  {
+    value: 'hope_optimism',
+    label: 'Hope & Optimism',
+    description: 'What keeps people going',
+    promptHint: 'Find what sustains hope, especially after hardship. Realistic optimism, not toxic positivity.',
+    domain: 'joy',
+  },
+  {
+    value: 'pride_accomplishment',
+    label: 'Pride & Accomplishment',
+    description: 'Healthy pride in achievements',
+    promptHint: 'Capture healthy pride - owning accomplishments without arrogance. The satisfaction of doing something hard.',
+    domain: 'joy',
+  },
+  {
+    value: 'awe_wonder',
+    label: 'Awe & Wonder',
+    description: 'Transcendent moments',
+    promptHint: 'Find moments of awe - nature, art, human connection, spiritual experiences. What makes people feel small in a good way?',
+    domain: 'joy',
+  },
+
+  // === ADDITIONAL CONNECTION CATEGORIES ===
+  {
+    value: 'parenting',
+    label: 'Parenting',
+    description: 'The experience of raising children',
+    promptHint: 'Capture parenting experiences - the love, frustration, worry, joy. What surprises parents? What do they wish they\'d known?',
+    domain: 'connection',
+  },
+  {
+    value: 'boundaries',
+    label: 'Boundaries',
+    description: 'Setting limits, protecting energy',
+    promptHint: 'Find how people set and maintain boundaries. The guilt, the relief, the learning process. What makes healthy boundaries?',
+    domain: 'connection',
+  },
+  {
+    value: 'conflict_repair',
+    label: 'Conflict & Repair',
+    description: 'How people fight and make up',
+    promptHint: 'Look for conflict patterns and repair attempts. What helps people reconnect after rupture? What makes fights productive?',
+    domain: 'connection',
+  },
+  {
+    value: 'trust_betrayal',
+    label: 'Trust & Betrayal',
+    description: 'Building and breaking trust',
+    promptHint: 'Find insights about trust - how it\'s built, how it\'s broken, whether it can be rebuilt. The experience of betrayal.',
+    domain: 'connection',
+  },
+  {
+    value: 'communication_patterns',
+    label: 'Communication Patterns',
+    description: 'How people actually talk',
+    promptHint: 'Capture communication insights - what works, what doesn\'t. Listening skills, expressing needs, navigating difficult conversations.',
+    domain: 'connection',
+  },
+  {
+    value: 'caregiving',
+    label: 'Caregiving',
+    description: 'Taking care of others',
+    promptHint: 'Find experiences of caregiving - for aging parents, sick partners, children with needs. The invisible labor and its emotional toll.',
+    domain: 'connection',
+  },
+
+  // === ADDITIONAL GROWTH CATEGORIES ===
+  {
+    value: 'regret_forgiveness',
+    label: 'Regret & Forgiveness',
+    description: 'Processing past choices, letting go',
+    promptHint: 'Find how people process regret and work toward forgiveness - of self and others. What helps people let go?',
+    domain: 'growth',
+  },
+  {
+    value: 'life_transitions',
+    label: 'Life Transitions',
+    description: 'Major changes (divorce, moving, career)',
+    promptHint: 'Capture experiences of major life transitions - endings, beginnings, the disorientation in between.',
+    domain: 'growth',
+  },
+  {
+    value: 'identity_formation',
+    label: 'Identity Formation',
+    description: 'Who am I? Who am I becoming?',
+    promptHint: 'Find identity questions and discoveries. How do people figure out who they are? What shapes identity?',
+    domain: 'growth',
+  },
+  {
+    value: 'values_beliefs',
+    label: 'Values & Beliefs',
+    description: 'What people believe and why',
+    promptHint: 'Capture how values form and change. What do people really believe vs. what they think they should believe?',
+    domain: 'growth',
+  },
+  {
+    value: 'decision_making',
+    label: 'Decision Making',
+    description: 'How people make hard choices',
+    promptHint: 'Find how people make difficult decisions - the process, the doubt, the aftermath. What helps with impossible choices?',
+    domain: 'growth',
+  },
+
+  // === BODY & PHYSICAL EXPERIENCE ===
+  {
+    value: 'aging_mortality',
+    label: 'Aging & Mortality',
+    description: 'Growing old, facing death',
+    promptHint: 'Capture wisdom about aging and mortality. What changes with age? How do people face death? What do elders wish they\'d known?',
+    domain: 'body',
+  },
+  {
+    value: 'body_health',
+    label: 'Body & Health',
+    description: 'Physical health, chronic illness, disability',
+    promptHint: 'Find the mind-body connection - how physical health affects emotions, living with chronic conditions, body image.',
+    domain: 'body',
+  },
+  {
+    value: 'rest_burnout',
+    label: 'Rest & Burnout',
+    description: 'Exhaustion, recovery, permission to stop',
+    promptHint: 'Capture experiences of burnout and recovery. What does real rest look like? How do people give themselves permission to stop?',
+    domain: 'body',
+  },
+  {
+    value: 'embodied_emotion',
+    label: 'Embodied Emotion',
+    description: 'How emotions feel in the body',
+    promptHint: 'Find how emotions manifest physically - the knot in the stomach, the weight on the chest. Body-based wisdom.',
+    domain: 'body',
+  },
+  {
+    value: 'neurodivergent_experience',
+    label: 'Neurodivergent Experience',
+    description: 'ADHD, autism, etc. lived experience',
+    promptHint: 'Capture lived experience of neurodivergence - not clinical descriptions but what it actually feels like inside.',
+    domain: 'body',
+  },
+  {
+    value: 'sleep_energy',
+    label: 'Sleep & Energy',
+    description: 'Sleep patterns, energy management',
+    promptHint: 'Find insights about sleep and energy - what helps, what hurts, the relationship between rest and wellbeing.',
+    domain: 'body',
+  },
+  {
+    value: 'addiction_recovery',
+    label: 'Addiction & Recovery',
+    description: 'Substance and behavioral patterns',
+    promptHint: 'Capture compassionate insights about addiction - the patterns, the recovery process, what actually helps. No shame.',
+    domain: 'body',
+  },
+
+  // === CONTEXT & IDENTITY ===
+  {
+    value: 'cultural_identity',
+    label: 'Cultural Identity',
+    description: 'Immigration, cultural belonging',
+    promptHint: 'Find experiences of cultural identity - navigating multiple cultures, belonging, the immigrant experience, heritage.',
+    domain: 'context',
+  },
+  {
+    value: 'spirituality_faith',
+    label: 'Spirituality & Faith',
+    description: 'Religious/spiritual experiences',
+    promptHint: 'Capture spiritual experiences broadly - organized religion, personal spirituality, doubt, transcendence, meaning-making.',
+    domain: 'context',
+  },
+  {
+    value: 'work_career',
+    label: 'Work & Career',
+    description: 'Job stress, career identity, purpose at work',
+    promptHint: 'Find work-life insights - career stress, finding purpose in work, work-life balance, identity tied to profession.',
+    domain: 'context',
+  },
+  {
+    value: 'money_scarcity',
+    label: 'Money & Scarcity',
+    description: 'Financial stress, abundance mindset',
+    promptHint: 'Capture the emotional side of money - scarcity mindset, financial anxiety, relationship with money, enough-ness.',
+    domain: 'context',
+  },
+  {
+    value: 'gender_sexuality',
+    label: 'Gender & Sexuality',
+    description: 'LGBTQ+ experiences, gender identity',
+    promptHint: 'Find lived experiences of gender and sexuality - coming out, identity discovery, navigating the world, community.',
+    domain: 'context',
+  },
+  {
+    value: 'creativity_expression',
+    label: 'Creativity & Expression',
+    description: 'Art, music, writing as healing',
+    promptHint: 'Capture creativity as emotional outlet - how art heals, creative blocks, the joy of making, expression as processing.',
+    domain: 'context',
   },
 ];
 
