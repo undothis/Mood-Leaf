@@ -23,6 +23,34 @@ The MoodLeaf AI Training System is designed to create a specialized, human-like 
 
 ---
 
+## Quick Start: Transcript Server
+
+**Before processing YouTube channels, set up the transcript server:**
+
+### 1. Install yt-dlp (one time)
+```bash
+brew install yt-dlp
+```
+
+### 2. Start the server
+```bash
+cd transcript-server
+npm install   # only first time
+npm start
+```
+
+Keep this terminal open while processing. The server runs on `http://localhost:3333`.
+
+**Why?** YouTube blocks direct transcript requests from mobile apps. The server uses yt-dlp (the gold standard for YouTube extraction) to reliably fetch transcripts.
+
+### Updating yt-dlp
+YouTube changes frequently. Keep yt-dlp updated:
+```bash
+brew upgrade yt-dlp
+```
+
+---
+
 ## Table of Contents
 
 1. [System Architecture](#1-system-architecture)
