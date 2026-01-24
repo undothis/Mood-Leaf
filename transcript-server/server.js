@@ -239,6 +239,11 @@ Return ONLY valid JSON in this format:
 }`;
 }
 
+// Rate limiting settings
+const DELAY_BETWEEN_VIDEOS = 3000;  // 3 seconds between videos
+const DELAY_AFTER_ERROR = 10000;    // 10 seconds after an error (rate limit protection)
+const MAX_VIDEOS_PER_BATCH = 25;    // Safety limit
+
 // Batch fetch multiple transcripts
 app.post('/batch-transcripts', async (req, res) => {
   const { videoIds } = req.body;
@@ -247,16 +252,33 @@ app.post('/batch-transcripts', async (req, res) => {
     return res.status(400).json({ error: 'Missing videoIds array in body' });
   }
 
-  console.log(`[Transcript] Batch fetching ${videoIds.length} videos`);
+  // Safety limit
+  const limitedIds = videoIds.slice(0, MAX_VIDEOS_PER_BATCH);
+  if (videoIds.length > MAX_VIDEOS_PER_BATCH) {
+    console.log(`[Rate Limit] Limiting batch to ${MAX_VIDEOS_PER_BATCH} videos (requested ${videoIds.length})`);
+  }
+
+  console.log(`[Transcript] Batch fetching ${limitedIds.length} videos (${DELAY_BETWEEN_VIDEOS/1000}s delay between each)`);
 
   const results = [];
+  let consecutiveErrors = 0;
 
-  for (const videoId of videoIds) {
+  for (let i = 0; i < limitedIds.length; i++) {
+    const videoId = limitedIds[i];
+    console.log(`  [${i + 1}/${limitedIds.length}] Fetching ${videoId}...`);
+
     const result = await fetchTranscriptWithYtDlp(videoId);
 
     if (result.error) {
       results.push({ videoId, success: false, error: result.error });
       console.log(`  ✗ ${videoId}: ${result.error}`);
+      consecutiveErrors++;
+
+      // If we get 3 errors in a row, slow down significantly
+      if (consecutiveErrors >= 3) {
+        console.log(`  ⚠️ Multiple errors - waiting ${DELAY_AFTER_ERROR/1000}s to avoid rate limiting...`);
+        await new Promise(r => setTimeout(r, DELAY_AFTER_ERROR));
+      }
     } else {
       results.push({
         videoId,
@@ -265,10 +287,13 @@ app.post('/batch-transcripts', async (req, res) => {
         charCount: result.transcript.length
       });
       console.log(`  ✓ ${videoId}: ${result.transcript.length} chars`);
+      consecutiveErrors = 0;  // Reset error counter on success
     }
 
-    // Small delay between requests
-    await new Promise(r => setTimeout(r, 1000));
+    // Standard delay between requests (skip on last item)
+    if (i < limitedIds.length - 1) {
+      await new Promise(r => setTimeout(r, DELAY_BETWEEN_VIDEOS));
+    }
   }
 
   const successCount = results.filter(r => r.success).length;

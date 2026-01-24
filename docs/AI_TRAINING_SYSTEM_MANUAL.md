@@ -364,6 +364,108 @@ The kernel ensures that no matter which model powers the coach, the core philoso
      - **Growth** (wisdom, self-discovery, lessons)
      - **Authenticity** (real quotes, contradictions, messy middle)
 
+#### How Insight Extraction Works
+
+The system uses Claude API to analyze transcripts and extract meaningful insights. Here's the process:
+
+**1. Categories Define What to Look For**
+
+When you set up a channel, you select from 27 categories across 5 domains:
+
+**Pain Domain (Understanding Suffering)**
+| Category | Description |
+|----------|-------------|
+| `emotional_struggles` | How people experience difficult emotions |
+| `coping_strategies` | What people do to get through hard times |
+| `what_helps_hurts` | Specific things that help or make things worse |
+| `vulnerability` | Moments of openness and raw honesty |
+| `mental_health_patterns` | Recurring mental health experiences |
+| `trauma_recovery` | How people heal from difficult experiences |
+
+**Joy Domain (Understanding Happiness)**
+| Category | Description |
+|----------|-------------|
+| `humor_wit` | How people use humor to connect and cope |
+| `joy_celebration` | What brings genuine happiness |
+| `excitement_passion` | What people get excited about |
+| `playfulness` | Lighthearted moments and fun |
+| `gratitude_appreciation` | What people are thankful for |
+
+**Connection Domain (Understanding Relationships)**
+| Category | Description |
+|----------|-------------|
+| `companionship` | Being with others, shared presence |
+| `friendship_dynamics` | How friendships work |
+| `romantic_love` | Romantic relationship patterns |
+| `family_bonds` | Family relationship dynamics |
+| `belonging_community` | Feeling part of something larger |
+| `loneliness_isolation` | Experiences of disconnection |
+
+**Growth Domain (Understanding Development)**
+| Category | Description |
+|----------|-------------|
+| `self_discovery` | Learning about oneself |
+| `growth_moments` | Turning points and breakthroughs |
+| `life_lessons` | Wisdom gained from experience |
+| `wisdom_perspective` | Insights about life, often from age/experience |
+| `meaning_purpose` | What gives life meaning |
+
+**Authenticity Domain (Understanding Humanness)**
+| Category | Description |
+|----------|-------------|
+| `real_quotes` | Actual words people use to describe experiences |
+| `contradictions_complexity` | When people hold conflicting views |
+| `messy_middle` | In-progress struggles, not neat resolutions |
+| `uncomfortable_truths` | Hard realities people acknowledge |
+| `beautiful_imperfection` | Embracing flaws and limitations |
+
+**2. The Prompt Instructs Claude**
+
+The transcript server sends a structured prompt to Claude:
+
+```
+Analyze this transcript from "[video title]" by [channel name]
+and extract valuable insights.
+
+CATEGORIES TO EXTRACT:
+- emotional_processing: How to process emotions...
+- relationship_dynamics: Relationship patterns...
+
+TRANSCRIPT:
+[first 15,000 chars of transcript]
+
+Extract 3-8 high-quality insights. For each provide:
+1. A clear, actionable title
+2. The full insight text (2-4 sentences)
+3. Which category it belongs to
+4. Quality score (0-100)
+5. Safety score (0-100)
+6. Confidence level (0-1)
+```
+
+**3. Claude Analyzes and Returns Structured JSON**
+
+Claude reads the transcript, identifies meaningful therapeutic/coaching wisdom, and returns insights like:
+
+```json
+{
+  "title": "Validate before solving",
+  "insight": "When someone shares a problem, acknowledge their feelings before offering solutions. This builds trust and shows you understand.",
+  "category": "communication_skills",
+  "qualityScore": 92,
+  "safetyScore": 98,
+  "confidence": 0.9
+}
+```
+
+**4. Quality Filtering**
+
+After extraction, insights are filtered:
+- Low quality scores (<60) are rejected
+- Low safety scores (<80) are flagged for review
+- Duplicates are detected via content hashing
+- All remaining insights go to the pending queue for human review
+
 4. **Quality Filtering**
    - Minimum quality score: 60
    - Minimum specificity: 50
