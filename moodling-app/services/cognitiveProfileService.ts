@@ -317,6 +317,7 @@ export interface CognitiveProfile {
   primarySleepBlocker: SleepBlocker | null;
   sleepQuality: SleepQuality;
   idealSleepHours: number | null;  // What they feel they need
+  actualSleepHours: number | null;  // What they typically get
   usesScreensBeforeBed: boolean;
   hasTriedSleepTechniques: boolean;
 
@@ -1411,6 +1412,88 @@ export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
   },
 
   {
+    id: 'sleep_hours_needed',
+    text: "How many hours of sleep do you feel you need to feel rested?",
+    subtext: "Everyone's different - there's no right answer.",
+    type: 'choice',
+    options: [
+      {
+        value: '5_or_less',
+        label: "5 hours or less",
+        indicates: { idealSleepHours: 5 }
+      },
+      {
+        value: '6',
+        label: "About 6 hours",
+        indicates: { idealSleepHours: 6 }
+      },
+      {
+        value: '7',
+        label: "About 7 hours",
+        indicates: { idealSleepHours: 7 }
+      },
+      {
+        value: '8',
+        label: "About 8 hours",
+        indicates: { idealSleepHours: 8 }
+      },
+      {
+        value: '9_plus',
+        label: "9 hours or more",
+        indicates: { idealSleepHours: 9 }
+      },
+      {
+        value: 'not_sure',
+        label: "I'm not really sure",
+        indicates: { idealSleepHours: null }
+      }
+    ],
+    measures: ['idealSleepHours'],
+    adaptiveDepth: 'standard'
+  },
+
+  {
+    id: 'sleep_hours_actual',
+    text: "How many hours do you typically get on a normal night?",
+    type: 'choice',
+    options: [
+      {
+        value: '4_or_less',
+        label: "4 hours or less",
+        indicates: { actualSleepHours: 4 }
+      },
+      {
+        value: '5',
+        label: "About 5 hours",
+        indicates: { actualSleepHours: 5 }
+      },
+      {
+        value: '6',
+        label: "About 6 hours",
+        indicates: { actualSleepHours: 6 }
+      },
+      {
+        value: '7',
+        label: "About 7 hours",
+        indicates: { actualSleepHours: 7 }
+      },
+      {
+        value: '8_plus',
+        label: "8 hours or more",
+        indicates: { actualSleepHours: 8 }
+      },
+      {
+        value: 'varies_a_lot',
+        label: "It varies wildly",
+        indicates: { actualSleepHours: null }
+      }
+    ],
+    measures: ['actualSleepHours'],
+    adaptiveDepth: 'standard',
+    requiresPrevious: ['sleep_hours_needed']
+  },
+
+  {
     id: 'sleep_screens',
     text: "Do you typically use screens (phone, TV, computer) in the hour before bed?",
     type: 'choice',
@@ -1527,6 +1610,7 @@ const DEFAULT_PROFILE: CognitiveProfile = {
   primarySleepBlocker: null,
   sleepQuality: 'functional',
   idealSleepHours: null,
+  actualSleepHours: null,
   usesScreensBeforeBed: true,
   hasTriedSleepTechniques: false,
   completedOnboarding: false,
