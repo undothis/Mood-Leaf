@@ -86,6 +86,7 @@ export const OVERLAY_SKILLS: Record<string, SkillConfig> = {
 // Parse AI response for skill triggers
 // Format: [OPEN_SKILL:skill_id] or [SKILL:skill_id] to open
 // Format: [CLOSE_SKILL] or [END_SKILL] to close
+// NOTE: If both OPEN and CLOSE are present, prioritize OPEN (ignore CLOSE)
 export function parseSkillTrigger(text: string): {
   skillId: string | null;
   shouldClose: boolean;
@@ -95,7 +96,7 @@ export function parseSkillTrigger(text: string): {
   const closeRegex = /\[(?:CLOSE|END)_SKILL\]/gi;
 
   const openMatch = openRegex.exec(text);
-  const shouldClose = closeRegex.test(text);
+  const hasCloseTag = closeRegex.test(text);
 
   // Clean both types of tags from text
   let cleanText = text
@@ -103,12 +104,14 @@ export function parseSkillTrigger(text: string): {
     .replace(/\[(?:CLOSE|END)_SKILL\]/gi, '')
     .trim();
 
+  // If OPEN tag found, prioritize opening (ignore any CLOSE tag in same message)
   if (openMatch) {
     const skillId = openMatch[1].toLowerCase();
     return { skillId, shouldClose: false, cleanText };
   }
 
-  return { skillId: null, shouldClose, cleanText };
+  // Only process CLOSE if no OPEN tag was present
+  return { skillId: null, shouldClose: hasCloseTag, cleanText };
 }
 
 // Check if a skill ID is valid for overlay

@@ -336,7 +336,10 @@ OPENING & CLOSING SKILLS DIRECTLY IN CHAT:
   * Example: "Great job! [CLOSE_SKILL] How are you feeling now?"
   * MUST close if user says ANY of: "close", "stop", "done", "enough", "close it", "close the skill", "close skill", "I'm done", "that's enough", "end it", "finished", "ok stop", "ok done", "end the skill", "stop the skill"
   * CRITICAL: If user mentions "close" or "stop" or "done" with "skill" or "breathing" or "exercise", you MUST include [CLOSE_SKILL] in your response
-- ONLY use this when they explicitly ask for breathing help or seem very receptive to it
+- NEVER include both [OPEN_SKILL:...] and [CLOSE_SKILL] in the same response! They are mutually exclusive.
+  * When OPENING a skill, only use [OPEN_SKILL:...] - do NOT add [CLOSE_SKILL]
+  * When CLOSING a skill, only use [CLOSE_SKILL] - do NOT add [OPEN_SKILL:...]
+- ONLY use skill tags when they explicitly ask for breathing help or seem very receptive to it
 - Don't overuse - reserve for moments when they need immediate calming support
 
 CORRELATION INSIGHTS:
