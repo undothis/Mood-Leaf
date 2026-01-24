@@ -1338,51 +1338,63 @@ async function fetchTranscriptViaInnerTube(
     }
 
     // Step 2: Fetch the caption content
-    // Try multiple formats - YouTube URLs sometimes work differently
+    // Caption URLs often fail with direct fetch on native - try proxies
     const baseUrl = selectedCaption.baseUrl;
-    const urlsToTry = [
-      baseUrl, // Try original URL first
-      baseUrl.includes('fmt=') ? baseUrl : baseUrl + '&fmt=json3',
-      baseUrl.includes('fmt=') ? baseUrl.replace(/fmt=[^&]+/, 'fmt=srv3') : baseUrl + '&fmt=srv3',
-    ];
+    const captionUrlWithFmt = baseUrl.includes('fmt=') ? baseUrl : baseUrl + '&fmt=json3';
 
     // Rate limit before caption fetch
     await rateLimit();
 
     let captionData = '';
-    for (const captionUrl of urlsToTry) {
-      if (captionData.length > 0) break;
 
-      const urlPreview = captionUrl.length > 80 ? captionUrl.substring(0, 80) + '...' : captionUrl;
-      log(`    Trying: ${urlPreview}`);
+    // Try direct fetch first
+    const urlPreview = captionUrlWithFmt.length > 80 ? captionUrlWithFmt.substring(0, 80) + '...' : captionUrlWithFmt;
+    log(`    Fetching captions: ${urlPreview}`);
 
-      try {
-        const captionResponse = await fetch(captionUrl, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-            'Accept': '*/*',
-            'Accept-Language': 'en-US,en;q=0.9',
-          },
-          signal: AbortSignal.timeout(10000),
-        });
-
-        if (captionResponse.ok) {
-          captionData = await captionResponse.text();
-          if (captionData.length > 0) {
-            log(`    ✓ Got caption data (${captionData.length} chars)`);
-            break;
-          }
-        } else {
-          log(`    Got HTTP ${captionResponse.status}`);
-        }
-      } catch (err) {
-        log(`    Failed: ${err instanceof Error ? err.message : err}`);
+    try {
+      const directResponse = await fetch(captionUrlWithFmt, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+          'Accept': '*/*',
+          'Accept-Language': 'en-US,en;q=0.9',
+        },
+        signal: AbortSignal.timeout(10000),
+      });
+      if (directResponse.ok) {
+        captionData = await directResponse.text();
       }
+    } catch (err) {
+      log(`    Direct fetch failed: ${err instanceof Error ? err.message : err}`);
+    }
+
+    // If direct fetch failed, try through CORS proxies (even on native)
+    if (captionData.length === 0) {
+      log(`    Trying via proxies...`);
+      for (const proxy of CORS_PROXIES) {
+        if (captionData.length > 0) break;
+        try {
+          const encodedUrl = proxy.encode ? encodeURIComponent(captionUrlWithFmt) : captionUrlWithFmt;
+          const proxyUrl = `${proxy.prefix}${encodedUrl}${proxy.suffix}`;
+          const proxyResponse = await fetch(proxyUrl, {
+            signal: AbortSignal.timeout(10000),
+          });
+          if (proxyResponse.ok) {
+            captionData = await proxyResponse.text();
+            if (captionData.length > 0) {
+              log(`    ✓ Got via proxy (${captionData.length} chars)`);
+            }
+          }
+        } catch (proxyErr) {
+          // Try next proxy
+        }
+      }
+    } else {
+      log(`    ✓ Got caption data (${captionData.length} chars)`);
     }
 
     if (captionData.length === 0) {
-      log(`    ✗ All caption URL formats returned empty`);
-      return { transcript: '', segments: [], error: 'Caption URLs returned empty content' };
+      log(`    ✗ All methods failed to get caption content`);
+      return { transcript: '', segments: [], error: 'Could not fetch caption content' };
     }
 
     // Try to parse as JSON3 format
