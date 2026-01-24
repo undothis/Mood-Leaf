@@ -155,6 +155,7 @@ export default function CoachScreen() {
   const [voiceSupported, setVoiceSupported] = useState(false);
   const [silenceProgress, setSilenceProgress] = useState(0);
   const [autoSendEnabled, setAutoSendEnabled] = useState(true); // Toggle for auto-send on pause
+  const [continuousVoiceMode, setContinuousVoiceMode] = useState(false); // Continuous conversation mode
   const voiceControllerRef = useRef<VoiceChatController | null>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
@@ -345,6 +346,10 @@ export default function CoachScreen() {
     if (!voiceControllerRef.current) return;
 
     if (voiceState === 'idle') {
+      // Enable continuous voice mode when TTS is on (conversation mode)
+      if (ttsEnabled) {
+        setContinuousVoiceMode(true);
+      }
       // Update mode based on autoSendEnabled
       await voiceControllerRef.current.updateSettings({
         mode: autoSendEnabled ? 'auto_detect' : 'push_to_talk',
@@ -352,6 +357,8 @@ export default function CoachScreen() {
       });
       await voiceControllerRef.current.startListening();
     } else if (voiceState === 'listening') {
+      // Tapping while listening stops continuous mode
+      setContinuousVoiceMode(false);
       const transcript = await voiceControllerRef.current.stopListening();
       if (transcript.trim() && !autoSendEnabled) {
         // Manual mode: put transcript in input box for review
@@ -521,9 +528,28 @@ export default function CoachScreen() {
     }
   };
 
+  // End phrases that stop continuous voice mode
+  const END_PHRASES = ['bye', 'goodbye', 'good bye', 'see ya', 'see you', 'later', 'talk later', 'gotta go', 'i\'m done', 'that\'s all', 'thanks bye', 'thank you bye'];
+
   const handleSend = async (text?: string) => {
     const messageText = text || inputText.trim();
     if (!messageText || isLoading) return;
+
+    // Check for end phrases to stop continuous voice mode
+    const lowerMessage = messageText.toLowerCase().trim();
+    const isEndPhrase = END_PHRASES.some(phrase =>
+      lowerMessage === phrase ||
+      lowerMessage.startsWith(phrase + ' ') ||
+      lowerMessage.endsWith(' ' + phrase)
+    );
+
+    if (isEndPhrase && continuousVoiceMode) {
+      setContinuousVoiceMode(false);
+      // Stop any ongoing listening
+      if (voiceControllerRef.current && voiceState === 'listening') {
+        voiceControllerRef.current.stopListening();
+      }
+    }
 
     // Check if this is a slash command
     if (isSlashCommand(messageText)) {
@@ -632,7 +658,15 @@ export default function CoachScreen() {
       if (ttsEnabled && coachSettings?.selectedPersona) {
         setIsSpeaking(true);
         speakCoachResponse(displayText, coachSettings.selectedPersona)
-          .finally(() => setIsSpeaking(false));
+          .finally(() => {
+            setIsSpeaking(false);
+            // In continuous voice mode, auto-restart listening after AI finishes speaking
+            if (continuousVoiceMode && voiceControllerRef.current && voiceSupported) {
+              setTimeout(async () => {
+                await voiceControllerRef.current?.startListening();
+              }, 500);
+            }
+          });
       }
 
       // Track turns for anti-dependency
@@ -897,6 +931,21 @@ export default function CoachScreen() {
           ))}
 
         </ScrollView>
+
+        {/* Continuous Voice Mode Indicator */}
+        {continuousVoiceMode && (
+          <View style={[styles.continuousModeBar, { backgroundColor: colors.tint + '20' }]}>
+            <Ionicons name="chatbubbles" size={16} color={colors.tint} />
+            <Text style={[styles.continuousModeText, { color: colors.tint }]}>
+              Voice conversation active
+            </Text>
+            <TouchableOpacity onPress={() => setContinuousVoiceMode(false)}>
+              <Text style={[styles.continuousModeEnd, { color: colors.textMuted }]}>
+                Tap mic or say "bye" to end
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Voice Transcript Display */}
         {voiceState === 'listening' && voiceTranscript && (
@@ -1321,6 +1370,24 @@ const styles = StyleSheet.create({
   autoSendHint: {
     fontSize: 11,
     fontStyle: 'italic',
+  },
+  continuousModeBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginBottom: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    gap: 8,
+  },
+  continuousModeText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  continuousModeEnd: {
+    fontSize: 11,
   },
   autoSendToggle: {
     flexDirection: 'row',
