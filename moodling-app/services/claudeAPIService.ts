@@ -12,6 +12,18 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  log,
+  info,
+  warn,
+  error as logError,
+  startTimer,
+  endTimer,
+  logCoachAccess,
+  logCoachResponse,
+  startSession,
+  getCurrentSessionId,
+} from './loggingService';
 import { getToneInstruction, getTonePreferences, ToneStyle } from './tonePreferencesService';
 import { getContextForClaude } from './userContextService';
 import { getLifeContextForClaude } from './lifeContextService';
@@ -741,9 +753,17 @@ export async function sendMessage(
   message: string,
   context: ConversationContext
 ): Promise<AIResponse> {
+  // Start performance timer for this API call
+  const apiTimerId = startTimer('Claude API Call', 'coach', { messageLength: message?.length || 0 });
+  const callStartTime = Date.now();
+
+  // Track data sources accessed for this response
+  let dataSourcesAvailable = 0;
+  let dataSourcesUsed = 0;
+
   // Top-level try/catch to catch ANY error and provide meaningful feedback
   try {
-    console.log('[ClaudeAPI] sendMessage called with message length:', message?.length || 0);
+    await info('coach', 'Starting Claude API call', { messageLength: message?.length || 0 });
 
     // Check for safety concerns (self-harm, violence, etc.)
     let safeguardCheck;
@@ -831,16 +851,28 @@ export async function sendMessage(
   let richContext = '';
   try {
     richContext = await getContextForClaude();
+    dataSourcesAvailable++;
+    if (richContext) {
+      dataSourcesUsed++;
+      await logCoachAccess('profile', 'User Profile Context', true, richContext.length);
+    }
   } catch (error) {
     console.log('Could not load rich user context:', error);
+    await logCoachAccess('profile', 'User Profile Context', false);
   }
 
   // Get life context (must be wrapped in try/catch to prevent full API failure)
   let lifeContext = '';
   try {
     lifeContext = await getLifeContextForClaude();
+    dataSourcesAvailable++;
+    if (lifeContext) {
+      dataSourcesUsed++;
+      await logCoachAccess('life_context', 'Life Context', true, lifeContext.length);
+    }
   } catch (error) {
     console.log('Could not load life context:', error);
+    await logCoachAccess('life_context', 'Life Context', false);
   }
 
   // Get health context if HealthKit is enabled
@@ -850,9 +882,19 @@ export async function sendMessage(
     if (await isHealthKitEnabled()) {
       healthContext = await getHealthContextForClaude();
       correlationContext = await getCorrelationSummaryForClaude();
+      dataSourcesAvailable += 2;
+      if (healthContext) {
+        dataSourcesUsed++;
+        await logCoachAccess('health_metrics', 'Health Metrics', true, healthContext.length);
+      }
+      if (correlationContext) {
+        dataSourcesUsed++;
+        await logCoachAccess('health_correlations', 'Health Correlations', true, correlationContext.length);
+      }
     }
   } catch (error) {
     console.log('HealthKit not available:', error);
+    await logCoachAccess('health_metrics', 'Health Metrics', false);
   }
 
   // Get psychological profile context (cognitive patterns, attachment style, etc.)
@@ -899,8 +941,14 @@ export async function sendMessage(
   let journalContext = '';
   try {
     journalContext = await getRecentJournalContextForClaude();
+    dataSourcesAvailable++;
+    if (journalContext) {
+      dataSourcesUsed++;
+      await logCoachAccess('journal_entries', 'Journal Entries', true, journalContext.length);
+    }
   } catch (error) {
     console.log('Could not load journal context:', error);
+    await logCoachAccess('journal_entries', 'Journal Entries', false);
   }
 
   // Get calendar context if enabled (upcoming events, travel, meetings)
@@ -908,17 +956,29 @@ export async function sendMessage(
   try {
     if (await isCalendarEnabled()) {
       calendarContext = await getCalendarContextForClaude();
+      dataSourcesAvailable++;
+      if (calendarContext) {
+        dataSourcesUsed++;
+        await logCoachAccess('calendar', 'Calendar Events', true, calendarContext.length);
+      }
     }
   } catch (error) {
     console.log('Could not load calendar context:', error);
+    await logCoachAccess('calendar', 'Calendar Events', false);
   }
 
   // Get tiered memory context (short/mid/long term)
   let memoryContext = '';
   try {
     memoryContext = await getMemoryContextForLLM();
+    dataSourcesAvailable++;
+    if (memoryContext) {
+      dataSourcesUsed++;
+      await logCoachAccess('memory_tiers', 'Memory Tiers', true, memoryContext.length);
+    }
   } catch (error) {
     console.log('Could not load memory context:', error);
+    await logCoachAccess('memory_tiers', 'Memory Tiers', false);
   }
 
   // Track this user message in session memory
@@ -944,8 +1004,14 @@ export async function sendMessage(
   let cognitiveProfileContext = '';
   try {
     cognitiveProfileContext = await getCognitiveProfileContextForLLM();
+    dataSourcesAvailable++;
+    if (cognitiveProfileContext) {
+      dataSourcesUsed++;
+      await logCoachAccess('cognitive_profile', 'Cognitive Profile', true, cognitiveProfileContext.length);
+    }
   } catch (error) {
     console.log('Could not load cognitive profile context:', error);
+    await logCoachAccess('cognitive_profile', 'Cognitive Profile', false);
   }
 
   // Get social connection health context (isolation risk, connection quality)
@@ -1295,6 +1361,35 @@ ${alivenessDirective}`;
       console.log('Tenet validation error (non-blocking):', err);
     }
 
+    // Log successful response metrics
+    const responseTimeMs = Date.now() - callStartTime;
+    await endTimer(apiTimerId, {
+      success: true,
+      inputTokens: data.usage.input_tokens,
+      outputTokens: data.usage.output_tokens,
+      cost,
+    });
+
+    // Log comprehensive coach response metrics
+    await logCoachResponse({
+      responseTimeMs,
+      inputTokens: data.usage.input_tokens,
+      outputTokens: data.usage.output_tokens,
+      totalTokens: data.usage.input_tokens + data.usage.output_tokens,
+      dataSourcesAvailable,
+      dataSourcesUsed,
+      success: true,
+    });
+
+    await info('coach', 'Claude API call successful', {
+      responseTimeMs,
+      inputTokens: data.usage.input_tokens,
+      outputTokens: data.usage.output_tokens,
+      cost,
+      dataSourcesUsed,
+      dataSourcesAvailable,
+    });
+
     return {
       text: responseText,
       source: 'claudeAPI',
@@ -1302,8 +1397,10 @@ ${alivenessDirective}`;
       inputTokens: data.usage.input_tokens,
       outputTokens: data.usage.output_tokens,
     };
-  } catch (apiError) {
+  } catch (apiError: any) {
     console.error('[ClaudeAPI] API request failed:', apiError);
+    await logError('coach', 'Claude API request failed', { error: apiError.message });
+    await endTimer(apiTimerId, { success: false, error: apiError.message });
 
     // Fallback response for API errors
     return {
@@ -1317,6 +1414,21 @@ ${alivenessDirective}`;
     // This catches ANY unexpected error in the entire sendMessage function
     console.error('[ClaudeAPI] CRITICAL: Unexpected error in sendMessage:', topLevelError);
     console.error('[ClaudeAPI] Error stack:', topLevelError instanceof Error ? topLevelError.stack : 'No stack');
+
+    const errorMessage = topLevelError instanceof Error ? topLevelError.message : 'Unknown error';
+    await log('fatal', 'coach', 'Critical error in sendMessage', {
+      error: errorMessage,
+      stack: topLevelError instanceof Error ? topLevelError.stack : undefined,
+    });
+
+    // Log failed coach response
+    await logCoachResponse({
+      responseTimeMs: Date.now() - callStartTime,
+      dataSourcesAvailable,
+      dataSourcesUsed,
+      success: false,
+      errorType: 'critical_error',
+    });
 
     return {
       text: "Something unexpected happened. I'm still here - what's on your mind?",

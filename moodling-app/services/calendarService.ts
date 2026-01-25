@@ -13,6 +13,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
+import { log, info, warn, error as logError, startTimer, endTimer, measureAsync } from './loggingService';
 
 // Storage keys
 const CALENDAR_ENABLED_KEY = 'moodleaf_calendar_enabled';
@@ -86,12 +87,15 @@ export async function isCalendarEnabled(): Promise<boolean> {
  */
 export async function enableCalendar(): Promise<boolean> {
   try {
+    await info('services', 'Enabling calendar integration');
+
     // Check if expo-calendar is available
     let Calendar;
     try {
       Calendar = require('expo-calendar');
     } catch {
       console.log('expo-calendar not available');
+      await warn('services', 'expo-calendar not available');
       return false;
     }
 
@@ -99,14 +103,17 @@ export async function enableCalendar(): Promise<boolean> {
     const { status } = await Calendar.requestCalendarPermissionsAsync();
     if (status !== 'granted') {
       console.log('Calendar permission denied');
+      await warn('services', 'Calendar permission denied', { status });
       return false;
     }
 
     await AsyncStorage.setItem(CALENDAR_ENABLED_KEY, 'true');
     await AsyncStorage.setItem(CALENDAR_PERMISSIONS_KEY, 'granted');
+    await info('services', 'Calendar integration enabled successfully');
     return true;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to enable calendar:', error);
+    await logError('services', 'Failed to enable calendar', { error: error.message });
     return false;
   }
 }
@@ -127,13 +134,17 @@ export async function disableCalendar(): Promise<void> {
  * Fetch upcoming events from device calendar
  */
 export async function fetchUpcomingEvents(daysAhead: number = 7): Promise<CalendarEvent[]> {
+  const timerId = startTimer('Fetch calendar events', 'services', { daysAhead });
+
   try {
     if (Platform.OS !== 'ios' && Platform.OS !== 'android') {
+      await endTimer(timerId, { result: 'unsupported_platform' });
       return [];
     }
 
     const enabled = await isCalendarEnabled();
     if (!enabled) {
+      await endTimer(timerId, { result: 'not_enabled' });
       return [];
     }
 
@@ -141,12 +152,14 @@ export async function fetchUpcomingEvents(daysAhead: number = 7): Promise<Calend
     try {
       Calendar = require('expo-calendar');
     } catch {
+      await endTimer(timerId, { result: 'module_not_available' });
       return [];
     }
 
     // Get all calendars
     const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
     if (!calendars || calendars.length === 0) {
+      await endTimer(timerId, { result: 'no_calendars' });
       return [];
     }
 
@@ -190,9 +203,12 @@ export async function fetchUpcomingEvents(daysAhead: number = 7): Promise<Calend
       new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
     );
 
+    await endTimer(timerId, { eventsFound: transformedEvents.length });
     return transformedEvents;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to fetch calendar events:', error);
+    await logError('services', 'Failed to fetch calendar events', { error: error.message });
+    await endTimer(timerId, { result: 'error', error: error.message });
     return [];
   }
 }

@@ -18,6 +18,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { log, info, startTimer, endTimer } from './loggingService';
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -595,6 +596,15 @@ export async function getProgressForGame(gameId: string): Promise<GameProgress |
  */
 export async function recordGameSession(session: GameSession): Promise<void> {
   try {
+    await info('games', 'Recording game session', {
+      gameId: session.gameId,
+      duration: session.duration,
+      completedSuccessfully: session.completedSuccessfully,
+      moodChange: session.moodAfter && session.moodBefore
+        ? session.moodAfter - session.moodBefore
+        : undefined,
+    });
+
     // Update sessions list
     const sessionsStr = await AsyncStorage.getItem(STORAGE_KEYS.GAME_SESSIONS);
     const sessions: GameSession[] = sessionsStr ? JSON.parse(sessionsStr) : [];

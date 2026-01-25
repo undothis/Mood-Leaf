@@ -15,6 +15,7 @@
 
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { log, info, warn } from './loggingService';
 
 // Storage keys
 const LLM_PROVIDER_KEY = 'moodleaf_llm_provider';
@@ -262,7 +263,9 @@ export async function getActiveProvider(): Promise<LLMProvider> {
  * Set the active LLM provider
  */
 export async function setActiveProvider(provider: LLMProvider): Promise<void> {
+  const previous = await getActiveProvider();
   await AsyncStorage.setItem(LLM_PROVIDER_KEY, provider);
+  await info('coach', 'LLM provider changed', { from: previous, to: provider });
 }
 
 /**

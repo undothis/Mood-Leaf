@@ -69,6 +69,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { log, info, warn, error as logError, startTimer, endTimer, logCoachResponse } from './loggingService';
 import {
   getPrincipleContextForLLM,
   validateAgainstTenets,
@@ -537,8 +538,15 @@ export async function getActiveModel(): Promise<{ modelPath: string; loraPath?: 
  * - Sufficient device resources
  */
 export async function runInference(request: InferenceRequest): Promise<InferenceResponse> {
+  const timerId = startTimer('LLaMA inference', 'coach', { promptLength: request.prompt.length });
   const config = await getLlamaConfig();
   const startTime = Date.now();
+
+  await info('coach', 'Starting LLaMA inference', {
+    promptLength: request.prompt.length,
+    contextLength: config.contextLength,
+    temperature: config.temperature,
+  });
 
   // Format the prompt (async to load cognitive profile context)
   const formattedPrompt = await formatPromptForLlama(request.context, request.prompt);
@@ -596,6 +604,26 @@ export async function runInference(request: InferenceRequest): Promise<Inference
 
   // Log inference stats
   await logInferenceStats(placeholderResponse);
+
+  // Log coach response metrics (same as Claude for consistency)
+  await logCoachResponse({
+    responseTimeMs: placeholderResponse.inferenceTimeMs,
+    totalTokens: placeholderResponse.tokensUsed,
+    dataSourcesAvailable: 0, // TODO: track when fully implemented
+    dataSourcesUsed: 0,
+    success: true,
+  });
+
+  await endTimer(timerId, {
+    tokensUsed: placeholderResponse.tokensUsed,
+    inferenceTimeMs: placeholderResponse.inferenceTimeMs,
+  });
+
+  await info('coach', 'LLaMA inference completed', {
+    inferenceTimeMs: placeholderResponse.inferenceTimeMs,
+    tokensUsed: placeholderResponse.tokensUsed,
+    modelVersion: placeholderResponse.modelVersion,
+  });
 
   return placeholderResponse;
 }
