@@ -632,6 +632,13 @@ export default function DeveloperDashboard() {
             >
               <Text style={styles.linkButtonText}>Open Live Activity Monitor</Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.linkButton, { backgroundColor: '#9C27B0', marginTop: 8 }]}
+              onPress={() => router.push('/admin/memory-viewer')}
+            >
+              <Text style={styles.linkButtonText}>View Coach Memories</Text>
+            </TouchableOpacity>
           </View>
         )}
 
