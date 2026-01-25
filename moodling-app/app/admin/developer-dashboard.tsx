@@ -20,6 +20,8 @@ import {
   useColorScheme,
   Dimensions,
   RefreshControl,
+  Modal,
+  FlatList,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -98,6 +100,8 @@ export default function DeveloperDashboard() {
   const [stats, setStats] = useState(getLogStats());
   const [timeRange, setTimeRange] = useState<'1h' | '6h' | '24h' | 'all'>('1h');
   const [activeTab, setActiveTab] = useState<'errors' | 'performance' | 'categories' | 'coach' | 'quality'>('errors');
+  const [showLogModal, setShowLogModal] = useState(false);
+  const [modalFilter, setModalFilter] = useState<'errors' | 'warnings' | null>(null);
 
   // Load data
   const loadData = useCallback(async () => {
@@ -236,6 +240,22 @@ export default function DeveloperDashboard() {
     return { errors, warnings, total, errorRate };
   }, [filteredLogs]);
 
+  // Get filtered logs for modal
+  const modalLogs = useMemo(() => {
+    if (modalFilter === 'errors') {
+      return filteredLogs.filter(l => l.level === 'error' || l.level === 'fatal');
+    } else if (modalFilter === 'warnings') {
+      return filteredLogs.filter(l => l.level === 'warn');
+    }
+    return [];
+  }, [filteredLogs, modalFilter]);
+
+  // Open modal with filter
+  const openLogModal = (filter: 'errors' | 'warnings') => {
+    setModalFilter(filter);
+    setShowLogModal(true);
+  };
+
   // Render mini bar chart
   const renderMiniBarChart = (value: number, max: number, color: string) => {
     const width = max > 0 ? (value / max) * 100 : 0;
@@ -285,8 +305,71 @@ export default function DeveloperDashboard() {
     );
   };
 
+  // Render a single log item in modal
+  const renderLogItem = ({ item }: { item: LogEntry }) => (
+    <View style={[styles.modalLogItem, { borderLeftColor: LEVEL_COLORS[item.level] }]}>
+      <View style={styles.modalLogHeader}>
+        <Text style={[styles.modalLogTime, { color: colors.textSecondary }]}>
+          {new Date(item.timestamp).toLocaleTimeString()}
+        </Text>
+        <View style={[styles.modalLogBadge, { backgroundColor: CATEGORY_COLORS[item.category] || '#757575' }]}>
+          <Text style={styles.modalLogBadgeText}>{item.category}</Text>
+        </View>
+      </View>
+      <Text style={[styles.modalLogMessage, { color: colors.text }]}>
+        {item.message}
+      </Text>
+      {item.data && Object.keys(item.data).length > 0 && (
+        <Text style={[styles.modalLogData, { color: colors.textSecondary }]}>
+          {JSON.stringify(item.data, null, 2)}
+        </Text>
+      )}
+      {item.stack && (
+        <Text style={[styles.modalLogStack, { color: colors.textSecondary }]} numberOfLines={3}>
+          {item.stack.split('\n').slice(1, 4).join('\n')}
+        </Text>
+      )}
+    </View>
+  );
+
   return (
     <>
+      {/* Errors/Warnings Modal */}
+      <Modal
+        visible={showLogModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowLogModal(false)}
+      >
+        <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+          <View style={[styles.modalHeader, { backgroundColor: colors.card }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>
+              {modalFilter === 'errors' ? `Errors (${modalLogs.length})` : `Warnings (${modalLogs.length})`}
+            </Text>
+            <TouchableOpacity
+              style={[styles.modalCloseButton, { backgroundColor: colors.tint }]}
+              onPress={() => setShowLogModal(false)}
+            >
+              <Text style={styles.modalCloseText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+          {modalLogs.length === 0 ? (
+            <View style={styles.modalEmpty}>
+              <Text style={[styles.modalEmptyText, { color: colors.textSecondary }]}>
+                No {modalFilter} in the selected time range.
+              </Text>
+            </View>
+          ) : (
+            <FlatList
+              data={modalLogs}
+              keyExtractor={(item) => item.id}
+              renderItem={renderLogItem}
+              contentContainerStyle={styles.modalList}
+            />
+          )}
+        </View>
+      </Modal>
+
       <Stack.Screen
         options={{
           title: 'Developer Dashboard',
@@ -328,18 +411,24 @@ export default function DeveloperDashboard() {
         <View style={[styles.card, { backgroundColor: colors.card }]}>
           <Text style={[styles.cardTitle, { color: colors.text }]}>Quick Stats</Text>
           <View style={styles.statsRow}>
-            <View style={styles.statItem}>
+            <TouchableOpacity
+              style={styles.statItem}
+              onPress={() => openLogModal('errors')}
+            >
               <Text style={[styles.statValue, { color: LEVEL_COLORS.error }]}>
                 {summaryStats.errors}
               </Text>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Errors</Text>
-            </View>
-            <View style={styles.statItem}>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Errors ▶</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.statItem}
+              onPress={() => openLogModal('warnings')}
+            >
               <Text style={[styles.statValue, { color: LEVEL_COLORS.warn }]}>
                 {summaryStats.warnings}
               </Text>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Warnings</Text>
-            </View>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Warnings ▶</Text>
+            </TouchableOpacity>
             <View style={styles.statItem}>
               <Text style={[styles.statValue, { color: colors.text }]}>
                 {summaryStats.total}
@@ -1120,5 +1209,91 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 13,
     fontWeight: '600',
+  },
+  // Modal styles
+  modalContainer: {
+    flex: 1,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.1)',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  modalCloseButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  modalCloseText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  modalList: {
+    padding: 16,
+  },
+  modalLogItem: {
+    borderLeftWidth: 4,
+    paddingLeft: 12,
+    paddingVertical: 12,
+    marginBottom: 12,
+    backgroundColor: 'rgba(0,0,0,0.03)',
+    borderRadius: 8,
+    paddingRight: 12,
+  },
+  modalLogHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  modalLogTime: {
+    fontSize: 12,
+  },
+  modalLogBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  modalLogBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  modalLogMessage: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  modalLogData: {
+    fontSize: 11,
+    fontFamily: 'monospace',
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    padding: 8,
+    borderRadius: 4,
+    marginTop: 6,
+  },
+  modalLogStack: {
+    fontSize: 10,
+    fontFamily: 'monospace',
+    marginTop: 6,
+    opacity: 0.7,
+  },
+  modalEmpty: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  modalEmptyText: {
+    fontSize: 14,
+    textAlign: 'center',
   },
 });
