@@ -133,15 +133,9 @@ Training Studio can also process movies for rich emotional training data.
 
 **Upload Movies**
 - Upload your own movie files (mp4, mkv, avi, etc.)
-- Use subtitle files (.srt, .vtt) for fastest and most accurate transcription
-- Use Whisper AI to extract speech from audio when no subtitles available
+- Whisper AI automatically extracts and transcribes all dialogue
+- More reliable than subtitles (no sync issues, no missing dialogue)
 - Categorize movies by emotional theme
-
-**Automatic Subtitle Search**
-- Built-in subtitle finder searches OpenSubtitles, Addic7ed, and other providers
-- Enter movie title and year to search
-- One-click download of best matching subtitle
-- Supports multiple languages (English, Spanish, French, German, etc.)
 
 **40+ Recommended Movies**
 - Pre-curated list organized by emotional category:

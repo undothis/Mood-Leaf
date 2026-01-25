@@ -431,25 +431,17 @@ export interface MovieUploadResponse {
   success: boolean;
   job_id?: string;
   message: string;
-  transcript_source?: string;
 }
 
 export async function uploadMovie(
   movieFile: File,
   title: string,
-  category: string,
-  subtitleFile?: File,
-  useWhisper: boolean = true
+  category: string
 ): Promise<MovieUploadResponse> {
   const formData = new FormData();
   formData.append('movie_file', movieFile);
   formData.append('title', title);
   formData.append('category', category);
-  formData.append('use_whisper', useWhisper.toString());
-
-  if (subtitleFile) {
-    formData.append('subtitle_file', subtitleFile);
-  }
 
   const res = await fetch(`${API_BASE}/movies/upload`, {
     method: 'POST',
@@ -459,62 +451,3 @@ export async function uploadMovie(
   return res.json();
 }
 
-// Subtitle Search
-export interface SubtitleSearchResult {
-  provider: string;
-  language: string;
-  release_name: string;
-  subtitle_id: string;
-  score: number;
-}
-
-export interface SubtitleSearchResponse {
-  success: boolean;
-  query?: {
-    title: string;
-    year?: number;
-    language: string;
-  };
-  results?: SubtitleSearchResult[];
-  count?: number;
-  note?: string;
-  error?: string;
-}
-
-export async function searchSubtitles(
-  title: string,
-  year?: number,
-  language: string = 'eng'
-): Promise<SubtitleSearchResponse> {
-  const res = await fetch(`${API_BASE}/movies/search-subtitles`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ title, year, language }),
-  });
-  if (!res.ok) throw new Error('Failed to search subtitles');
-  return res.json();
-}
-
-export interface SubtitleDownloadResponse {
-  success: boolean;
-  subtitle_path?: string;
-  filename?: string;
-  language?: string;
-  provider?: string;
-  message?: string;
-  error?: string;
-}
-
-export async function downloadSubtitle(
-  title: string,
-  year?: number,
-  language: string = 'eng'
-): Promise<SubtitleDownloadResponse> {
-  const res = await fetch(`${API_BASE}/movies/download-subtitle`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ title, year, language }),
-  });
-  if (!res.ok) throw new Error('Failed to download subtitle');
-  return res.json();
-}

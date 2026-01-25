@@ -6,16 +6,12 @@ import {
   fetchRecommendedMovies,
   getAIMovieRecommendations,
   uploadMovie,
-  searchSubtitles,
-  downloadSubtitle,
   RecommendedMovie,
-  SubtitleSearchResult,
 } from '@/lib/api';
 import {
   Film,
   Upload,
   Loader2,
-  Star,
   Sparkles,
   Wand2,
   MessageSquare,
@@ -23,13 +19,7 @@ import {
   ChevronDown,
   ChevronUp,
   FileVideo,
-  FileText,
   Info,
-  Search,
-  Download,
-  Subtitles,
-  CheckCircle,
-  AlertCircle,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -86,10 +76,8 @@ export default function MoviesPage() {
 
   // Upload form state
   const [movieFile, setMovieFile] = useState<File | null>(null);
-  const [subtitleFile, setSubtitleFile] = useState<File | null>(null);
   const [movieTitle, setMovieTitle] = useState('');
   const [movieCategory, setMovieCategory] = useState('general');
-  const [useWhisper, setUseWhisper] = useState(true);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
 
   // AI Recommender state
@@ -97,16 +85,6 @@ export default function MoviesPage() {
   const [aiRecommendations, setAiRecommendations] = useState<RecommendedMovie[]>([]);
   const [aiTrainingTips, setAiTrainingTips] = useState('');
   const [isLoadingAI, setIsLoadingAI] = useState(false);
-
-  // Subtitle search state
-  const [showSubtitleSearch, setShowSubtitleSearch] = useState(false);
-  const [subtitleTitle, setSubtitleTitle] = useState('');
-  const [subtitleYear, setSubtitleYear] = useState('');
-  const [subtitleLang, setSubtitleLang] = useState('eng');
-  const [subtitleResults, setSubtitleResults] = useState<SubtitleSearchResult[]>([]);
-  const [isSearchingSubtitles, setIsSearchingSubtitles] = useState(false);
-  const [isDownloadingSubtitle, setIsDownloadingSubtitle] = useState(false);
-  const [subtitleMessage, setSubtitleMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
 
   const { data: movies, isLoading } = useQuery({
     queryKey: ['recommended-movies'],
@@ -116,13 +94,12 @@ export default function MoviesPage() {
   const { mutate: doUpload, isPending: isUploading } = useMutation({
     mutationFn: async () => {
       if (!movieFile || !movieTitle) throw new Error('Missing required fields');
-      return uploadMovie(movieFile, movieTitle, movieCategory, subtitleFile || undefined, useWhisper);
+      return uploadMovie(movieFile, movieTitle, movieCategory);
     },
     onSuccess: (data) => {
       setUploadStatus(data.message);
       if (data.success) {
         setMovieFile(null);
-        setSubtitleFile(null);
         setMovieTitle('');
       }
     },
@@ -171,56 +148,6 @@ export default function MoviesPage() {
     }
   };
 
-  const handleSearchSubtitles = async () => {
-    if (!subtitleTitle.trim()) return;
-    setIsSearchingSubtitles(true);
-    setSubtitleResults([]);
-    setSubtitleMessage(null);
-    try {
-      const year = subtitleYear ? parseInt(subtitleYear) : undefined;
-      const response = await searchSubtitles(subtitleTitle, year, subtitleLang);
-      if (response.success && response.results) {
-        setSubtitleResults(response.results);
-        if (response.results.length === 0) {
-          setSubtitleMessage({
-            type: 'error',
-            text: `No subtitles found for "${subtitleTitle}". Try OpenSubtitles.org manually.`
-          });
-        }
-      } else {
-        setSubtitleMessage({type: 'error', text: response.error || 'Search failed'});
-      }
-    } catch (error) {
-      setSubtitleMessage({type: 'error', text: 'Failed to search subtitles. Make sure subliminal is installed.'});
-    } finally {
-      setIsSearchingSubtitles(false);
-    }
-  };
-
-  const handleDownloadSubtitle = async () => {
-    if (!subtitleTitle.trim()) return;
-    setIsDownloadingSubtitle(true);
-    setSubtitleMessage(null);
-    try {
-      const year = subtitleYear ? parseInt(subtitleYear) : undefined;
-      const response = await downloadSubtitle(subtitleTitle, year, subtitleLang);
-      if (response.success) {
-        setSubtitleMessage({
-          type: 'success',
-          text: `Downloaded: ${response.filename} from ${response.provider}`
-        });
-        // Auto-fill the movie title in the upload form
-        setMovieTitle(subtitleTitle);
-      } else {
-        setSubtitleMessage({type: 'error', text: response.error || 'Download failed'});
-      }
-    } catch (error) {
-      setSubtitleMessage({type: 'error', text: 'Failed to download subtitle'});
-    } finally {
-      setIsDownloadingSubtitle(false);
-    }
-  };
-
   return (
     <div className="p-8">
       <div className="mb-8">
@@ -259,12 +186,12 @@ export default function MoviesPage() {
               <div className="flex items-start gap-2">
                 <Info className="w-4 h-4 text-blue-600 mt-0.5" />
                 <div className="text-sm text-blue-800">
-                  <p className="font-medium">How movie transcription works:</p>
-                  <ul className="list-disc ml-4 mt-1 text-blue-700">
-                    <li><strong>Subtitle file (.srt, .vtt)</strong> - Fastest and most accurate</li>
-                    <li><strong>Whisper AI</strong> - Extracts speech from audio (slower but works for any video)</li>
-                    <li><strong>Both</strong> - Use subtitles for text, Whisper for voice analysis</li>
-                  </ul>
+                  <p className="font-medium">How it works:</p>
+                  <p className="text-blue-700 mt-1">
+                    Upload a movie file and Whisper AI will transcribe all dialogue.
+                    This is more reliable than subtitles, which often contain errors or paraphrasing.
+                    The transcription is then analyzed by Claude to extract coaching insights.
+                  </p>
                 </div>
               </div>
             </div>
@@ -287,23 +214,6 @@ export default function MoviesPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Subtitle File (Optional)
-                </label>
-                <input
-                  type="file"
-                  accept=".srt,.vtt"
-                  onChange={(e) => setSubtitleFile(e.target.files?.[0] || null)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                {subtitleFile && (
-                  <p className="text-xs text-gray-500 mt-1">{subtitleFile.name}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Movie Title *
                 </label>
                 <input
@@ -314,34 +224,22 @@ export default function MoviesPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Category
-                </label>
-                <select
-                  value={movieCategory}
-                  onChange={(e) => setMovieCategory(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="general">General</option>
-                  {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
-                    <option key={key} value={key}>{label}</option>
-                  ))}
-                </select>
-              </div>
             </div>
 
-            <div className="flex items-center gap-4">
-              <label className="flex items-center gap-2 text-sm text-gray-600">
-                <input
-                  type="checkbox"
-                  checked={useWhisper}
-                  onChange={(e) => setUseWhisper(e.target.checked)}
-                  className="rounded border-gray-300 text-blue-500 focus:ring-blue-500"
-                />
-                Use Whisper transcription {!subtitleFile && '(required without subtitles)'}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Category
               </label>
+              <select
+                value={movieCategory}
+                onChange={(e) => setMovieCategory(e.target.value)}
+                className="w-full md:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="general">General</option>
+                {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
+                  <option key={key} value={key}>{label}</option>
+                ))}
+              </select>
             </div>
 
             <div className="flex items-center gap-4">
@@ -353,12 +251,12 @@ export default function MoviesPage() {
                 {isUploading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Uploading...
+                    Processing...
                   </>
                 ) : (
                   <>
                     <Upload className="w-4 h-4" />
-                    Upload & Process
+                    Upload & Transcribe
                   </>
                 )}
               </button>
@@ -372,171 +270,6 @@ export default function MoviesPage() {
                 </p>
               )}
             </div>
-          </div>
-        )}
-      </div>
-
-      {/* Subtitle Search Section */}
-      <div className="bg-white rounded-xl p-6 border border-gray-100 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-              <Subtitles className="w-5 h-5 text-green-600" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">Find Subtitles</h2>
-              <p className="text-sm text-gray-600">
-                Automatically search and download subtitle files
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={() => setShowSubtitleSearch(!showSubtitleSearch)}
-            className="px-4 py-2 text-sm bg-green-500 text-white rounded-lg hover:bg-green-600 flex items-center gap-2"
-          >
-            <Search className="w-4 h-4" />
-            {showSubtitleSearch ? 'Hide' : 'Find Subtitles'}
-          </button>
-        </div>
-
-        {showSubtitleSearch && (
-          <div className="space-y-4 pt-4 border-t border-gray-100">
-            <div className="bg-green-50 rounded-lg p-4">
-              <div className="flex items-start gap-2">
-                <Info className="w-4 h-4 text-green-600 mt-0.5" />
-                <div className="text-sm text-green-800">
-                  <p className="font-medium">Automatic subtitle search</p>
-                  <p className="text-green-700 mt-1">
-                    Searches OpenSubtitles, Addic7ed, and other providers. Downloaded subtitles are saved
-                    and can be used when uploading your movie.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Movie Title *
-                </label>
-                <input
-                  type="text"
-                  value={subtitleTitle}
-                  onChange={(e) => setSubtitleTitle(e.target.value)}
-                  placeholder="e.g., Good Will Hunting"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Year (Optional)
-                </label>
-                <input
-                  type="text"
-                  value={subtitleYear}
-                  onChange={(e) => setSubtitleYear(e.target.value)}
-                  placeholder="1997"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Language
-                </label>
-                <select
-                  value={subtitleLang}
-                  onChange={(e) => setSubtitleLang(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                >
-                  <option value="eng">English</option>
-                  <option value="spa">Spanish</option>
-                  <option value="fra">French</option>
-                  <option value="deu">German</option>
-                  <option value="ita">Italian</option>
-                  <option value="por">Portuguese</option>
-                  <option value="jpn">Japanese</option>
-                  <option value="kor">Korean</option>
-                  <option value="zho">Chinese</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <button
-                onClick={handleSearchSubtitles}
-                disabled={!subtitleTitle.trim() || isSearchingSubtitles}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                {isSearchingSubtitles ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Searching...
-                  </>
-                ) : (
-                  <>
-                    <Search className="w-4 h-4" />
-                    Search
-                  </>
-                )}
-              </button>
-
-              <button
-                onClick={handleDownloadSubtitle}
-                disabled={!subtitleTitle.trim() || isDownloadingSubtitle}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                {isDownloadingSubtitle ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Downloading...
-                  </>
-                ) : (
-                  <>
-                    <Download className="w-4 h-4" />
-                    Download Best Match
-                  </>
-                )}
-              </button>
-            </div>
-
-            {subtitleMessage && (
-              <div className={clsx(
-                "flex items-center gap-2 p-3 rounded-lg",
-                subtitleMessage.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
-              )}>
-                {subtitleMessage.type === 'success' ? (
-                  <CheckCircle className="w-4 h-4" />
-                ) : (
-                  <AlertCircle className="w-4 h-4" />
-                )}
-                <span className="text-sm">{subtitleMessage.text}</span>
-              </div>
-            )}
-
-            {subtitleResults.length > 0 && (
-              <div className="mt-4">
-                <p className="text-sm font-medium text-gray-700 mb-2">
-                  Found {subtitleResults.length} subtitles:
-                </p>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {subtitleResults.map((sub, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                      <div>
-                        <span className="text-sm font-medium text-gray-900">
-                          {sub.release_name || subtitleTitle}
-                        </span>
-                        <span className="ml-2 text-xs text-gray-500">
-                          via {sub.provider}
-                        </span>
-                      </div>
-                      <span className="px-2 py-0.5 text-xs bg-gray-200 text-gray-700 rounded">
-                        {sub.language}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         )}
       </div>
@@ -697,8 +430,7 @@ export default function MoviesPage() {
             <p className="font-medium">Important Note</p>
             <p className="mt-1">
               You must own or have legal rights to any movie files you upload. This tool is for processing
-              content you have legitimate access to for personal/research use. Subtitle files can often be
-              found on sites like OpenSubtitles.org.
+              content you have legitimate access to for personal/research use.
             </p>
           </div>
         </div>
