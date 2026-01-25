@@ -96,9 +96,28 @@
 └────────────────────────────────┴────────────────────────────────────┘
 ```
 
-### Stream 1: Transcripts → Wisdom (ALREADY WORKING)
+### Stream 1: Transcripts → Wisdom (✅ ALREADY WORKING)
 
-What the current YouTube Harvester extracts:
+**Existing infrastructure:** `transcript-server/`
+
+```
+transcript-server/
+├── server.js           # Express server on port 3333
+├── package.json
+└── README.md
+
+Endpoints:
+├── GET  /transcript?v=VIDEO_ID     # Single transcript via yt-dlp
+├── POST /batch-transcripts         # Batch transcripts
+└── POST /claude-extract            # Claude API proxy for insights
+
+To start:
+  cd ~/Desktop/Mood-Leaf/transcript-server
+  npm install
+  npm start
+```
+
+What the current system extracts:
 - **Life lessons** - What people have learned
 - **Coping strategies** - What helps and hurts
 - **Emotional patterns** - How people describe feelings
@@ -109,7 +128,21 @@ What the current YouTube Harvester extracts:
 
 **This makes the AI coach WISE and UNDERSTANDING.**
 
-### Stream 2: Audio/Video → Aliveness (NEEDS TRAINING STUDIO)
+### Stream 2: Audio/Video → Aliveness (🔨 NEEDS TRAINING STUDIO)
+
+**What Training Studio adds** (extends existing transcript-server):
+
+```
+training-studio/                    # NEW - adds to existing system
+├── backend/
+│   ├── download.py                # yt-dlp video/audio download
+│   ├── transcription.py           # Whisper (word-level timing)
+│   ├── diarization.py             # pyannote (speaker separation)
+│   ├── prosody.py                 # librosa/parselmouth
+│   ├── facial.py                  # MediaPipe/DeepFace
+│   └── main.py                    # FastAPI server
+└── frontend/                       # Web UI for analysis review
+```
 
 What full media processing extracts:
 - **Prosody** - Rhythm, cadence, pitch, pauses
@@ -524,7 +557,7 @@ This `.jsonl` file can be:
 
 ## Next Steps (When Ready to Build)
 
-1. Create new repo: `MoodLeaf-Training-Studio`
+1. Create folder: `/Mood-Leaf/training-studio/`
 2. Scaffold Python backend with FastAPI
 3. Implement yt-dlp download pipeline
 4. Add Whisper transcription
@@ -538,6 +571,241 @@ This `.jsonl` file can be:
 
 ---
 
-*Document Version: 1.0*
+## Claude Build Instructions
+
+> **For Claude:** When the user says "build the Training Studio" or similar, follow these instructions.
+
+### Location
+
+**Same repo as Mood Leaf, NOT a separate repo.**
+
+```bash
+# Create in the existing Mood-Leaf repo
+cd /home/user/Mood-Leaf
+mkdir -p training-studio/backend training-studio/frontend
+```
+
+### Phase 1: Backend Scaffold
+
+```bash
+# Create Python backend structure
+cd /home/user/Mood-Leaf/training-studio/backend
+
+# Create these files:
+# - main.py (FastAPI app)
+# - requirements.txt
+# - transcription.py (Whisper)
+# - diarization.py (pyannote)
+# - prosody.py (librosa/parselmouth)
+# - facial.py (MediaPipe/DeepFace)
+# - database.py (SQLite/PostgreSQL)
+# - models.py (Pydantic models matching interviewAnalysisService.ts types)
+```
+
+**requirements.txt:**
+```
+fastapi>=0.109.0
+uvicorn>=0.27.0
+openai-whisper>=20231117
+pyannote.audio>=3.1.0
+librosa>=0.10.1
+parselmouth>=0.4.3
+mediapipe>=0.10.9
+deepface>=0.0.79
+opencv-python>=4.9.0
+numpy>=1.26.0
+pydantic>=2.5.0
+python-multipart>=0.0.6
+aiofiles>=23.2.1
+sqlalchemy>=2.0.25
+```
+
+**main.py skeleton:**
+```python
+from fastapi import FastAPI, UploadFile, File, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
+
+app = FastAPI(title="Mood Leaf Training Studio")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.post("/api/transcribe")
+async def transcribe(file: UploadFile = File(...)):
+    """Transcribe audio using Whisper"""
+    pass
+
+@app.post("/api/diarize")
+async def diarize(file: UploadFile = File(...)):
+    """Separate speakers using pyannote"""
+    pass
+
+@app.post("/api/extract-prosody")
+async def extract_prosody(file: UploadFile = File(...)):
+    """Extract prosodic features"""
+    pass
+
+@app.post("/api/analyze-interview")
+async def analyze_interview(file: UploadFile = File(...)):
+    """Full interview analysis"""
+    pass
+
+@app.get("/api/statistics")
+async def get_statistics():
+    """Get aggregate statistics"""
+    pass
+
+@app.get("/api/health")
+async def health():
+    return {"status": "ok"}
+```
+
+### Phase 2: Frontend Scaffold
+
+```bash
+cd /home/user/Mood-Leaf/training-studio/frontend
+npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir
+```
+
+**Key pages to create:**
+- `src/app/page.tsx` - Dashboard
+- `src/app/channels/page.tsx` - Channel management
+- `src/app/process/page.tsx` - Video processing
+- `src/app/review/page.tsx` - Insight review
+- `src/app/statistics/page.tsx` - Analytics dashboard
+
+### Phase 3: Port Existing Code
+
+**Copy types from Mood Leaf:**
+- `interviewAnalysisService.ts` → Convert to Python Pydantic models
+- `prosodyExtractionService.ts` → Convert to Python Pydantic models
+- `youtubeProcessorService.ts` → Port relevant logic to Python
+
+**Copy UI patterns from:**
+- `app/admin/interview-processor.tsx` → Port to React/Next.js
+- `app/admin/training.tsx` → Port to React/Next.js
+
+### Phase 4: Implement Processing
+
+**Whisper transcription:**
+```python
+import whisper
+
+model = whisper.load_model("large-v3")
+
+def transcribe(audio_path: str):
+    result = model.transcribe(
+        audio_path,
+        word_timestamps=True,
+        language="en"
+    )
+    return result
+```
+
+**Speaker diarization:**
+```python
+from pyannote.audio import Pipeline
+
+pipeline = Pipeline.from_pretrained(
+    "pyannote/speaker-diarization-3.0",
+    use_auth_token="YOUR_HF_TOKEN"
+)
+
+def diarize(audio_path: str):
+    diarization = pipeline(audio_path)
+    speakers = []
+    for turn, _, speaker in diarization.itertracks(yield_label=True):
+        speakers.append({
+            "start": turn.start,
+            "end": turn.end,
+            "speaker": speaker
+        })
+    return speakers
+```
+
+**Prosody extraction:**
+```python
+import librosa
+import parselmouth
+
+def extract_prosody(audio_path: str):
+    # Load with librosa
+    y, sr = librosa.load(audio_path)
+
+    # Pitch with parselmouth
+    sound = parselmouth.Sound(audio_path)
+    pitch = sound.to_pitch()
+
+    # Extract features matching ProsodicFeatures type
+    return {
+        "rhythm": {...},
+        "cadence": {...},
+        "tempo": {...},
+        # etc.
+    }
+```
+
+### Phase 5: Test & Integrate
+
+```bash
+# Run backend
+cd /home/user/Mood-Leaf/training-studio/backend
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
+
+# Run frontend
+cd /home/user/Mood-Leaf/training-studio/frontend
+npm run dev
+```
+
+### Phase 6: Remove from Mood Leaf
+
+After Training Studio is working, delete these from `moodling-app/`:
+
+```bash
+# Services
+rm moodling-app/services/youtubeProcessorService.ts
+rm moodling-app/services/interviewAnalysisService.ts
+rm moodling-app/services/prosodyExtractionService.ts
+rm moodling-app/services/trainingDataService.ts
+rm moodling-app/services/trainingQualityService.ts
+rm moodling-app/services/trainingStatusService.ts
+rm moodling-app/services/trainingCleanupService.ts
+
+# UI
+rm moodling-app/app/admin/interview-processor.tsx
+rm moodling-app/app/admin/training.tsx
+```
+
+### Key Reference Files
+
+When building, refer to these existing files for types and logic:
+
+| Mood Leaf File | Contains |
+|----------------|----------|
+| `services/interviewAnalysisService.ts` | All prosody/interview types |
+| `services/prosodyExtractionService.ts` | Voice quality types |
+| `services/youtubeProcessorService.ts` | Extraction categories, quality scoring |
+| `app/admin/interview-processor.tsx` | UI patterns, channel list |
+| `docs/TRAINING_ADMIN_MANUAL.md` | Aliveness philosophy |
+
+### Environment Variables Needed
+
+```bash
+# training-studio/backend/.env
+ANTHROPIC_API_KEY=sk-ant-...
+HUGGINGFACE_TOKEN=hf_...  # For pyannote
+OPENAI_API_KEY=sk-...     # Optional, for Whisper API fallback
+DATABASE_URL=sqlite:///./training.db
+```
+
+---
+
+*Document Version: 1.1*
 *Created: January 2025*
+*Updated: January 2025*
 *Status: Planning - Do Not Build Yet*
