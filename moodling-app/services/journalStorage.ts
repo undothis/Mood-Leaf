@@ -12,6 +12,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { JournalEntry, parseJournalEntry } from '@/types/JournalEntry';
+import { log, info, warn, error as logError, startTimer, endTimer } from './loggingService';
 
 const STORAGE_KEY = '@moodling/journal_entries';
 

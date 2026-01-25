@@ -13,6 +13,7 @@
  */
 
 import { DailySummary } from '@/types/DailySummary';
+import { log, info } from './loggingService';
 
 /**
  * Confidence level for pattern observations

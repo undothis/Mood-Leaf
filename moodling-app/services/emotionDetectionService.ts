@@ -20,6 +20,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
+import { log, info, warn, error as logError, startTimer, endTimer, logFacialAnalysis } from './loggingService';
 
 // ============================================
 // STORAGE KEYS

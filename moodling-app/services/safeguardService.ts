@@ -19,6 +19,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { log, info, warn, error as logError } from './loggingService';
 
 // Storage keys
 const SAFEGUARD_LOG_KEY = 'moodleaf_safeguard_log';

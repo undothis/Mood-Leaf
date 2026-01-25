@@ -12,6 +12,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { log, info, warn, error as logError } from './loggingService';
 import { getAPIKey, CLAUDE_CONFIG } from './claudeAPIService';
 import { getContextForClaude } from './userContextService';
 import { getLifeContextForClaude } from './lifeContextService';

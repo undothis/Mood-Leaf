@@ -16,6 +16,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { log, info, warn, error as logError, startTimer, endTimer } from './loggingService';
 import { HealthSnapshot, fetchHealthSnapshot, isHealthKitEnabled } from './healthKitService';
 import { JournalEntry } from '@/types/JournalEntry';
 import { getAllEntries } from './journalStorage';

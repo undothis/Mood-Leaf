@@ -13,6 +13,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { log, info, warn, error as logError } from './loggingService';
 import { AppState, AppStateStatus } from 'react-native';
 
 // ============================================================================
