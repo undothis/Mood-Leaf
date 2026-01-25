@@ -141,8 +141,8 @@ const SERVICE_TESTERS: Record<string, () => Promise<{ success: boolean; data?: a
   // Context & Memories
   memory_tiers: async () => {
     try {
-      const { getMemoryContext } = await import('./memoryTierService');
-      const memory = await getMemoryContext();
+      const { getMemoryContextForLLM } = await import('./memoryTierService');
+      const memory = await getMemoryContextForLLM();
       return { success: true, data: { hasMemories: !!memory } };
     } catch (e: any) {
       return { success: false, error: e.message };
@@ -181,9 +181,11 @@ const SERVICE_TESTERS: Record<string, () => Promise<{ success: boolean; data?: a
 
   journal_entries: async () => {
     try {
-      const { getRecentEntries } = await import('./journalStorage');
-      const entries = await getRecentEntries(5);
-      return { success: true, data: { entriesCount: entries?.length || 0 } };
+      const { getAllEntries } = await import('./journalStorage');
+      const entries = await getAllEntries();
+      // Only count recent entries (last 5)
+      const recentEntries = entries.slice(-5);
+      return { success: true, data: { entriesCount: recentEntries?.length || 0 } };
     } catch (e: any) {
       return { success: false, error: e.message };
     }
