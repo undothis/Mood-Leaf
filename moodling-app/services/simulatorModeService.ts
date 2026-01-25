@@ -14,6 +14,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { log, info, warn, error as logError } from './loggingService';
 import { getAllEntries } from './journalStorage';
 import { getAllQuickLogs, getAllLogEntries, LogEntry } from './quickLogsService';
 import { getLifeContextForClaude } from './lifeContextService';

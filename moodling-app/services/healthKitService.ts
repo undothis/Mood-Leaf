@@ -13,6 +13,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
+import { log, info, warn, error as logError, startTimer, endTimer } from './loggingService';
 
 // Storage keys
 const HEALTHKIT_ENABLED_KEY = 'moodling_healthkit_enabled';
@@ -254,6 +255,12 @@ export async function handleHeartRateSpike(currentHR: number): Promise<{
 
   if (!isSpiking) return null;
 
+  await warn('health', 'Heart rate spike detected', {
+    currentHR,
+    baseline,
+    percentAboveBaseline,
+  });
+
   const shouldNotify = await shouldSendSpikeNotification();
   if (!shouldNotify) return null;
 
@@ -293,9 +300,12 @@ export async function handleHeartRateSpike(currentHR: number): Promise<{
  * In production, this would actually call HealthKit APIs
  */
 export async function fetchHealthSnapshot(): Promise<HealthSnapshot> {
+  const timerId = startTimer('Fetch health snapshot', 'health');
+
   // Check if enabled
   const enabled = await isHealthKitEnabled();
   if (!enabled || !isHealthKitAvailable()) {
+    await endTimer(timerId, { result: 'not_enabled_or_unavailable' });
     return createEmptySnapshot();
   }
 
@@ -309,12 +319,20 @@ export async function fetchHealthSnapshot(): Promise<HealthSnapshot> {
   try {
     const storedData = await AsyncStorage.getItem(HEALTHKIT_DATA_KEY);
     if (storedData) {
-      return JSON.parse(storedData);
+      const snapshot = JSON.parse(storedData);
+      await endTimer(timerId, {
+        hasHeartRate: !!snapshot.currentHeartRate,
+        hasSleep: !!snapshot.lastNightSleep,
+        hasActivity: !!snapshot.todayActivity,
+      });
+      return snapshot;
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to fetch health snapshot:', error);
+    await logError('health', 'Failed to fetch health snapshot', { error: error.message });
   }
 
+  await endTimer(timerId, { result: 'empty_snapshot' });
   return createEmptySnapshot();
 }
 

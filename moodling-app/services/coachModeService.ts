@@ -15,6 +15,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { log, info, warn, error as logError } from './loggingService';
 
 const STORAGE_KEYS = {
   ACTIVE_MODES: 'moodleaf_active_coach_modes',

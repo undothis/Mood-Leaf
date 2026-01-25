@@ -19,6 +19,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { log, info, warn, error as logError, startTimer, endTimer, logFacialAnalysis } from './loggingService';
 
 // Storage keys
 const STORAGE_KEYS = {
@@ -408,11 +409,16 @@ export async function analyzeFace(
   imageBuffer: ArrayBuffer,
   options?: { skipIdentityCheck?: boolean }
 ): Promise<FaceAnalysisResult> {
+  const timerId = startTimer('Face analysis', 'cadence_facial', { skipIdentityCheck: options?.skipIdentityCheck });
+
   const settings = await getFaceSettings();
 
   if (!settings.enabled) {
+    await endTimer(timerId, { result: 'disabled' });
     throw new Error('Face recognition is disabled');
   }
+
+  await logFacialAnalysis('Starting face analysis', { bufferSize: imageBuffer.byteLength });
 
   // Get baseline for comparison
   const baseline = await getFaceBaseline();
@@ -422,6 +428,14 @@ export async function analyzeFace(
   // This is a placeholder that simulates the analysis
 
   const result = await simulateFaceAnalysis(imageBuffer, baseline, facePrint, options);
+
+  await logFacialAnalysis('Face analysis complete', {
+    status: result.assessment.status,
+    dominantEmotion: result.analysis.dominantEmotion.emotion,
+    fatigueDetected: result.analysis.indicators.fatigue.detected,
+    stressDetected: result.analysis.indicators.stress.detected,
+    identityMatch: result.identityMatch.isMatch,
+  });
 
   // Update baseline if this is a normal sample
   if (result.assessment.status === 'normal') {
@@ -436,6 +450,7 @@ export async function analyzeFace(
     await sendAnonymousData(result);
   }
 
+  await endTimer(timerId, { status: result.assessment.status });
   return result;
 }
 

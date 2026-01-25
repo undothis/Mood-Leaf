@@ -13,6 +13,7 @@
 
 import { MoodCategory } from './sentimentAnalysis';
 import { ToneStyle, getTonePreferences } from './tonePreferencesService';
+import { log, info } from './loggingService';
 
 export interface Reflection {
   opening: string;      // Acknowledges the entry

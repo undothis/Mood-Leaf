@@ -6,6 +6,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { log, info, warn, error as logError } from './loggingService';
 
 const STORAGE_KEY = 'mood_leaf_playback_positions';
 const HISTORY_KEY = 'mood_leaf_playback_history';

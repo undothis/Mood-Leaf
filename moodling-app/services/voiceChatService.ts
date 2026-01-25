@@ -20,6 +20,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
+import { log, info, warn, error as logError, startTimer, endTimer, logVoiceAnalysis } from './loggingService';
 
 // ============================================
 // STORAGE KEYS
@@ -275,6 +276,8 @@ export class VoiceChatController {
   async startListening(): Promise<void> {
     if (this.state.state === 'listening') return;
 
+    await logVoiceAnalysis('Voice listening started', { mode: this.settings.mode, language: this.settings.language });
+
     this.state.state = 'listening';
     this.state.transcript = '';
     this.state.interimTranscript = '';
@@ -321,6 +324,11 @@ export class VoiceChatController {
 
     const finalTranscript = this.state.transcript + this.state.interimTranscript;
     this.state.interimTranscript = '';
+
+    await logVoiceAnalysis('Voice listening stopped', {
+      transcriptLength: finalTranscript.length,
+      silenceDuration: this.state.silenceDuration,
+    });
 
     return finalTranscript;
   }

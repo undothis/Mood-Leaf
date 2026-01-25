@@ -13,6 +13,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { log, info, warn, error as logError, startTimer, endTimer } from './loggingService';
 import { CoachPersona } from './coachPersonalityService';
 
 // Lazy imports for expo-av and expo-file-system to handle missing dependencies

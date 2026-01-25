@@ -16,6 +16,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { log, info, warn, error as logError } from './loggingService';
 
 // ============================================
 // TYPES - How People Actually Think

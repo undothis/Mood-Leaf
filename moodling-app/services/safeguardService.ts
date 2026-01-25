@@ -19,6 +19,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { log, info, warn, error as logError } from './loggingService';
 
 // Storage keys
 const SAFEGUARD_LOG_KEY = 'moodleaf_safeguard_log';
@@ -224,8 +225,15 @@ export function checkSafeguards(message: string): SafeguardResult {
     const matched = keywords.filter(kw => lower.includes(kw));
 
     if (matched.length > 0) {
-      // Log the event (anonymized)
+      // Log the event (anonymized) - internal log
       logSafeguardEvent(category, matched);
+
+      // Log to central logging service for developer dashboard
+      warn('privacy', 'Safeguard triggered', {
+        category,
+        severity: getSeverity(category, matched),
+        keywordCount: matched.length,
+      });
 
       return {
         triggered: true,

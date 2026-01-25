@@ -12,6 +12,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { log, info, warn, error as logError } from './loggingService';
 import { getNewInsights, shouldCongratulateOnInsight, Insight } from './insightService';
 
 // Storage keys

@@ -11,6 +11,7 @@
  */
 
 import { Platform } from 'react-native';
+import { log, info, warn, error as logError, logVoiceAnalysis } from './loggingService';
 
 export interface VoiceRecordingState {
   isRecording: boolean;

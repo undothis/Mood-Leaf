@@ -15,6 +15,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { log, info, warn, error as logError, startTimer, endTimer } from './loggingService';
 import {
   // Types
   CognitiveDistortion,
