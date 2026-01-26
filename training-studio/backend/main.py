@@ -290,6 +290,77 @@ async def run_diagnostics():
     }
 
 
+@app.get("/logs")
+async def get_logs(
+    lines: int = Query(100, description="Number of lines to return"),
+    log_type: str = Query("all", description="Log type: 'all', 'errors', or 'recent'")
+):
+    """
+    Get recent log entries for debugging.
+
+    - lines: Number of log lines to return (default 100, max 1000)
+    - log_type: 'all' for main log, 'errors' for error log only
+    """
+    from config import LOG_FILE, ERROR_LOG_FILE, LOGS_DIR
+    import logging
+
+    logger = logging.getLogger(__name__)
+    lines = min(lines, 1000)  # Cap at 1000 lines
+
+    result = {
+        "log_dir": str(LOGS_DIR),
+        "log_files": [],
+        "entries": []
+    }
+
+    # List available log files
+    if LOGS_DIR.exists():
+        result["log_files"] = [f.name for f in LOGS_DIR.glob("*.log*")]
+
+    # Choose which log file to read
+    log_file = ERROR_LOG_FILE if log_type == "errors" else LOG_FILE
+
+    try:
+        if log_file.exists():
+            with open(log_file, 'r', encoding='utf-8') as f:
+                all_lines = f.readlines()
+                # Get last N lines
+                recent_lines = all_lines[-lines:] if len(all_lines) > lines else all_lines
+                result["entries"] = [line.strip() for line in recent_lines]
+                result["total_lines"] = len(all_lines)
+                result["returned_lines"] = len(recent_lines)
+        else:
+            result["message"] = f"Log file not found: {log_file}"
+            logger.warning(f"Log file not found: {log_file}")
+    except Exception as e:
+        logger.error(f"Error reading log file: {e}")
+        result["error"] = str(e)
+
+    return result
+
+
+@app.delete("/logs")
+async def clear_logs():
+    """Clear log files (keeps structure, removes content)."""
+    from config import LOG_FILE, ERROR_LOG_FILE
+    import logging
+
+    logger = logging.getLogger(__name__)
+
+    cleared = []
+    for log_file in [LOG_FILE, ERROR_LOG_FILE]:
+        try:
+            if log_file.exists():
+                with open(log_file, 'w', encoding='utf-8') as f:
+                    f.write(f"=== Log cleared at {datetime.now().isoformat()} ===\n")
+                cleared.append(str(log_file.name))
+        except Exception as e:
+            logger.error(f"Error clearing log {log_file}: {e}")
+
+    logger.info("Logs cleared by user")
+    return {"cleared": cleared, "message": "Logs cleared successfully"}
+
+
 @app.get("/categories")
 async def get_categories():
     """Get available extraction categories."""

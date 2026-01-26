@@ -3,12 +3,90 @@ Configuration settings for Training Studio.
 """
 
 import os
+import logging
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
+from datetime import datetime
 from pydantic_settings import BaseSettings
 from dotenv import load_dotenv
 
 # Load .env file if it exists
 load_dotenv()
+
+# ============================================================================
+# LOGGING CONFIGURATION
+# ============================================================================
+
+# Create logs directory
+LOGS_DIR = Path(__file__).parent / "logs"
+LOGS_DIR.mkdir(exist_ok=True)
+
+# Log file path
+LOG_FILE = LOGS_DIR / "training_studio.log"
+ERROR_LOG_FILE = LOGS_DIR / "errors.log"
+
+def setup_logging():
+    """Configure logging to write to both file and console."""
+
+    # Create formatters
+    detailed_formatter = logging.Formatter(
+        '%(asctime)s | %(levelname)-8s | %(name)s | %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+    simple_formatter = logging.Formatter(
+        '%(asctime)s | %(levelname)s | %(message)s',
+        datefmt='%H:%M:%S'
+    )
+
+    # Root logger
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.DEBUG)
+
+    # Clear existing handlers
+    root_logger.handlers = []
+
+    # File handler - all logs (rotating, max 5MB, keep 3 backups)
+    file_handler = RotatingFileHandler(
+        LOG_FILE,
+        maxBytes=5*1024*1024,  # 5MB
+        backupCount=3,
+        encoding='utf-8'
+    )
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(detailed_formatter)
+    root_logger.addHandler(file_handler)
+
+    # Error file handler - errors only
+    error_handler = RotatingFileHandler(
+        ERROR_LOG_FILE,
+        maxBytes=2*1024*1024,  # 2MB
+        backupCount=2,
+        encoding='utf-8'
+    )
+    error_handler.setLevel(logging.ERROR)
+    error_handler.setFormatter(detailed_formatter)
+    root_logger.addHandler(error_handler)
+
+    # Console handler
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    console_handler.setFormatter(simple_formatter)
+    root_logger.addHandler(console_handler)
+
+    # Reduce noise from third-party libraries
+    logging.getLogger('httpcore').setLevel(logging.WARNING)
+    logging.getLogger('httpx').setLevel(logging.WARNING)
+    logging.getLogger('urllib3').setLevel(logging.WARNING)
+    logging.getLogger('asyncio').setLevel(logging.WARNING)
+
+    return root_logger
+
+# Initialize logging
+logger = setup_logging()
+logger.info("=" * 60)
+logger.info("Training Studio starting up")
+logger.info(f"Log file: {LOG_FILE}")
+logger.info("=" * 60)
 
 
 class Settings(BaseSettings):
