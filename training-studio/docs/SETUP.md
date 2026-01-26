@@ -181,6 +181,85 @@ pip install pyannote.audio
 python -c "import pyannote.audio; print('pyannote installed!')"
 ```
 
+#### What is Speaker Diarization?
+
+**Speaker diarization** answers the question: "Who spoke when?"
+
+In an interview video with two people (interviewer + guest), diarization identifies:
+- When SPEAKER_00 (interviewer) is talking
+- When SPEAKER_01 (guest/coach) is talking
+- The exact timestamps for each speaker turn
+
+```
+Without Diarization:
+┌─────────────────────────────────────────────────────────────┐
+│ "So tell me about your approach to helping people          │
+│ deal with grief. Well I think the most important thing     │
+│ is to first acknowledge their pain without trying to       │
+│ fix it immediately..."                                     │
+└─────────────────────────────────────────────────────────────┘
+(All text lumped together - who said what?)
+
+With Diarization:
+┌─────────────────────────────────────────────────────────────┐
+│ INTERVIEWER: "So tell me about your approach to helping    │
+│              people deal with grief."                      │
+│                                                            │
+│ COACH: "Well I think the most important thing is to first  │
+│        acknowledge their pain without trying to fix it     │
+│        immediately..."                                     │
+└─────────────────────────────────────────────────────────────┘
+(Clear speaker attribution)
+```
+
+#### Why is Diarization Useful for AI Training?
+
+1. **Better Training Data Quality**
+   - Separates interviewer questions from coach responses
+   - Creates cleaner question→answer pairs for training
+   - Helps identify who is giving the coaching advice
+
+2. **Conversation Flow Understanding**
+   - AI learns natural turn-taking patterns
+   - Understands when to ask vs. when to respond
+   - Models realistic therapeutic conversation dynamics
+
+3. **Speaker Statistics**
+   - Know how much each person talked (coach usually 60-70%)
+   - Identify interview style (lots of questions vs. long monologues)
+   - Filter out videos where the "expert" barely speaks
+
+4. **Interviewer Identification**
+   - Automatically identifies who is the interviewer (usually speaks 30-40%)
+   - Helps attribute coaching insights to the right person
+   - Filters out interviewer opinions from training data
+
+#### Why is Diarization Optional?
+
+**Simple Mode works great without it** because:
+- YouTube's auto-generated transcripts often include speaker markers
+- Claude can infer speaker changes from context and phrasing
+- For single-speaker videos (lectures, TED talks), diarization is unnecessary
+
+**Diarization adds complexity:**
+- Requires HuggingFace account and token
+- Requires accepting pyannote model terms
+- Downloads large ML models (~1GB)
+- Processing takes longer (adds 2-5 min per video)
+- Can make errors with similar voices or overlapping speech
+
+**When you SHOULD use diarization:**
+- Processing podcast/interview content with 2+ speakers
+- Need precise speaker attribution for training
+- Building conversation-style training data
+- Want speaker statistics (who talked more)
+
+**When you can SKIP diarization:**
+- Processing lectures, TED talks, or single-speaker content
+- Using Simple Mode (YouTube transcripts + Claude)
+- Just getting started and want faster processing
+- Don't need precise speaker separation
+
 ### 5e. Facial Analysis (py-feat)
 
 ```bash

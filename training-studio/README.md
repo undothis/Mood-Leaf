@@ -140,10 +140,27 @@ ANTHROPIC_API_KEY=sk-ant-api03-...
 2. In the sidebar, click "Claude API Key"
 3. Enter your API key
 
-### Optional: HuggingFace Token (for speaker diarization)
+### Optional: HuggingFace Token (for Speaker Diarization)
+
+**What is speaker diarization?** It answers "who spoke when?" - separating interviewer questions from coach responses in multi-speaker videos.
+
 ```
 HUGGINGFACE_TOKEN=hf_...
 ```
+
+**Why use it?**
+- Creates cleaner question→answer training pairs
+- Identifies the coach's words vs. interviewer's words
+- Provides speaker statistics (who talked more)
+- Better training data for conversation-style AI
+
+**Why it's optional:**
+- Simple Mode works great without it (Claude infers speakers from context)
+- Single-speaker videos (lectures, TED talks) don't need it
+- Adds processing time (2-5 min per video)
+- Requires HuggingFace account setup
+
+**Recommendation:** Start without diarization. Enable it later if you need precise speaker attribution for interview/podcast content.
 
 ---
 
