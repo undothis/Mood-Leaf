@@ -20,7 +20,7 @@ from pydantic import BaseModel, Field
 import shutil
 import tempfile
 
-from config import settings, init_directories, EXTRACTION_CATEGORIES, RECOMMENDED_CHANNELS, RECOMMENDED_MOVIES
+from config import settings, init_directories, EXTRACTION_CATEGORIES, RECOMMENDED_CHANNELS, RECOMMENDED_MOVIES, ALIVENESS_CATEGORIES
 from database import init_db, db, async_session, ChannelModel, VideoModel, ProcessingJobModel, InsightModel
 from models import (
     YouTubeChannel, VideoMetadata, ProcessingJob, ProcessingStatus,
@@ -1417,6 +1417,288 @@ async def get_source_tokens():
 
 
 # ============================================================================
+# EXTRACTION VERIFICATION - Testing System for Category Coverage
+# ============================================================================
+
+@app.get("/extraction-verification")
+async def get_extraction_verification():
+    """
+    Get extraction verification statistics showing all categories with
+    percentages and checkmarks/status indicators.
+
+    This endpoint helps verify that the harvesting pipeline is working
+    correctly by showing coverage across all extraction categories.
+    """
+    insights = await db.get_all_insights()
+    total_insights = len(insights)
+
+    if total_insights == 0:
+        # Return empty state with all categories marked as not started
+        all_categories = {}
+
+        # Add standard extraction categories
+        for cat_key, cat_desc in EXTRACTION_CATEGORIES.items():
+            all_categories[cat_key] = {
+                "name": cat_key.replace("_", " ").title(),
+                "description": cat_desc,
+                "type": "standard",
+                "count": 0,
+                "percentage": 0.0,
+                "status": "not_started",
+                "status_icon": "⚪",
+                "quality_avg": 0,
+                "safety_avg": 0,
+            }
+
+        # Add aliveness categories
+        for cat_key, cat_data in ALIVENESS_CATEGORIES.items():
+            all_categories[f"aliveness_{cat_key}"] = {
+                "name": cat_key.replace("_", " ").title(),
+                "description": cat_data["description"],
+                "type": "aliveness",
+                "tier": _get_aliveness_tier(cat_key),
+                "why_human": cat_data.get("why_human", ""),
+                "count": 0,
+                "percentage": 0.0,
+                "status": "not_started",
+                "status_icon": "⚪",
+                "quality_avg": 0,
+                "safety_avg": 0,
+            }
+
+        return {
+            "summary": {
+                "total_insights": 0,
+                "categories_with_data": 0,
+                "total_categories": len(all_categories),
+                "overall_health": "not_started",
+                "overall_health_icon": "⚪",
+                "coverage_percentage": 0.0,
+            },
+            "categories": all_categories,
+            "tiers": {
+                "emotional_texture": {"count": 0, "categories": 0, "health": "not_started"},
+                "cognitive_patterns": {"count": 0, "categories": 0, "health": "not_started"},
+                "self_protective": {"count": 0, "categories": 0, "health": "not_started"},
+                "relational_signals": {"count": 0, "categories": 0, "health": "not_started"},
+                "authenticity_markers": {"count": 0, "categories": 0, "health": "not_started"},
+                "meta_conversational": {"count": 0, "categories": 0, "health": "not_started"},
+                "rare_gold": {"count": 0, "categories": 0, "health": "not_started"},
+            },
+            "recommendations": [
+                "Start by adding some YouTube channels or processing videos",
+                "Use the recommended channels list for quality sources",
+                "Run diagnostics to ensure all components are working"
+            ]
+        }
+
+    # Count insights per category
+    category_counts = {}
+    category_quality = {}
+    category_safety = {}
+
+    for insight in insights:
+        cat = insight.category or "unknown"
+        category_counts[cat] = category_counts.get(cat, 0) + 1
+
+        if cat not in category_quality:
+            category_quality[cat] = []
+            category_safety[cat] = []
+        category_quality[cat].append(insight.quality_score)
+        category_safety[cat].append(insight.safety_score)
+
+    # Build comprehensive category report
+    all_categories = {}
+
+    # Add standard extraction categories
+    for cat_key, cat_desc in EXTRACTION_CATEGORIES.items():
+        count = category_counts.get(cat_key, 0)
+        percentage = (count / total_insights * 100) if total_insights > 0 else 0
+        quality_avg = sum(category_quality.get(cat_key, [0])) / max(len(category_quality.get(cat_key, [1])), 1)
+        safety_avg = sum(category_safety.get(cat_key, [0])) / max(len(category_safety.get(cat_key, [1])), 1)
+
+        status, status_icon = _get_category_status(count, percentage, quality_avg, safety_avg)
+
+        all_categories[cat_key] = {
+            "name": cat_key.replace("_", " ").title(),
+            "description": cat_desc,
+            "type": "standard",
+            "count": count,
+            "percentage": round(percentage, 2),
+            "status": status,
+            "status_icon": status_icon,
+            "quality_avg": round(quality_avg, 1),
+            "safety_avg": round(safety_avg, 1),
+        }
+
+    # Add aliveness categories
+    for cat_key, cat_data in ALIVENESS_CATEGORIES.items():
+        count = category_counts.get(cat_key, 0)
+        percentage = (count / total_insights * 100) if total_insights > 0 else 0
+        quality_avg = sum(category_quality.get(cat_key, [0])) / max(len(category_quality.get(cat_key, [1])), 1)
+        safety_avg = sum(category_safety.get(cat_key, [0])) / max(len(category_safety.get(cat_key, [1])), 1)
+
+        status, status_icon = _get_category_status(count, percentage, quality_avg, safety_avg)
+
+        all_categories[f"aliveness_{cat_key}"] = {
+            "name": cat_key.replace("_", " ").title(),
+            "description": cat_data["description"],
+            "type": "aliveness",
+            "tier": _get_aliveness_tier(cat_key),
+            "why_human": cat_data.get("why_human", ""),
+            "coach_note": cat_data.get("Coach_note", ""),
+            "count": count,
+            "percentage": round(percentage, 2),
+            "status": status,
+            "status_icon": status_icon,
+            "quality_avg": round(quality_avg, 1),
+            "safety_avg": round(safety_avg, 1),
+        }
+
+    # Calculate tier statistics for aliveness categories
+    tier_stats = {
+        "emotional_texture": {"count": 0, "categories": 0, "category_list": []},
+        "cognitive_patterns": {"count": 0, "categories": 0, "category_list": []},
+        "self_protective": {"count": 0, "categories": 0, "category_list": []},
+        "relational_signals": {"count": 0, "categories": 0, "category_list": []},
+        "authenticity_markers": {"count": 0, "categories": 0, "category_list": []},
+        "meta_conversational": {"count": 0, "categories": 0, "category_list": []},
+        "rare_gold": {"count": 0, "categories": 0, "category_list": []},
+    }
+
+    for cat_key, cat_info in all_categories.items():
+        if cat_info.get("type") == "aliveness":
+            tier = cat_info.get("tier", "other")
+            if tier in tier_stats:
+                tier_stats[tier]["count"] += cat_info["count"]
+                tier_stats[tier]["categories"] += 1
+                if cat_info["count"] > 0:
+                    tier_stats[tier]["category_list"].append(cat_info["name"])
+
+    # Calculate tier health
+    for tier, stats in tier_stats.items():
+        if stats["count"] == 0:
+            stats["health"] = "not_started"
+            stats["health_icon"] = "⚪"
+        elif stats["count"] < 5:
+            stats["health"] = "needs_data"
+            stats["health_icon"] = "🟡"
+        elif stats["count"] < 20:
+            stats["health"] = "growing"
+            stats["health_icon"] = "🟢"
+        else:
+            stats["health"] = "healthy"
+            stats["health_icon"] = "✅"
+
+    # Calculate overall health
+    categories_with_data = sum(1 for c in all_categories.values() if c["count"] > 0)
+    coverage_percentage = (categories_with_data / len(all_categories) * 100) if all_categories else 0
+
+    if coverage_percentage == 0:
+        overall_health = "not_started"
+        overall_health_icon = "⚪"
+    elif coverage_percentage < 25:
+        overall_health = "needs_attention"
+        overall_health_icon = "🔴"
+    elif coverage_percentage < 50:
+        overall_health = "developing"
+        overall_health_icon = "🟡"
+    elif coverage_percentage < 75:
+        overall_health = "good"
+        overall_health_icon = "🟢"
+    else:
+        overall_health = "excellent"
+        overall_health_icon = "✅"
+
+    # Generate recommendations
+    recommendations = []
+
+    # Find categories with no data
+    empty_categories = [k for k, v in all_categories.items() if v["count"] == 0]
+    if len(empty_categories) > 10:
+        recommendations.append(f"⚠️ {len(empty_categories)} categories have no data - consider processing more diverse content")
+
+    # Find low quality categories
+    low_quality = [k for k, v in all_categories.items() if v["count"] > 0 and v["quality_avg"] < 70]
+    if low_quality:
+        recommendations.append(f"📊 {len(low_quality)} categories have low quality scores - review extraction settings")
+
+    # Find low safety categories
+    low_safety = [k for k, v in all_categories.items() if v["count"] > 0 and v["safety_avg"] < 80]
+    if low_safety:
+        recommendations.append(f"⚠️ {len(low_safety)} categories have safety concerns - manual review recommended")
+
+    # Tier-specific recommendations
+    for tier, stats in tier_stats.items():
+        if stats["count"] == 0:
+            tier_name = tier.replace("_", " ").title()
+            recommendations.append(f"📝 No data for {tier_name} tier - add content with these emotional textures")
+
+    if not recommendations:
+        recommendations.append("✅ Extraction pipeline is healthy - continue monitoring")
+
+    return {
+        "summary": {
+            "total_insights": total_insights,
+            "categories_with_data": categories_with_data,
+            "total_categories": len(all_categories),
+            "overall_health": overall_health,
+            "overall_health_icon": overall_health_icon,
+            "coverage_percentage": round(coverage_percentage, 1),
+        },
+        "categories": all_categories,
+        "tiers": tier_stats,
+        "recommendations": recommendations,
+    }
+
+
+def _get_category_status(count: int, percentage: float, quality_avg: float, safety_avg: float) -> tuple:
+    """Determine status and icon for a category based on metrics."""
+    if count == 0:
+        return "not_started", "⚪"
+    elif safety_avg < 70:
+        return "safety_concern", "🔴"
+    elif quality_avg < 60:
+        return "low_quality", "🟠"
+    elif count < 3:
+        return "needs_data", "🟡"
+    elif quality_avg >= 80 and safety_avg >= 90:
+        return "excellent", "✅"
+    elif quality_avg >= 70:
+        return "good", "🟢"
+    else:
+        return "moderate", "🟡"
+
+
+def _get_aliveness_tier(category_key: str) -> str:
+    """Map aliveness category to its tier."""
+    emotional_texture = ["emotional_granularity", "mixed_feelings", "somatic_markers", "emotional_evolution"]
+    cognitive_patterns = ["temporal_orientation", "contradiction_holding", "narrative_identity", "cognitive_patterns"]
+    self_protective = ["micro_confession", "hedging_shields", "permission_seeking", "topic_circling", "retreat_signals"]
+    relational_signals = ["repair_attempts", "bids_for_witness", "attachment_echoes", "pronoun_patterns"]
+    authenticity_markers = ["guarded_hope", "humor_function", "performed_vs_authentic_vulnerability", "unresolved_questions"]
+    meta_conversational = ["tone_shifts", "meaningful_silence", "what_not_said", "readiness_signals"]
+    rare_gold = ["self_kindness_moments", "values_in_conflict", "identity_friction", "memory_echoes", "meaning_resistance", "integration_moments"]
+
+    if category_key in emotional_texture:
+        return "emotional_texture"
+    elif category_key in cognitive_patterns:
+        return "cognitive_patterns"
+    elif category_key in self_protective:
+        return "self_protective"
+    elif category_key in relational_signals:
+        return "relational_signals"
+    elif category_key in authenticity_markers:
+        return "authenticity_markers"
+    elif category_key in meta_conversational:
+        return "meta_conversational"
+    elif category_key in rare_gold:
+        return "rare_gold"
+    else:
+        return "other"
+
+
+# ============================================================================
 # COMPREHENSIVE ANALYSIS STATISTICS
 # ============================================================================
 
@@ -1539,8 +1821,16 @@ async def export_training_data(
     - chatml: ChatML format for Llama 3+, OpenAI - multi-turn with system prompt
     - sharegpt: ShareGPT format for Unsloth - community standard
     - conversations: Rich multi-turn with full emotional context
+    - aliveness: ★ NEW - Full texture markers with Coach guidance (RECOMMENDED)
     - jsonl: JSON Lines format
     - raw: Raw insight data with all fields
+
+    The 'aliveness' format is RECOMMENDED for training AI that feels genuinely human.
+    It includes:
+    - Texture markers (emotional granularity, self-protection, ambivalence)
+    - Coach guidance (what to do, what to avoid, example responses)
+    - Ready-to-use training pairs with system prompts
+    - MoodLeaf philosophy embedded in each example
 
     Features:
     - Includes source_token for tracking which data influenced model
@@ -1775,6 +2065,117 @@ async def export_training_data(
             "data": examples
         }
 
+    elif format == "aliveness":
+        # Aliveness format - Full texture markers with ready-to-use training pairs
+        # This is the premium format for training AI that feels genuinely human
+        examples = []
+        for i, weight, ch_name in filtered_insights:
+            source_token = i.source_token or f"ch{i.channel_id[:6] if i.channel_id else 'unk'}_v{i.video_id[:8]}_i{i.id[:6]}"
+
+            # Get texture data (may be stored as JSON or dict)
+            texture = {}
+            coach_resp = {}
+            training_ex = {}
+            emotional_ctx = {}
+
+            if hasattr(i, 'texture_analysis_json') and i.texture_analysis_json:
+                texture = i.texture_analysis_json
+            elif hasattr(i, 'emotional_context_json') and i.emotional_context_json:
+                # Fall back to emotional_context for texture markers
+                emotional_ctx = i.emotional_context_json
+                texture = {
+                    "emotional_granularity": emotional_ctx.get("emotional_granularity", "medium"),
+                    "self_protective_type": emotional_ctx.get("self_protective_type", "none"),
+                    "temporal_orientation": emotional_ctx.get("temporal_orientation", "present"),
+                    "ambivalence_present": emotional_ctx.get("ambivalence_present", False),
+                    "somatic_language": emotional_ctx.get("somatic_language", []),
+                    "what_not_said": emotional_ctx.get("what_not_said", ""),
+                }
+
+            if hasattr(i, 'coach_response_json') and i.coach_response_json:
+                coach_resp = i.coach_response_json
+
+            if hasattr(i, 'training_example_json') and i.training_example_json:
+                training_ex = i.training_example_json
+
+            # Build the MoodLeaf system prompt based on texture
+            system_prompt = """You are MoodLeaf, a compassionate AI wellness coach.
+
+CORE PRINCIPLES:
+- Be curious, not prescriptive
+- Use tentative language: "it seems like...", "I wonder if..."
+- Your goal is to become unnecessary
+- No diagnosing, no toxic positivity
+- Meet people where they are
+- Respect retreat and silence
+
+TEXTURE AWARENESS:"""
+
+            # Add texture-specific guidance
+            if texture.get("self_protective_type") and texture["self_protective_type"] != "none":
+                system_prompt += f"\n- User is {texture['self_protective_type']} - honor the protection, don't correct it"
+            if texture.get("ambivalence_present"):
+                system_prompt += "\n- User is holding contradictions - don't resolve them, validate both/and"
+            if texture.get("emotional_granularity") == "low":
+                system_prompt += "\n- User has low emotional granularity - mirror their level, don't upgrade"
+            if texture.get("somatic_language"):
+                system_prompt += "\n- User uses body language - stay embodied in response"
+
+            # Build user message
+            user_msg = training_ex.get("user_message") or i.insight
+
+            # Build assistant response with Coach guidance
+            assistant_msg = training_ex.get("assistant_response") or i.coaching_implication
+
+            # Create the training example
+            example = {
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_msg},
+                    {"role": "assistant", "content": assistant_msg}
+                ],
+                "aliveness_metadata": {
+                    "source_token": source_token,
+                    "category": i.category,
+                    "texture_markers": texture,
+                    "coach_guidance": {
+                        "what_to_do": coach_resp.get("what_to_do", ""),
+                        "what_to_avoid": coach_resp.get("what_to_avoid", ""),
+                        "example_response": coach_resp.get("example_response", "")
+                    },
+                    "raw_quote": getattr(i, 'raw_quote', None),
+                    "scores": {
+                        "quality": i.quality_score,
+                        "specificity": i.specificity_score,
+                        "actionability": i.actionability_score,
+                        "safety": i.safety_score,
+                        "novelty": i.novelty_score
+                    },
+                    "source": {
+                        "channel": ch_name,
+                        "video_id": i.video_id,
+                        "weight": weight if apply_weights else 1.0
+                    }
+                }
+            }
+            examples.append(example)
+
+        return {
+            "format": "aliveness",
+            "description": "Aliveness format with texture markers and Coach guidance for training genuinely human AI",
+            "moodleaf_philosophy": {
+                "curious_not_prescriptive": True,
+                "tentative_language": True,
+                "goal_become_unnecessary": True,
+                "no_toxic_positivity": True,
+                "respect_retreat": True
+            },
+            "texture_categories": list(ALIVENESS_CATEGORIES.keys()) if 'ALIVENESS_CATEGORIES' in dir() else [],
+            "count": len(examples),
+            "weights_applied": apply_weights,
+            "data": examples
+        }
+
     else:  # raw
         return {
             "format": "raw",
@@ -1783,7 +2184,7 @@ async def export_training_data(
             "data": [
                 {
                     "id": i.id,
-                    "source_token": i.source_token or f"ch{i.channel_id[:6]}_v{i.video_id[:8]}_i{i.id[:6]}",
+                    "source_token": i.source_token or f"ch{i.channel_id[:6] if i.channel_id else 'unk'}_v{i.video_id[:8]}_i{i.id[:6]}",
                     "channel_id": i.channel_id,
                     "channel_name": ch_name,
                     "video_id": i.video_id,
@@ -1791,8 +2192,11 @@ async def export_training_data(
                     "title": i.title,
                     "insight": i.insight,
                     "coaching_implication": i.coaching_implication,
-                    "emotional_context": i.emotional_context_json,
-                    "prosody_context": i.prosody_context_json,
+                    "emotional_context": i.emotional_context_json if hasattr(i, 'emotional_context_json') else None,
+                    "prosody_context": i.prosody_context_json if hasattr(i, 'prosody_context_json') else None,
+                    "texture_analysis": i.texture_analysis_json if hasattr(i, 'texture_analysis_json') else None,
+                    "coach_response": i.coach_response_json if hasattr(i, 'coach_response_json') else None,
+                    "training_example": i.training_example_json if hasattr(i, 'training_example_json') else None,
                     "influence_weight": weight if apply_weights else 1.0,
                     "scores": {
                         "quality": i.quality_score,
