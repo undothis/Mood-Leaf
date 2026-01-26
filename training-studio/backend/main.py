@@ -20,7 +20,7 @@ from pydantic import BaseModel, Field
 import shutil
 import tempfile
 
-from config import settings, init_directories, EXTRACTION_CATEGORIES, RECOMMENDED_CHANNELS, RECOMMENDED_MOVIES, ALIVENESS_CATEGORIES
+from config import settings, init_directories, EXTRACTION_CATEGORIES, RECOMMENDED_CHANNELS, RECOMMENDED_MOVIES, ALIVENESS_CATEGORIES, VERSION, get_version_info
 from database import init_db, db, async_session, ChannelModel, VideoModel, ProcessingJobModel, InsightModel
 from models import (
     YouTubeChannel, VideoMetadata, ProcessingJob, ProcessingStatus,
@@ -74,7 +74,7 @@ async def health_check():
     """Health check endpoint."""
     return HealthResponse(
         status="ok",
-        version="1.0.0",
+        version=VERSION,
         services={
             "database": True,
             "whisper": True,
@@ -82,6 +82,12 @@ async def health_check():
             "claude": bool(settings.anthropic_api_key),
         }
     )
+
+
+@app.get("/version")
+async def get_version():
+    """Get detailed version information."""
+    return get_version_info()
 
 
 @app.get("/diagnostics")
