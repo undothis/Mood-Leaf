@@ -26,6 +26,68 @@ This will:
 
 ---
 
+## ⚠️ IMPORTANT: Dependency Management (READ THIS!)
+
+### DO NOT Commit Dependencies!
+
+The following folders are **automatically installed** and should **NEVER be committed to GitHub**:
+
+| Folder | What it is | Why NOT to commit |
+|--------|-----------|-------------------|
+| `frontend/node_modules/` | JavaScript packages | 100s of MB, platform-specific |
+| `backend/venv/` | Python virtual environment | Platform/path-specific |
+
+### What IS Committed (This is correct!)
+
+| File | Purpose |
+|------|---------|
+| `frontend/package.json` | Lists JS dependencies to install |
+| `frontend/package-lock.json` | Locks exact versions |
+| `backend/requirements.txt` | Lists Python dependencies to install |
+
+### Setting Up on a New Computer
+
+Just clone the repo and run `./start.sh` - it automatically installs everything fresh!
+
+```bash
+git clone <your-repo-url>
+cd Mood-Leaf/training-studio
+./start.sh
+```
+
+### GitHub Desktop Instructions
+
+**If you see `node_modules` or `venv` in your changes list:**
+
+1. **DO NOT check/stage them** - they should be ignored
+2. If they appear, the `.gitignore` may not be working. Check that these files exist:
+   - `training-studio/frontend/.gitignore` (should contain `node_modules/`)
+   - `training-studio/backend/.gitignore` (should contain `venv/`)
+
+**What you SHOULD commit:**
+- ✅ Source code files (`.py`, `.tsx`, `.ts`, `.js`)
+- ✅ `package.json` and `package-lock.json`
+- ✅ `requirements.txt`
+- ✅ Configuration files
+
+**What you should NEVER commit:**
+- ❌ `node_modules/` folder
+- ❌ `venv/` folder
+- ❌ `.env` files (contain secrets!)
+- ❌ `__pycache__/` folders
+- ❌ `.next/` build folder
+
+**To discard unwanted changes in GitHub Desktop:**
+1. Right-click on the file/folder in the changes list
+2. Select "Discard Changes"
+
+**If dependencies accidentally got staged:**
+1. Uncheck them in the changes list
+2. Make sure `.gitignore` is properly configured
+3. If already committed, you'll need to remove them (ask for help)
+
+---
+
 ## Manual Setup
 
 ### Prerequisites
