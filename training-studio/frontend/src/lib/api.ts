@@ -250,6 +250,44 @@ export async function getApiKeyStatus(): Promise<{
   return res.json();
 }
 
+export async function setHuggingFaceToken(token: string): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE}/config/huggingface-token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+  });
+  if (!res.ok) throw new Error('Failed to set HuggingFace token');
+  return res.json();
+}
+
+export async function getHuggingFaceTokenStatus(): Promise<{
+  configured: boolean;
+  masked_token: string | null;
+}> {
+  const res = await fetch(`${API_BASE}/config/huggingface-token-status`);
+  if (!res.ok) throw new Error('Failed to get HuggingFace token status');
+  return res.json();
+}
+
+export async function getAllConfigStatus(): Promise<{
+  claude_api: {
+    configured: boolean;
+    masked_key: string | null;
+    required: boolean;
+    description: string;
+  };
+  huggingface: {
+    configured: boolean;
+    masked_token: string | null;
+    required: boolean;
+    description: string;
+  };
+}> {
+  const res = await fetch(`${API_BASE}/config/all-status`);
+  if (!res.ok) throw new Error('Failed to get config status');
+  return res.json();
+}
+
 export interface DiagnosticResult {
   status: 'ok' | 'warning' | 'error';
   message: string;

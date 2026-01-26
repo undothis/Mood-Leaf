@@ -1155,6 +1155,61 @@ async def get_api_key_status():
     }
 
 
+class HuggingFaceTokenRequest(BaseModel):
+    """Request to set HuggingFace token."""
+    token: str
+
+
+@app.post("/config/huggingface-token")
+async def set_huggingface_token(request: HuggingFaceTokenRequest):
+    """Set the HuggingFace token for speaker diarization (stored in memory, not persisted)."""
+    # HuggingFace tokens start with hf_
+    if not request.token.startswith("hf_"):
+        raise HTTPException(status_code=400, detail="Invalid token format. HuggingFace tokens start with 'hf_'")
+
+    # Update the settings in memory
+    settings.huggingface_token = request.token
+
+    # Reinitialize the diarization service with new token
+    diarization_service._pipeline = None  # Will be recreated on next use
+
+    return {"success": True, "message": "HuggingFace token updated"}
+
+
+@app.get("/config/huggingface-token-status")
+async def get_huggingface_token_status():
+    """Check if HuggingFace token is configured."""
+    has_token = bool(settings.huggingface_token)
+    # Show only last 4 chars for security
+    masked = f"hf_...{settings.huggingface_token[-4:]}" if has_token else None
+    return {
+        "configured": has_token,
+        "masked_token": masked
+    }
+
+
+@app.get("/config/all-status")
+async def get_all_config_status():
+    """Get status of all configurable API keys/tokens."""
+    has_api_key = bool(settings.anthropic_api_key)
+    has_hf_token = bool(settings.huggingface_token)
+
+    return {
+        "claude_api": {
+            "configured": has_api_key,
+            "masked_key": f"...{settings.anthropic_api_key[-4:]}" if has_api_key else None,
+            "required": True,
+            "description": "Required for insight extraction"
+        },
+        "huggingface": {
+            "configured": has_hf_token,
+            "masked_token": f"hf_...{settings.huggingface_token[-4:]}" if has_hf_token else None,
+            "required": False,
+            "description": "Optional - enables speaker diarization"
+        }
+    }
+
+
 # ============================================================================
 # TUNING DASHBOARD - Source Management & Influence Control
 # ============================================================================

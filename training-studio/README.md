@@ -51,23 +51,25 @@ brew install libsndfile     # Audio file format support
 
 ### Backend Setup
 
+> **Important**: You must be in the `training-studio/backend` directory (not `training-studio`) for pip to work!
+
+**For bash/zsh users:**
 ```bash
 cd training-studio/backend
-
-# Create virtual environment with Python 3.11
 python3.11 -m venv venv
-
-# Activate (choose based on your shell)
-source venv/bin/activate      # bash/zsh
-source venv/bin/activate.csh  # tcsh
-
-# Upgrade pip first
+source venv/bin/activate
 pip install --upgrade pip
-
-# Install dependencies
 pip install -r requirements.txt
+python3 main.py
+```
 
-# Start server
+**For tcsh/csh users (% prompt):**
+```tcsh
+cd training-studio/backend
+python3.11 -m venv venv
+source venv/bin/activate.csh
+pip install --upgrade pip
+pip install -r requirements.txt
 python3 main.py
 ```
 
@@ -127,18 +129,18 @@ npm run dev
 
 ## Configuration
 
-### Claude API Key
+### Claude API Key (Required)
 
-**Option 1: Environment File**
+**Option 1: UI Configuration (Easiest)**
+1. Open http://localhost:3000
+2. In the sidebar, click "Claude API Key"
+3. Enter your API key (starts with `sk-`)
+
+**Option 2: Environment File**
 Create `backend/.env`:
 ```
 ANTHROPIC_API_KEY=sk-ant-api03-...
 ```
-
-**Option 2: UI Configuration**
-1. Open http://localhost:3000
-2. In the sidebar, click "Claude API Key"
-3. Enter your API key
 
 ### Optional: HuggingFace Token (for Speaker Diarization)
 

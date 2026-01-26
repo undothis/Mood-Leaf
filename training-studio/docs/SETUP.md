@@ -4,6 +4,58 @@ This guide walks you through setting up Training Studio from scratch, including 
 
 ---
 
+## System Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                              TRAINING STUDIO                                     │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  ┌──────────────────────┐         ┌──────────────────────────────────────────┐  │
+│  │                      │         │                                          │  │
+│  │   FRONTEND           │  HTTP   │              BACKEND                     │  │
+│  │   (Next.js)          │◄───────►│              (FastAPI)                   │  │
+│  │   Port 3000          │  REST   │              Port 8000                   │  │
+│  │                      │   API   │                                          │  │
+│  │  ┌────────────────┐  │         │  ┌─────────────────────────────────────┐ │  │
+│  │  │ Dashboard      │  │         │  │           SERVICES                  │ │  │
+│  │  │ Channels       │  │         │  │  ┌─────────────────────────────┐   │ │  │
+│  │  │ Process        │  │         │  │  │ youtube.py     (yt-dlp)    │   │ │  │
+│  │  │ Review         │  │         │  │  │ transcription.py (Whisper) │   │ │  │
+│  │  │ Stats          │  │         │  │  │ diarization.py (pyannote)  │   │ │  │
+│  │  │ Tuning         │  │         │  │  │ prosody.py     (librosa)   │   │ │  │
+│  │  │ Export         │  │         │  │  │ facial.py      (py-feat)   │   │ │  │
+│  │  │ Verification   │  │         │  │  │ insights.py    (Claude)    │   │ │  │
+│  │  └────────────────┘  │         │  │  └─────────────────────────────┘   │ │  │
+│  │                      │         │  │                                     │ │  │
+│  └──────────────────────┘         │  │  ┌─────────────────────────────┐   │ │  │
+│                                   │  │  │ database.py    (SQLite)    │   │ │  │
+│                                   │  │  └─────────────────────────────┘   │ │  │
+│                                   │  └─────────────────────────────────────┘ │  │
+│                                   └──────────────────────────────────────────┘  │
+│                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+                                         │
+                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                           EXTERNAL DEPENDENCIES                                  │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐ │
+│  │    YouTube     │  │   Claude API   │  │  HuggingFace   │  │  Local Files   │ │
+│  │   (yt-dlp)     │  │  (Anthropic)   │  │  (pyannote)    │  │  (SQLite DB)   │ │
+│  │                │  │                │  │                │  │                │ │
+│  │  • Videos      │  │  • Classify    │  │  • Speaker     │  │  • Channels    │ │
+│  │  • Audio       │  │    interviews  │  │    models      │  │  • Videos      │ │
+│  │  • Transcripts │  │  • Extract     │  │  • Diarization │  │  • Insights    │ │
+│  │  • Metadata    │  │    insights    │  │    pipeline    │  │  • Jobs        │ │
+│  └────────────────┘  └────────────────┘  └────────────────┘  └────────────────┘ │
+│                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## Quick Reference: What Mode Do You Need?
 
 | Mode | What It Does | Dependencies |
@@ -471,31 +523,376 @@ brew uninstall yt-dlp ffmpeg portaudio libsndfile
 
 ---
 
+---
+
+## Processing Flow Diagrams
+
+### Simple Mode Flow (Recommended for Getting Started)
+
+Simple Mode uses YouTube's auto-generated transcripts and Claude for insight extraction.
+No local ML models required - fast and reliable.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                           SIMPLE MODE PROCESSING FLOW                            │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+     USER                    FRONTEND                   BACKEND                 EXTERNAL
+       │                        │                          │                       │
+       │  1. Paste YouTube URL  │                          │                       │
+       │───────────────────────►│                          │                       │
+       │                        │  2. POST /process/simple │                       │
+       │                        │─────────────────────────►│                       │
+       │                        │                          │                       │
+       │                        │                          │  3. Get video info    │
+       │                        │                          │──────────────────────►│ YouTube
+       │                        │                          │◄──────────────────────│
+       │                        │                          │                       │
+       │                        │                          │  4. Fetch transcript  │
+       │                        │                          │──────────────────────►│ YouTube
+       │                        │                          │◄──────────────────────│
+       │                        │                          │                       │
+       │                        │                          │  5. Extract insights  │
+       │                        │                          │──────────────────────►│ Claude API
+       │                        │                          │◄──────────────────────│
+       │                        │                          │                       │
+       │                        │                          │  6. Save to SQLite    │
+       │                        │                          │───────┐               │
+       │                        │                          │◄──────┘               │
+       │                        │                          │                       │
+       │                        │  7. Return insights      │                       │
+       │                        │◄─────────────────────────│                       │
+       │  8. Display results    │                          │                       │
+       │◄───────────────────────│                          │                       │
+       │                        │                          │                       │
+
+
+SIMPLE MODE - WHAT EACH COMPONENT DOES:
+
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│    yt-dlp       │     │    YouTube      │     │   Claude API    │
+│                 │     │   Transcript    │     │                 │
+│ • Get video     │────►│                 │────►│ • Classify      │
+│   metadata      │     │ • Auto-captions │     │   interview     │
+│ • Validate URL  │     │ • Timestamps    │     │ • Extract       │
+│                 │     │                 │     │   insights      │
+└─────────────────┘     └─────────────────┘     │ • Score quality │
+                                                └─────────────────┘
+                                                         │
+                                                         ▼
+                                                ┌─────────────────┐
+                                                │    SQLite DB    │
+                                                │                 │
+                                                │ • Store insights│
+                                                │ • Track videos  │
+                                                │ • Export data   │
+                                                └─────────────────┘
+```
+
+### Full Mode Flow (Advanced - All Features)
+
+Full Mode downloads media locally and runs ML models for deeper analysis.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                            FULL MODE PROCESSING FLOW                             │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+                              ┌────────────────────┐
+                              │   YouTube Video    │
+                              │   (User Input)     │
+                              └─────────┬──────────┘
+                                        │
+                                        ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  STEP 1: DOWNLOAD (youtube.py + yt-dlp)                                         │
+│  ┌───────────────────────────────────────────────────────────────────────────┐  │
+│  │ • Download video file (mp4) ──► For facial analysis                       │  │
+│  │ • Download audio file (wav) ──► For transcription + prosody               │  │
+│  │ • Fetch metadata (title, channel, duration)                               │  │
+│  └───────────────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+                                        │
+                        ┌───────────────┴───────────────┐
+                        │                               │
+                        ▼                               ▼
+┌───────────────────────────────────────┐ ┌───────────────────────────────────────┐
+│  STEP 2: TRANSCRIBE                   │ │  STEP 5: FACIAL ANALYSIS              │
+│  (transcription.py + Whisper)         │ │  (facial.py + py-feat/MediaPipe)      │
+│  ┌─────────────────────────────────┐  │ │  ┌─────────────────────────────────┐  │
+│  │ • Convert speech to text        │  │ │  │ • Detect faces in frames        │  │
+│  │ • Word-level timestamps         │  │ │  │ • Recognize emotions            │  │
+│  │ • Multiple languages            │  │ │  │ • Track facial action units     │  │
+│  └─────────────────────────────────┘  │ │  │ • Detect incongruence           │  │
+└───────────────────────────────────────┘ │  └─────────────────────────────────┘  │
+                        │                 └───────────────────────────────────────┘
+                        ▼                               │
+┌───────────────────────────────────────┐               │
+│  STEP 3: SPEAKER DIARIZATION          │               │
+│  (diarization.py + pyannote)          │               │
+│  ┌─────────────────────────────────┐  │               │
+│  │ • Identify who spoke when       │  │               │
+│  │ • Separate interviewer/guest    │  │               │
+│  │ • Calculate speaking statistics │  │               │
+│  └─────────────────────────────────┘  │               │
+└───────────────────────────────────────┘               │
+                        │                               │
+                        ▼                               │
+┌───────────────────────────────────────┐               │
+│  STEP 4: PROSODY ANALYSIS             │               │
+│  (prosody.py + librosa/parselmouth)   │               │
+│  ┌─────────────────────────────────┐  │               │
+│  │ • Extract pitch patterns        │  │               │
+│  │ • Analyze speech rhythm         │  │               │
+│  │ • Detect pauses and hesitations │  │               │
+│  │ • Voice quality metrics         │  │               │
+│  │ • Detect distress markers       │  │               │
+│  │ • Calculate aliveness scores    │  │               │
+│  └─────────────────────────────────┘  │               │
+└───────────────────────────────────────┘               │
+                        │                               │
+                        └───────────────┬───────────────┘
+                                        │
+                                        ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  STEP 6: INTERVIEW CLASSIFICATION (insights.py + Claude API)                    │
+│  ┌───────────────────────────────────────────────────────────────────────────┐  │
+│  │ • Identify interview type (therapy, coaching, grief, etc.)                │  │
+│  │ • Detect therapeutic approaches used (CBT, DBT, MI, etc.)                 │  │
+│  │ • Assess content suitability for training                                 │  │
+│  └───────────────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+                                        │
+                                        ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  STEP 7: INSIGHT EXTRACTION (insights.py + Claude API)                          │
+│  ┌───────────────────────────────────────────────────────────────────────────┐  │
+│  │ INPUTS:                           OUTPUTS:                                │  │
+│  │ • Transcript + timestamps         • Extracted insights (10-30 per video)  │  │
+│  │ • Speaker diarization             • Quality scores (0-100)                │  │
+│  │ • Prosody analysis                • Safety scores                         │  │
+│  │ • Facial emotions                 • Coaching implications                 │  │
+│  │ • Video metadata                  • Categories (grief, anxiety, etc.)     │  │
+│  └───────────────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+                                        │
+                                        ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  STEP 8: SAVE TO DATABASE (database.py + SQLite)                                │
+│  ┌───────────────────────────────────────────────────────────────────────────┐  │
+│  │ • Store all extracted insights                                            │  │
+│  │ • Track processing jobs                                                   │  │
+│  │ • Link insights to source videos/channels                                 │  │
+│  │ • Enable review, tuning, and export                                       │  │
+│  └───────────────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Data Export Flow
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                              DATA EXPORT FLOW                                    │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│   REVIEW PAGE   │     │   TUNING PAGE   │     │  EXPORT PAGE    │
+│                 │     │                 │     │                 │
+│ • Approve/reject│────►│ • Adjust weights│────►│ • Select format │
+│   insights      │     │ • Exclude       │     │ • Download file │
+│ • Quality filter│     │   channels      │     │                 │
+│                 │     │ • Check balance │     │                 │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+                                                         │
+                                                         ▼
+                              ┌─────────────────────────────────────────┐
+                              │           EXPORT FORMATS                 │
+                              ├─────────────────────────────────────────┤
+                              │                                         │
+                              │  ChatML (Llama 3+, OpenAI)              │
+                              │  ┌───────────────────────────────────┐  │
+                              │  │ {"messages": [                    │  │
+                              │  │   {"role": "system", "content":..}│  │
+                              │  │   {"role": "user", "content":...} │  │
+                              │  │   {"role": "assistant",...}       │  │
+                              │  │ ]}                                │  │
+                              │  └───────────────────────────────────┘  │
+                              │                                         │
+                              │  ShareGPT (Unsloth)                     │
+                              │  ┌───────────────────────────────────┐  │
+                              │  │ {"conversations": [               │  │
+                              │  │   {"from": "human", "value":...}  │  │
+                              │  │   {"from": "gpt", "value":...}    │  │
+                              │  │ ]}                                │  │
+                              │  └───────────────────────────────────┘  │
+                              │                                         │
+                              │  Alpaca, JSONL, Raw...                  │
+                              └─────────────────────────────────────────┘
+                                                         │
+                                                         ▼
+                              ┌─────────────────────────────────────────┐
+                              │           FINE-TUNING                   │
+                              │                                         │
+                              │  Export ──► Unsloth/LoRA ──► Your Model │
+                              │                                         │
+                              └─────────────────────────────────────────┘
+```
+
+### Component Interaction Matrix
+
+| Component | Depends On | Provides To | Required? |
+|-----------|-----------|-------------|-----------|
+| **yt-dlp** | - | youtube.py | Yes |
+| **ffmpeg** | - | transcription, prosody | Full Mode |
+| **Whisper** | ffmpeg | transcription.py | Full Mode |
+| **pyannote** | HuggingFace token | diarization.py | Optional |
+| **librosa** | ffmpeg, portaudio | prosody.py | Optional |
+| **parselmouth** | - | prosody.py (voice quality) | Optional |
+| **py-feat** | - | facial.py | Optional |
+| **MediaPipe** | opencv | facial.py (backup) | Optional |
+| **Claude API** | API key | insights.py | Yes |
+| **SQLite** | - | database.py | Yes (auto) |
+
+---
+
+---
+
+## Common Issues & Solutions
+
+### "pip: Command not found" or "source: No such file"
+
+**Problem**: You're not in the right directory or haven't activated the virtual environment.
+
+**Solution**: You MUST be in `training-studio/backend` (not `training-studio`):
+
+```bash
+# WRONG - you're in the wrong directory
+cd training-studio
+pip install ...  # FAILS - pip not found
+
+# CORRECT - go to backend first
+cd training-studio/backend
+source venv/bin/activate   # bash/zsh
+pip install ...            # WORKS
+```
+
+### tcsh/csh Users (% prompt)
+
+If your terminal prompt ends with `%`, you're using tcsh. Use these commands:
+
+```tcsh
+# Navigate to backend
+cd training-studio/backend
+
+# Activate venv (note the .csh extension)
+source venv/bin/activate.csh
+
+# Now pip works
+pip install openai-whisper librosa praat-parselmouth py-feat mediapipe opencv-python
+```
+
+### "venv/bin/activate: No such file or directory"
+
+**Problem**: The virtual environment doesn't exist yet, or you're in the wrong directory.
+
+**Solution**: Create the venv first:
+
+```bash
+# Make sure you're in the backend directory
+cd training-studio/backend
+
+# Create the virtual environment
+python3.11 -m venv venv
+
+# Now activate it
+source venv/bin/activate      # bash/zsh
+source venv/bin/activate.csh  # tcsh/csh
+```
+
+### "python3.11: command not found"
+
+**Solution**: Install Python via Homebrew:
+
+```bash
+brew install python@3.11
+```
+
+Then use `python3.11` instead of `python3`.
+
+---
+
 ## Summary: Complete Install Commands
 
-Copy and run these commands for a complete Full Mode installation:
+### For bash/zsh users:
 
 ```bash
 # 1. Homebrew dependencies (macOS)
 brew install python@3.11 node yt-dlp ffmpeg portaudio libsndfile
 
-# 2. Backend setup
+# 2. Backend setup - IMPORTANT: go to backend directory first!
 cd training-studio/backend
 python3.11 -m venv venv
 source venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
+
+# 3. Install Full Mode dependencies (optional)
 pip install openai-whisper librosa praat-parselmouth pyannote.audio py-feat mediapipe opencv-python
 
-# 3. Configure API keys
+# 4. Configure API keys (or use the UI instead)
 cp .env.example .env
 # Edit .env with your ANTHROPIC_API_KEY and optionally HUGGINGFACE_TOKEN
+# OR just use the sidebar in the UI to enter keys
 
-# 4. Frontend setup
+# 5. Frontend setup
 cd ../frontend
 npm install
 
-# 5. Start
+# 6. Start
 cd ..
 ./start.sh
 ```
+
+### For tcsh/csh users (% prompt):
+
+```tcsh
+# 1. Homebrew dependencies (macOS)
+brew install python@3.11 node yt-dlp ffmpeg portaudio libsndfile
+
+# 2. Backend setup - IMPORTANT: go to backend directory first!
+cd training-studio/backend
+python3.11 -m venv venv
+source venv/bin/activate.csh
+pip install --upgrade pip
+pip install -r requirements.txt
+
+# 3. Install Full Mode dependencies (optional)
+pip install openai-whisper librosa praat-parselmouth pyannote.audio py-feat mediapipe opencv-python
+
+# 4. Configure API keys (or use the UI instead)
+cp .env.example .env
+# Edit .env with your ANTHROPIC_API_KEY and optionally HUGGINGFACE_TOKEN
+# OR just use the sidebar in the UI to enter keys
+
+# 5. Frontend setup
+cd ../frontend
+npm install
+
+# 6. Start
+cd ..
+source start.csh
+```
+
+---
+
+## Configuring API Keys via UI
+
+You can now configure API keys directly in the Training Studio UI instead of editing `.env`:
+
+1. Start Training Studio (`./start.sh` or `source start.csh`)
+2. Open http://localhost:3000
+3. In the sidebar, you'll see:
+   - **Claude API Key** (required) - Click to enter your Anthropic API key
+   - **HuggingFace Token** (optional) - Click to enter for speaker diarization
+
+The UI configuration is stored in memory and resets when the backend restarts. For permanent storage, use the `.env` file.
