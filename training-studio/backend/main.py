@@ -905,18 +905,54 @@ async def get_channel_videos(
         raise HTTPException(status_code=404, detail="Channel not found")
 
     logger.info(f"Brain Studio: Fetching from URL: {channel.url}")
-    videos = await youtube_service.fetch_channel_videos(
-        channel.url,
-        max_videos=max_videos,
-        strategy=strategy
-    )
-    logger.info(f"Brain Studio: Found {len(videos)} videos for channel {channel.name}")
 
-    return {
-        "channel_id": channel_id,
-        "channel_name": channel.name,
-        "videos": [v.model_dump() for v in videos]
-    }
+    try:
+        videos = await youtube_service.fetch_channel_videos(
+            channel.url,
+            max_videos=max_videos,
+            strategy=strategy
+        )
+        logger.info(f"Brain Studio: Found {len(videos)} videos for channel {channel.name}")
+
+        return {
+            "channel_id": channel_id,
+            "channel_name": channel.name,
+            "channel_url": channel.url,
+            "videos": [v.model_dump() for v in videos],
+            "video_count": len(videos)
+        }
+    except Exception as e:
+        logger.error(f"Brain Studio: Error fetching videos: {str(e)}")
+        return {
+            "channel_id": channel_id,
+            "channel_name": channel.name,
+            "channel_url": channel.url,
+            "videos": [],
+            "video_count": 0,
+            "error": str(e)
+        }
+
+
+@app.get("/test-video-fetch")
+async def test_video_fetch(url: str = Query(..., description="YouTube channel URL to test")):
+    """Debug endpoint to test video fetching directly."""
+    logger.info(f"Test video fetch for URL: {url}")
+
+    try:
+        videos = await youtube_service.fetch_channel_videos(url, max_videos=5)
+        return {
+            "success": True,
+            "url": url,
+            "video_count": len(videos),
+            "videos": [{"id": v.video_id, "title": v.title, "duration": v.duration_seconds} for v in videos]
+        }
+    except Exception as e:
+        logger.error(f"Test video fetch error: {str(e)}")
+        return {
+            "success": False,
+            "url": url,
+            "error": str(e)
+        }
 
 
 # ============================================================================
