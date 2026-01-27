@@ -1232,6 +1232,34 @@ async def get_api_key_status():
     }
 
 
+class HuggingFaceTokenRequest(BaseModel):
+    token: str
+
+
+@app.post("/config/huggingface-token")
+async def set_huggingface_token(request: HuggingFaceTokenRequest):
+    """Set the HuggingFace token (stored in memory, not persisted)."""
+    if not request.token.startswith("hf_"):
+        raise HTTPException(status_code=400, detail="Invalid token format. Token should start with 'hf_'")
+
+    # Update the settings in memory
+    settings.huggingface_token = request.token
+
+    return {"success": True, "message": "HuggingFace token updated"}
+
+
+@app.get("/config/huggingface-status")
+async def get_huggingface_status():
+    """Check if HuggingFace token is configured."""
+    has_token = bool(settings.huggingface_token)
+    # Show only last 4 chars for security
+    masked = f"...{settings.huggingface_token[-4:]}" if has_token else None
+    return {
+        "configured": has_token,
+        "masked_token": masked
+    }
+
+
 # ============================================================================
 # TUNING DASHBOARD - Source Management & Influence Control
 # ============================================================================
