@@ -29,7 +29,7 @@ class InsightExtractionService:
         self.api_key = settings.anthropic_api_key
         self.base_url = "https://api.anthropic.com/v1/messages"
         self.model = "claude-sonnet-4-20250514"
-        self.max_tokens = 4096
+        self.max_tokens = 8192  # Increased to handle complex extraction format
 
     async def extract_insights(
         self,
@@ -268,6 +268,98 @@ Extract {max_insights} high-quality texture markers. Return ONLY the JSON."""
 
         return prompt
 
+    def _fix_truncated_json(self, json_text: str) -> str:
+        """
+        Attempt to fix truncated JSON responses by completing partial structures.
+        This helps salvage insights from responses that got cut off.
+        """
+        import re
+
+        # Check if JSON looks complete (ends properly)
+        stripped = json_text.rstrip()
+        if stripped.endswith('}'):
+            return json_text
+
+        logger.warning("[Insights] Detected potentially truncated JSON, attempting recovery...")
+
+        # Count open vs close braces/brackets
+        open_braces = json_text.count('{')
+        close_braces = json_text.count('}')
+        open_brackets = json_text.count('[')
+        close_brackets = json_text.count(']')
+
+        # Find the last complete extraction object by looking for the pattern
+        # We want to keep only complete extraction objects
+        extraction_pattern = r'"extractions"\s*:\s*\['
+        match = re.search(extraction_pattern, json_text)
+
+        if match:
+            # Find all complete extraction objects (those that end with })
+            # Look for objects that have all required closing braces
+            last_complete_obj = -1
+            depth = 0
+            in_string = False
+            escape_next = False
+            obj_start = -1
+
+            for i, char in enumerate(json_text):
+                if escape_next:
+                    escape_next = False
+                    continue
+                if char == '\\':
+                    escape_next = True
+                    continue
+                if char == '"' and not escape_next:
+                    in_string = not in_string
+                    continue
+                if in_string:
+                    continue
+
+                if char == '{':
+                    if depth == 1:  # Starting a new extraction object
+                        obj_start = i
+                    depth += 1
+                elif char == '}':
+                    depth -= 1
+                    if depth == 1 and obj_start != -1:  # Completed an extraction object
+                        last_complete_obj = i
+
+            if last_complete_obj > 0:
+                # Truncate to last complete object and close the structure
+                json_text = json_text[:last_complete_obj + 1]
+
+                # Close the extractions array
+                if not json_text.rstrip().endswith(']'):
+                    json_text = json_text.rstrip()
+                    # Remove trailing comma if present
+                    if json_text.endswith(','):
+                        json_text = json_text[:-1]
+                    json_text += ']'
+
+                # Close the main object (add empty overall_patterns if needed)
+                if not json_text.rstrip().endswith('}'):
+                    json_text += ', "overall_patterns": {}}'
+
+                logger.info(f"[Insights] Recovered truncated JSON, new length: {len(json_text)} chars")
+            else:
+                # Couldn't find complete objects, try simple brace balancing
+                missing_close_braces = open_braces - close_braces
+                missing_close_brackets = open_brackets - close_brackets
+
+                # Remove potentially incomplete data at the end
+                # Find the last comma followed by a quote (start of a new field)
+                last_safe = json_text.rfind('",')
+                if last_safe > len(json_text) * 0.5:  # Only if we have substantial data
+                    json_text = json_text[:last_safe + 1]
+
+                # Add missing closing brackets/braces
+                json_text += ']' * missing_close_brackets
+                json_text += '}' * missing_close_braces
+
+                logger.info(f"[Insights] Applied simple brace balancing, added {missing_close_brackets}] and {missing_close_braces}}}")
+
+        return json_text
+
     def _parse_insights_response(
         self,
         response_text: str,
@@ -296,6 +388,9 @@ Extract {max_insights} high-quality texture markers. Return ONLY the JSON."""
             json_text = re.sub(r',\s*,', ',', json_text)
 
             logger.info(f"[Insights] Cleaned JSON length: {len(json_text)} chars")
+
+            # Try to detect and fix truncated JSON responses
+            json_text = self._fix_truncated_json(json_text)
 
             data = json.loads(json_text)
 

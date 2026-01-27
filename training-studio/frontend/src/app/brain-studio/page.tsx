@@ -967,6 +967,18 @@ function BrainSVG({
   );
 }
 
+// Default target percentages for each brain region (used when no goals are set)
+const DEFAULT_REGION_TARGETS: Record<string, number> = {
+  prefrontal: 8,    // decision making, cognitive patterns
+  temporal: 10,     // communication, relationships
+  limbic: 8,        // joy, emotional regulation
+  amygdala: 15,     // emotional struggles, fear, anxiety
+  hippocampus: 12,  // growth, wisdom, learning
+  parietal: 5,      // body awareness, somatic
+  occipital: 7,     // creativity, spirituality, meaning
+  brainstem: 12,    // coping, vulnerability, boundaries
+};
+
 function BrainVisualizationTab() {
   const { data: comparison, isLoading } = useQuery({
     queryKey: ['brain-comparison'],
@@ -981,11 +993,15 @@ function BrainVisualizationTab() {
     );
   }
 
+  const totalInsights = comparison?.total_insights || 0;
+  const hasNoData = totalInsights === 0;
+
   // Calculate region fills based on current data
-  const calculateRegionState = (categories: string[], currentState: Record<string, number>, goalState: Record<string, number>) => {
+  const calculateRegionState = (regionKey: string, categories: string[], currentState: Record<string, number>, goalState: Record<string, number>) => {
     let totalCurrent = 0;
     let totalGoal = 0;
-    let count = 0;
+    let currentCount = 0;
+    let goalCount = 0;
 
     categories.forEach(cat => {
       // Check all possible variations of category name
@@ -993,22 +1009,24 @@ function BrainVisualizationTab() {
       for (const variant of catVariants) {
         if (currentState[variant] !== undefined) {
           totalCurrent += currentState[variant];
-          count++;
+          currentCount++;
           break;
         }
       }
       for (const variant of catVariants) {
         if (goalState[variant] !== undefined) {
           totalGoal += goalState[variant];
+          goalCount++;
           break;
         }
       }
     });
 
-    const avgCurrent = count > 0 ? totalCurrent / count : 0;
-    const avgGoal = totalGoal > 0 ? totalGoal / categories.length : 0;
+    const avgCurrent = currentCount > 0 ? totalCurrent / currentCount : 0;
+    // Use default targets if no goals are set for this region
+    const avgGoal = goalCount > 0 ? totalGoal / goalCount : DEFAULT_REGION_TARGETS[regionKey] || 10;
 
-    return { current: avgCurrent, goal: avgGoal, count };
+    return { current: avgCurrent, goal: avgGoal, currentCount, goalCount };
   };
 
   // Generate fills for current brain
@@ -1016,32 +1034,47 @@ function BrainVisualizationTab() {
   // Generate fills for goal brain
   const goalBrainFills: Record<string, { fill: string; opacity: number; hasAlert?: boolean }> = {};
 
+  // Track all regions with their stats for legend
+  const regionStats: Record<string, { current: number; goal: number; gap: number }> = {};
+
   const misalignments: { region: string; name: string; current: number; goal: number; gap: number; description: string }[] = [];
 
   Object.entries(BRAIN_REGIONS).forEach(([regionKey, region]) => {
     const state = calculateRegionState(
+      regionKey,
       region.categories,
       comparison?.current_state || {},
       comparison?.goal_state || {}
     );
 
+    // Store stats for legend
+    const gap = state.goal - state.current;
+    regionStats[regionKey] = {
+      current: Math.round(state.current * 10) / 10,
+      goal: Math.round(state.goal * 10) / 10,
+      gap: Math.round(gap * 10) / 10,
+    };
+
     // Current brain - intensity based on how much data we have
     const currentIntensity = Math.min(1, state.current / 30); // 30% = full intensity
     currentBrainFills[regionKey] = {
       fill: region.color,
-      opacity: 0.2 + (currentIntensity * 0.6),
+      opacity: hasNoData ? 0.15 : 0.2 + (currentIntensity * 0.6),
     };
 
     // Goal brain - full intensity based on goal
-    const goalIntensity = state.goal > 0 ? Math.min(1, state.goal / 30) : 0.3;
+    const goalIntensity = Math.min(1, state.goal / 30);
     goalBrainFills[regionKey] = {
       fill: region.color,
       opacity: 0.2 + (goalIntensity * 0.6),
     };
 
-    // Check for misalignment (gap > 5%)
-    const gap = state.goal - state.current;
-    if (gap > 5) {
+    // Check for misalignment:
+    // - If no data at all: ALL regions with goals need attention
+    // - If some data: regions with gap > 3% need attention
+    const needsAttention = hasNoData ? state.goal > 0 : gap > 3;
+
+    if (needsAttention && state.goal > 0) {
       currentBrainFills[regionKey].hasAlert = true;
       misalignments.push({
         region: regionKey,
@@ -1054,24 +1087,67 @@ function BrainVisualizationTab() {
     }
   });
 
-  // Sort misalignments by gap
+  // Sort misalignments by gap (largest first)
   misalignments.sort((a, b) => b.gap - a.gap);
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl p-6 text-white">
+      <div className={clsx(
+        "rounded-xl p-6 text-white",
+        hasNoData
+          ? "bg-gradient-to-r from-orange-500 to-red-500"
+          : "bg-gradient-to-r from-purple-500 to-indigo-600"
+      )}>
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-lg font-semibold opacity-90">Brain Alignment Visualization</h2>
-            <p className="text-sm opacity-75">Compare your current training state to your ideal goal state</p>
+            <p className="text-sm opacity-75">
+              {hasNoData
+                ? "No training data yet - process videos to build your brain!"
+                : "Compare your current training state to your ideal goal state"
+              }
+            </p>
           </div>
           <div className="text-right">
-            <p className="text-4xl font-bold">{comparison?.health_score || 0}%</p>
-            <p className="text-sm opacity-75">Brain Health</p>
+            <p className="text-4xl font-bold">{hasNoData ? "0%" : `${comparison?.health_score || 0}%`}</p>
+            <p className="text-sm opacity-75">{hasNoData ? "Get Started!" : "Brain Health"}</p>
           </div>
         </div>
       </div>
+
+      {/* Get Started Alert - when no data */}
+      {hasNoData && (
+        <div className="bg-orange-50 border-2 border-orange-300 rounded-xl p-6">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <AlertTriangle className="w-6 h-6 text-orange-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-gray-900 text-lg">Your Brain is Empty!</h3>
+              <p className="text-gray-600 mt-1">
+                You haven&apos;t processed any videos yet. Go to the <strong>Channels</strong> page to add YouTube channels
+                and process videos. The insights extracted will fill in your brain regions.
+              </p>
+              <div className="mt-4 flex gap-3">
+                <a
+                  href="/channels"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Channels & Process Videos
+                </a>
+                <a
+                  href="/channels"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  View Recommended Channels
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Two Brains Side by Side */}
       <div className="grid grid-cols-2 gap-8">
@@ -1146,23 +1222,35 @@ function BrainVisualizationTab() {
       {/* Recommendations */}
       {misalignments.length > 0 && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <TrendingUp className="w-5 h-5 text-yellow-600" />
-            <h3 className="font-semibold text-gray-900">Recommendations to Fill Gaps</h3>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-yellow-600" />
+              <h3 className="font-semibold text-gray-900">Recommendations to Fill Gaps</h3>
+            </div>
+            <a
+              href="/channels"
+              className="inline-flex items-center gap-2 px-3 py-1.5 bg-yellow-500 text-white text-sm rounded-lg hover:bg-yellow-600 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Process Videos
+            </a>
           </div>
           <div className="space-y-3">
             {misalignments.slice(0, 3).map((m) => {
               const region = BRAIN_REGIONS[m.region as keyof typeof BRAIN_REGIONS];
               return (
                 <div key={m.region} className="bg-white rounded-lg p-4 border">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Sparkles className="w-4 h-4 text-yellow-500" />
-                    <span className="font-medium text-gray-900">Strengthen {m.name}</span>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-yellow-500" />
+                      <span className="font-medium text-gray-900">Strengthen {m.name}</span>
+                    </div>
+                    <span className="text-sm text-red-500 font-medium">Need +{m.gap}%</span>
                   </div>
                   <p className="text-sm text-gray-600">
                     Process more videos with content about: {region?.categories.slice(0, 4).map(c => c.replace(/_/g, ' ')).join(', ')}
                   </p>
-                  <div className="mt-2 flex gap-2 flex-wrap">
+                  <div className="mt-3 flex flex-wrap gap-2">
                     {getSuggestedChannels(m.region).map((suggestion, i) => (
                       <span key={i} className="text-xs px-2 py-1 bg-yellow-100 text-yellow-700 rounded">
                         {suggestion}
@@ -1176,27 +1264,74 @@ function BrainVisualizationTab() {
         </div>
       )}
 
-      {/* Legend */}
+      {/* Legend with Percentages */}
       <div className="bg-gray-50 border rounded-xl p-6">
-        <h3 className="font-semibold text-gray-900 mb-4">Brain Region Legend</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {Object.entries(BRAIN_REGIONS).map(([key, region]) => (
-            <div key={key} className="flex items-center gap-2">
-              <div
-                className="w-4 h-4 rounded-full"
-                style={{ backgroundColor: region.color }}
-              />
-              <div>
-                <p className="text-sm font-medium text-gray-900">{region.name}</p>
-                <p className="text-xs text-gray-500">{region.description}</p>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-gray-900">Brain Region Training Status</h3>
+          <a
+            href="/channels"
+            className="text-sm text-purple-600 hover:text-purple-700 flex items-center gap-1"
+          >
+            <Plus className="w-4 h-4" />
+            Process More Videos
+          </a>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {Object.entries(BRAIN_REGIONS).map(([key, region]) => {
+            const stats = regionStats[key] || { current: 0, goal: 10, gap: 10 };
+            const needsMore = stats.gap > 0;
+            return (
+              <div key={key} className="bg-white rounded-lg p-4 border">
+                <div className="flex items-center gap-3 mb-2">
+                  <div
+                    className="w-4 h-4 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: region.color }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900">{region.name}</p>
+                    <p className="text-xs text-gray-500 truncate">{region.description}</p>
+                  </div>
+                  {needsMore && (
+                    <span className="text-xs px-2 py-1 bg-red-100 text-red-600 rounded-full flex-shrink-0">
+                      Need +{stats.gap}%
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <div className="flex-1">
+                    <div className="flex justify-between mb-1">
+                      <span className="text-gray-500">Current: {stats.current}%</span>
+                      <span className="text-gray-500">Goal: {stats.goal}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2 relative">
+                      <div
+                        className="h-2 rounded-full transition-all"
+                        style={{
+                          width: `${Math.min(100, (stats.current / stats.goal) * 100)}%`,
+                          backgroundColor: region.color,
+                        }}
+                      />
+                      {/* Goal marker */}
+                      <div
+                        className="absolute top-0 h-2 w-0.5 bg-gray-600"
+                        style={{ left: '100%' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+                {needsMore && (
+                  <div className="mt-2 text-xs text-gray-500">
+                    Suggested: {getSuggestedChannels(key).slice(0, 2).join(', ')}
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
-      {/* Health Score Explanation */}
-      {misalignments.length === 0 && (
+      {/* Health Score Explanation - only show when actually aligned AND has data */}
+      {misalignments.length === 0 && !hasNoData && (
         <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
           <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
           <h3 className="font-semibold text-green-700 mb-2">Brain is Well-Aligned!</h3>
