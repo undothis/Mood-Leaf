@@ -98,6 +98,18 @@ export async function deleteChannel(channelId: string): Promise<void> {
   if (!res.ok) throw new Error('Failed to delete channel');
 }
 
+export async function refreshChannel(channelId: string): Promise<{
+  success: boolean;
+  channel: { id: string; name: string; channel_id: string };
+  message: string;
+}> {
+  const res = await fetch(`${API_BASE}/channels/${channelId}/refresh`, {
+    method: 'POST',
+  });
+  if (!res.ok) throw new Error('Failed to refresh channel');
+  return res.json();
+}
+
 export async function fetchChannelVideos(
   channelId: string,
   maxVideos: number = 20,
