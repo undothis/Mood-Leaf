@@ -277,13 +277,40 @@ class YouTubeService:
                 if line:
                     try:
                         data = json.loads(line)
-                        # Skip very short videos (< 45 seconds) - likely YouTube Shorts
-                        duration = data.get("duration")
-                        if duration and duration < 45:
-                            logger.debug(f"[YouTube] Skipping short video ({duration}s): {data.get('title', 'unknown')}")
+
+                        # DEBUG: Log the keys we're getting from yt-dlp
+                        if i == 0:
+                            logger.info(f"[YouTube] DEBUG: First JSON keys: {list(data.keys())[:15]}")
+                            logger.info(f"[YouTube] DEBUG: _type={data.get('_type')}, id={data.get('id')}, title={data.get('title', 'NO TITLE')[:50] if data.get('title') else 'NONE'}")
+
+                        # Skip playlist/channel metadata entries (not actual videos)
+                        # Note: --flat-playlist returns _type="url" for video entries
+                        entry_type = data.get("_type", "video")
+                        if entry_type in ["playlist", "channel", "multi_video"]:
+                            logger.info(f"[YouTube] Skipping {entry_type} entry: {data.get('title', 'unknown')[:50]}")
                             continue
 
+                        # Get video ID - try multiple field names
                         video_id = data.get("id", "")
+                        # Fallback: extract from URL if present
+                        if not video_id:
+                            url = data.get("url", "")
+                            if "v=" in url:
+                                video_id = url.split("v=")[-1].split("&")[0]
+                            elif "/shorts/" in url:
+                                video_id = url.split("/shorts/")[-1].split("?")[0]
+
+                        # Skip if no video ID found
+                        if not video_id:
+                            logger.warning(f"[YouTube] Line {i}: No video_id found, _type={entry_type}, keys: {list(data.keys())[:10]}")
+                            continue
+
+                        # Skip very short videos (< 45 seconds) - likely YouTube Shorts
+                        # Note: duration might be None in flat-playlist mode, that's OK
+                        duration = data.get("duration")
+                        if duration is not None and duration < 45:
+                            logger.debug(f"[YouTube] Skipping short video ({duration}s): {data.get('title', 'unknown')}")
+                            continue
 
                         # Get thumbnail - try multiple sources with proper fallback
                         thumbnail = None
@@ -299,25 +326,32 @@ class YouTubeService:
                         if not thumbnail and video_id:
                             thumbnail = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
 
-                        videos.append(VideoMetadata(
+                        video = VideoMetadata(
                             id=str(uuid.uuid4()),
                             video_id=video_id,
-                            channel_id=data.get("channel_id") or "unknown",
-                            title=data.get("title", ""),
-                            description=data.get("description", ""),
+                            channel_id=data.get("channel_id") or data.get("uploader_id") or "unknown",
+                            title=data.get("title", "") or f"Video {video_id}",
+                            description=data.get("description", "") or "",
                             duration_seconds=duration or 0,
                             view_count=data.get("view_count", 0) or 0,
                             like_count=data.get("like_count", 0) or 0,
                             published_at=None,  # Would need additional call
                             thumbnail_url=thumbnail,
-                        ))
-                        if i == 0:
-                            logger.info(f"[YouTube] First video: {data.get('title', 'no title')[:50]}")
+                        )
+                        videos.append(video)
+
+                        # Log every video added for debugging
+                        if len(videos) <= 3:
+                            logger.info(f"[YouTube] Added video {len(videos)}: {video.title[:40]}... (id={video_id})")
+
                     except json.JSONDecodeError as e:
                         logger.warning(f"[YouTube] JSON parse error on line {i}: {str(e)[:100]}")
                         continue
+                    except Exception as e:
+                        logger.error(f"[YouTube] Unexpected error on line {i}: {type(e).__name__}: {str(e)[:100]}")
+                        continue
 
-            logger.info(f"[YouTube] Parsed {len(videos)} videos (after filtering shorts)")
+            logger.info(f"[YouTube] Successfully parsed {len(videos)} videos from {len(lines)} JSON lines")
 
             # Apply strategy
             if strategy == "popular":
