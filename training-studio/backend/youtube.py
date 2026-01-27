@@ -220,10 +220,20 @@ class YouTubeService:
                     # Try without /videos suffix for @handle URLs
                     alt_url = channel_url.rstrip('/')
                     print(f"[YouTube] Retrying with: {alt_url}")
-                    cmd[6] = alt_url  # Replace URL in command
+
+                    # Build new command with alternate URL
+                    retry_cmd = [
+                        "yt-dlp",
+                        "--dump-json",
+                        "--flat-playlist",
+                        "--playlist-end", str(max_videos * 2),
+                        "--no-warnings",
+                        alt_url
+                    ]
+                    print(f"[YouTube] Running retry: {' '.join(retry_cmd)}")
 
                     result = await asyncio.create_subprocess_exec(
-                        *cmd,
+                        *retry_cmd,
                         stdout=asyncio.subprocess.PIPE,
                         stderr=asyncio.subprocess.PIPE
                     )
