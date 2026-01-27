@@ -3455,6 +3455,43 @@ async def get_all_categories():
         return {"categories": sorted(categories, key=lambda x: x["count"], reverse=True)}
 
 
+@app.get("/brain-studio/channels-for-category/{category}")
+async def get_channels_for_category(category: str):
+    """Get channels that have historically produced insights in a given category."""
+    logger.info(f"Brain Studio: Finding channels for category '{category}'")
+    async with async_session() as session:
+        from sqlalchemy import select, func
+
+        # Find channels that have produced approved insights in this category
+        result = await session.execute(
+            select(InsightModel.channel_id, func.count(InsightModel.id).label("count"))
+            .where(InsightModel.status == "approved", InsightModel.category == category)
+            .group_by(InsightModel.channel_id)
+            .order_by(func.count(InsightModel.id).desc())
+        )
+
+        channel_stats = []
+        for channel_id, count in result:
+            # Get channel details
+            channel_result = await session.execute(
+                select(ChannelModel).where(ChannelModel.id == channel_id)
+            )
+            channel = channel_result.scalar_one_or_none()
+            if channel:
+                channel_stats.append({
+                    "channel_id": channel.id,
+                    "name": channel.name,
+                    "youtube_channel_id": channel.channel_id,
+                    "category_insights": count,
+                })
+
+        return {
+            "category": category,
+            "channels": channel_stats,
+            "total_channels": len(channel_stats)
+        }
+
+
 # ============================================================================
 # MAIN ENTRY POINT
 # ============================================================================
