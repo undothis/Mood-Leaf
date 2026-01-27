@@ -25,11 +25,11 @@ export default function LogsPanel() {
   };
 
   return (
-    <div className="fixed bottom-0 left-64 right-0 z-40">
-      {/* Toggle Button */}
+    <>
+      {/* Toggle Button - Always visible */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="absolute -top-10 right-4 flex items-center gap-2 px-3 py-2 bg-gray-800 text-white text-sm rounded-t-lg hover:bg-gray-700"
+        className="fixed bottom-0 right-4 z-50 flex items-center gap-2 px-3 py-2 bg-gray-800 text-white text-sm rounded-t-lg hover:bg-gray-700 shadow-lg"
       >
         <Terminal className="w-4 h-4" />
         Logs
@@ -38,6 +38,7 @@ export default function LogsPanel() {
 
       {/* Logs Panel */}
       {isOpen && (
+        <div className="fixed bottom-0 left-64 right-0 z-40">
         <div className="bg-gray-900 border-t border-gray-700 h-64 flex flex-col">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-2 border-b border-gray-700">
@@ -93,7 +94,8 @@ export default function LogsPanel() {
             )}
           </div>
         </div>
+        </div>
       )}
-    </div>
+    </>
   );
 }

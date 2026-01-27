@@ -807,6 +807,54 @@ async def delete_channel(channel_id: str):
     return {"success": True}
 
 
+@app.post("/channels/{channel_id}/refresh")
+async def refresh_channel(channel_id: str):
+    """Refresh channel information from YouTube."""
+    logger.info(f"Refreshing channel info for {channel_id}")
+
+    channel = await db.get_channel(channel_id)
+    if not channel:
+        raise HTTPException(status_code=404, detail="Channel not found")
+
+    try:
+        # Re-fetch channel info from YouTube
+        info = await youtube_service.get_channel_info(channel.url)
+        logger.info(f"Got channel info: {info}")
+
+        # Update channel in database
+        async with async_session() as session:
+            from sqlalchemy import update
+            new_name = info.get("channel_name", channel.name)
+            new_channel_id = info.get("channel_id", channel.channel_id)
+
+            await session.execute(
+                update(ChannelModel)
+                .where(ChannelModel.id == channel_id)
+                .values(
+                    name=new_name,
+                    channel_id=new_channel_id,
+                    url=info.get("channel_url", channel.url)
+                )
+            )
+            await session.commit()
+
+        logger.info(f"Updated channel {channel_id}: name={new_name}")
+
+        return {
+            "success": True,
+            "channel": {
+                "id": channel_id,
+                "name": new_name,
+                "channel_id": new_channel_id
+            },
+            "message": f"Channel refreshed: {new_name}"
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to refresh channel {channel_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to refresh: {str(e)}")
+
+
 @app.get("/channels/{channel_id}/videos")
 async def get_channel_videos(
     channel_id: str,

@@ -6,6 +6,7 @@ import {
   fetchChannels,
   addChannel,
   deleteChannel,
+  refreshChannel,
   fetchRecommendedChannels,
   getAIChannelRecommendations,
   fetchChannelVideos,
@@ -33,6 +34,7 @@ import {
   Play,
   Video,
   X,
+  RefreshCw,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -298,16 +300,24 @@ function ChannelCard({
   channel,
   onDelete,
   onBrowseVideos,
+  onRefresh,
+  isRefreshing,
 }: {
   channel: any;
   onDelete: () => void;
   onBrowseVideos: () => void;
+  onRefresh: () => void;
+  isRefreshing?: boolean;
 }) {
   const trustColors: Record<string, string> = {
     low: 'bg-red-100 text-red-700',
     medium: 'bg-yellow-100 text-yellow-700',
     high: 'bg-green-100 text-green-700',
   };
+
+  const displayName = channel.name === 'Unknown'
+    ? channel.url?.split('/').pop() || channel.url
+    : channel.name;
 
   return (
     <div className="bg-white rounded-xl p-6 border border-gray-100 hover:shadow-md transition-shadow">
@@ -317,7 +327,12 @@ function ChannelCard({
             <Youtube className="w-6 h-6 text-red-500" />
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900">{channel.name}</h3>
+            <h3 className="font-semibold text-gray-900">
+              {displayName}
+              {channel.name === 'Unknown' && (
+                <span className="ml-2 text-xs text-yellow-600">(tap refresh)</span>
+              )}
+            </h3>
             <a
               href={channel.url}
               target="_blank"
@@ -329,12 +344,22 @@ function ChannelCard({
             </a>
           </div>
         </div>
-        <button
-          onClick={onDelete}
-          className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={onRefresh}
+            disabled={isRefreshing}
+            className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
+            title="Refresh channel info from YouTube"
+          >
+            <RefreshCw className={clsx("w-4 h-4", isRefreshing && "animate-spin")} />
+          </button>
+          <button
+            onClick={onDelete}
+            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       <div className="flex items-center gap-3 mb-4">
@@ -491,6 +516,25 @@ export default function ChannelsPage() {
     },
   });
 
+  const [refreshingChannels, setRefreshingChannels] = useState<Set<string>>(new Set());
+
+  const { mutate: refresh } = useMutation({
+    mutationFn: refreshChannel,
+    onMutate: (channelId) => {
+      setRefreshingChannels(prev => new Set(prev).add(channelId));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['channels'] });
+    },
+    onSettled: (_, __, channelId) => {
+      setRefreshingChannels(prev => {
+        const next = new Set(prev);
+        next.delete(channelId);
+        return next;
+      });
+    },
+  });
+
   const { mutate: add } = useMutation({
     mutationFn: addChannel,
     onSuccess: (_, variables) => {
@@ -631,6 +675,8 @@ export default function ChannelsPage() {
               channel={channel}
               onDelete={() => remove(channel.id)}
               onBrowseVideos={() => setBrowseVideoChannel(channel)}
+              onRefresh={() => refresh(channel.id)}
+              isRefreshing={refreshingChannels.has(channel.id)}
             />
           ))}
         </div>
