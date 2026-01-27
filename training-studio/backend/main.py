@@ -97,6 +97,15 @@ async def get_version():
     return get_version_info()
 
 
+@app.get("/manual")
+async def get_manual():
+    """Get the training manual content."""
+    manual_path = Path(__file__).parent.parent / "docs" / "AI_TRAINING_SYSTEM_MANUAL.md"
+    if not manual_path.exists():
+        raise HTTPException(status_code=404, detail="Manual not found")
+    return {"content": manual_path.read_text()}
+
+
 @app.get("/diagnostics")
 async def run_diagnostics():
     """

@@ -931,3 +931,13 @@ export async function fetchLogs(lines: number = 50): Promise<{ entries: LogEntry
   return res.json();
 }
 
+// ============================================================================
+// MANUAL
+// ============================================================================
+
+export async function fetchManual(): Promise<{ content: string }> {
+  const res = await fetch(`${API_BASE}/manual`);
+  if (!res.ok) throw new Error('Failed to fetch manual');
+  return res.json();
+}
+

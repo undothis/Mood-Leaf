@@ -1,184 +1,10 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { Search, Book, ChevronDown, ChevronRight, FileText, ArrowUp } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { Search, Book, ChevronDown, ChevronRight, FileText, ArrowUp, Loader2 } from 'lucide-react';
 import clsx from 'clsx';
-
-// Manual content - would be better to fetch from backend, but inline for simplicity
-const MANUAL_CONTENT = `
-# MoodLeaf AI Training System - Comprehensive Manual
-
-## Overview
-
-The MoodLeaf AI Training System is designed to create a specialized, human-like AI companion by training on curated human experience data.
-
-### Do I Need Llama Installed?
-
-**No, not for the current workflow.**
-
-| Task | Requires Llama? | What It Uses |
-|------|-----------------|--------------|
-| Import insights manually | No | Local storage |
-| Harvest from YouTube channels | No | **Claude API** |
-| Review and approve insights | No | Local storage |
-| Export training data | No | Local JSON |
-| **Fine-tune local model** | **Yes** | Llama 3.2 + LoRA |
-
-## Quick Start: Transcript Server
-
-**Before processing YouTube channels, set up the transcript server:**
-
-### 1. Install yt-dlp (one time)
-\`\`\`bash
-brew install yt-dlp
-\`\`\`
-
-### 2. Start the server
-\`\`\`bash
-cd transcript-server
-npm install   # only first time
-npm start
-\`\`\`
-
-## API Keys & Token Setup
-
-### Required: Anthropic API Key (Claude)
-
-1. Go to https://console.anthropic.com/
-2. Sign up or log in
-3. Go to **API Keys** in the sidebar
-4. Click **Create Key**
-5. Copy the key (starts with \`sk-ant-\`)
-
-### Optional: Hugging Face Token (Speaker Diarization)
-
-Only needed if you want "who said what" labeling in transcripts.
-
-1. Go to https://huggingface.co/pyannote/speaker-diarization-3.1
-2. Click **"Agree and access repository"**
-3. Go to https://huggingface.co/settings/tokens
-4. Create a **Read** token
-
-## System Architecture
-
-The MoodLeaf Training Studio consists of:
-
-- **Backend (FastAPI)**: Python API server at port 8000
-- **Frontend (Next.js)**: React UI at port 3000
-- **Transcript Server**: Node.js server at port 3333 for YouTube downloads
-- **SQLite Database**: Local storage for all training data
-
-## Data Collection Pipeline
-
-### Processing a YouTube Video
-
-1. **Add Channel**: Go to Channels page, paste YouTube channel URL
-2. **Browse Videos**: Expand channel to see available videos
-3. **Process Video**: Click "Process" to extract transcript and insights
-4. **Review Insights**: Go to Review page to approve/reject insights
-
-### Batch Processing
-
-Use the Batch Videos page to queue multiple videos for processing:
-- Select videos from different channels
-- Set processing priority
-- Monitor progress on Dashboard
-
-## Brain Studio & Visualization
-
-### Brain View
-
-Shows two side-by-side brains:
-- **Current State**: Your actual training data distribution
-- **Goal State**: Your target configuration
-
-### Goals Tab
-
-Manage your training goals:
-- **Add Goal**: Set target percentages for categories
-- **Edit Goal**: Modify target %, priority, recommended sources
-- **Delete Goal**: Remove goals you no longer need
-
-### Training Gaps
-
-Shows what categories need more content:
-- Priority indicators (red/yellow/gray)
-- Smart suggestions for how many videos to process
-- Quick links to Batch Process page
-
-## Review Page
-
-Where you approve, reject, or edit insights:
-
-- **Approve**: Mark insight as training-ready
-- **Reject**: Remove from training data
-- **Edit**: Modify the insight text
-- **Aliveness Score**: 1-10 rating for how authentic/human the insight sounds
-
-## Export Page
-
-Export your approved insights for fine-tuning:
-
-- **JSON Format**: For custom training pipelines
-- **JSONL Format**: For Llama fine-tuning
-- **CSV Format**: For analysis in spreadsheets
-
-## Statistics Page
-
-View analytics about your training data:
-
-- Total insights by category
-- Channel contributions
-- Approval rates
-- Aliveness score distributions
-
-## Dashboard
-
-The main homepage showing:
-
-- **Processing Jobs**: Active video processing with component status
-- **System Diagnostics**: Live monitoring of all pipeline components
-- **Recent Activity**: Latest processed videos and insights
-
-### Component Status
-
-When processing, you'll see status for each component:
-- yt_dlp: Video download
-- ffmpeg: Audio extraction
-- whisper: Speech-to-text
-- diarization: Speaker labeling
-- prosody: Emotion detection
-- facial: Facial analysis
-- claude: Insight extraction
-
-## Troubleshooting
-
-### Common Issues
-
-**"No transcript available"**
-- Ensure transcript server is running
-- Check yt-dlp is installed and updated
-
-**"API key not configured"**
-- Add ANTHROPIC_API_KEY to backend/.env
-
-**"Diarization failed"**
-- HuggingFace token may be missing
-- Check pyannote model access is approved
-
-### Updating Components
-
-\`\`\`bash
-# Update yt-dlp
-brew upgrade yt-dlp
-
-# Update backend dependencies
-cd backend && pip install -r requirements.txt
-
-# Update frontend
-cd frontend && npm install
-\`\`\`
-`;
+import { fetchManual } from '@/lib/api';
 
 interface Section {
   title: string;
@@ -258,22 +84,32 @@ function highlightText(text: string, query: string): JSX.Element {
   );
 }
 
+function countMatches(text: string, query: string): number {
+  if (!query.trim()) return 0;
+  const regex = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+  const matches = text.match(regex);
+  return matches ? matches.length : 0;
+}
+
+function sectionHasMatch(section: Section, query: string): boolean {
+  if (!query) return true;
+  const lowerQuery = query.toLowerCase();
+  if (section.title.toLowerCase().includes(lowerQuery)) return true;
+  if (section.content.toLowerCase().includes(lowerQuery)) return true;
+  return section.subsections.some(s => sectionHasMatch(s, query));
+}
+
 function SectionCard({ section, query, depth = 0 }: { section: Section; query: string; depth?: number }) {
-  const [isExpanded, setIsExpanded] = useState(depth < 2 || query.length > 0);
-  const hasMatch = query && (
-    section.title.toLowerCase().includes(query.toLowerCase()) ||
-    section.content.toLowerCase().includes(query.toLowerCase()) ||
-    section.subsections.some(s =>
-      s.title.toLowerCase().includes(query.toLowerCase()) ||
-      s.content.toLowerCase().includes(query.toLowerCase())
-    )
-  );
+  const [isExpanded, setIsExpanded] = useState(depth < 2);
+  const hasMatch = sectionHasMatch(section, query);
 
   useEffect(() => {
-    if (hasMatch) setIsExpanded(true);
-  }, [hasMatch, query]);
+    if (query && hasMatch) setIsExpanded(true);
+  }, [query, hasMatch]);
 
   if (query && !hasMatch) return null;
+
+  const titleMatch = query && section.title.toLowerCase().includes(query.toLowerCase());
 
   return (
     <div className={clsx("border-l-2", depth === 0 ? "border-leaf-500" : "border-gray-200", depth > 0 && "ml-4")}>
@@ -281,11 +117,11 @@ function SectionCard({ section, query, depth = 0 }: { section: Section; query: s
         onClick={() => setIsExpanded(!isExpanded)}
         className={clsx(
           "w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-50",
-          hasMatch && "bg-yellow-50"
+          titleMatch && "bg-yellow-50"
         )}
       >
         {section.subsections.length > 0 || section.content ? (
-          isExpanded ? <ChevronDown className="w-4 h-4 text-gray-400" /> : <ChevronRight className="w-4 h-4 text-gray-400" />
+          isExpanded ? <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" /> : <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
         ) : (
           <div className="w-4" />
         )}
@@ -301,7 +137,7 @@ function SectionCard({ section, query, depth = 0 }: { section: Section; query: s
         <div className="pl-6">
           {section.content && (
             <div className="prose prose-sm max-w-none py-2 px-3 text-gray-600">
-              <pre className="whitespace-pre-wrap font-sans text-sm">
+              <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">
                 {highlightText(section.content, query)}
               </pre>
             </div>
@@ -319,14 +155,21 @@ export default function ManualPage() {
   const [query, setQuery] = useState('');
   const [showScrollTop, setShowScrollTop] = useState(false);
 
-  const sections = useMemo(() => parseManual(MANUAL_CONTENT), []);
+  const { data: manualData, isLoading, error } = useQuery({
+    queryKey: ['manual'],
+    queryFn: fetchManual,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
+
+  const sections = useMemo(() => {
+    if (!manualData?.content) return [];
+    return parseManual(manualData.content);
+  }, [manualData?.content]);
 
   const matchCount = useMemo(() => {
-    if (!query.trim()) return 0;
-    const regex = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
-    const matches = MANUAL_CONTENT.match(regex);
-    return matches ? matches.length : 0;
-  }, [query]);
+    if (!query.trim() || !manualData?.content) return 0;
+    return countMatches(manualData.content, query);
+  }, [query, manualData?.content]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -335,6 +178,28 @@ export default function ManualPage() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-leaf-500 mx-auto mb-3" />
+          <p className="text-gray-500">Loading manual...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 max-w-4xl mx-auto">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+          <p className="text-red-700 font-medium">Failed to load manual</p>
+          <p className="text-red-500 text-sm mt-1">Make sure the backend is running</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
@@ -357,7 +222,7 @@ export default function ManualPage() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search manual... (e.g., 'transcript', 'API key', 'brain')"
+            placeholder="Search manual... (e.g., 'transcript', 'API key', 'brain studio', 'goals')"
             className="w-full pl-10 pr-4 py-3 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-leaf-500 focus:border-transparent"
           />
           {query && (
@@ -365,7 +230,7 @@ export default function ManualPage() {
               <span className="text-xs text-gray-500">{matchCount} matches</span>
               <button
                 onClick={() => setQuery('')}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 text-lg"
               >
                 ×
               </button>
@@ -381,7 +246,11 @@ export default function ManualPage() {
             { label: 'Quick Start', search: 'Quick Start' },
             { label: 'API Keys', search: 'API Key' },
             { label: 'Brain Studio', search: 'Brain Studio' },
+            { label: 'Goals Tab', search: 'Goals Tab' },
+            { label: 'Dashboard', search: 'Dashboard' },
+            { label: 'Training Gaps', search: 'Training Gaps' },
             { label: 'Troubleshooting', search: 'Troubleshooting' },
+            { label: 'Export', search: 'Export' },
           ].map((item) => (
             <button
               key={item.search}
