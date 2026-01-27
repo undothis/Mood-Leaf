@@ -224,8 +224,14 @@ class YouTubeService:
             if stderr_text:
                 logger.warning(f"[YouTube] stderr: {stderr_text[:500]}")
 
-            if result.returncode != 0:
-                print(f"[YouTube] Error fetching videos: {stderr_text}")
+            # Retry if command failed OR if stdout is empty (yt-dlp sometimes returns 0 with no output)
+            needs_retry = result.returncode != 0 or not stdout_text.strip()
+
+            if needs_retry:
+                if result.returncode != 0:
+                    print(f"[YouTube] Error fetching videos: {stderr_text}")
+                else:
+                    print(f"[YouTube] Command succeeded but no output, will retry with alternate URL")
 
                 # Try alternate URL format if first attempt failed
                 if "@" in channel_url:
@@ -251,9 +257,14 @@ class YouTubeService:
                     )
                     stdout, stderr = await result.communicate()
 
-                    if result.returncode != 0:
-                        print(f"[YouTube] Retry also failed: {stderr.decode()}")
+                    # CRITICAL: Update stdout_text with the retry output
+                    stdout_text = stdout.decode() if stdout else ""
+
+                    if result.returncode != 0 or not stdout_text.strip():
+                        print(f"[YouTube] Retry also failed: {stderr.decode() if stderr else 'no stderr'}")
                         return []
+
+                    logger.info(f"[YouTube] Retry succeeded, stdout length: {len(stdout_text)} chars")
                 else:
                     return []
 
