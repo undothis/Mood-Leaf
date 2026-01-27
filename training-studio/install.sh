@@ -3,12 +3,58 @@
 # =============================================================================
 # MoodLeaf Training Studio - Complete Installation Script
 # =============================================================================
-# This script installs ALL dependencies needed to run the Training Studio:
-#   - System dependencies (yt-dlp, ffmpeg, Python, Node.js)
-#   - Python dependencies (backend)
-#   - Node.js dependencies (frontend)
-#   - Directory setup
-#   - Environment configuration
+#
+# DESCRIPTION:
+#   This script installs ALL dependencies needed to run the Training Studio.
+#   It handles system packages, Python backend, and Node.js frontend setup.
+#
+# USAGE:
+#   ./install.sh           Run full installation
+#   ./install.sh --help    Show this help message
+#   ./install.sh --check   Only verify dependencies (no install)
+#
+# WHAT IT INSTALLS:
+#
+#   SYSTEM DEPENDENCIES:
+#   - Python 3.10+         (programming language for backend)
+#   - Node.js 18+ / npm    (JavaScript runtime for frontend)
+#   - ffmpeg               (audio/video processing)
+#   - yt-dlp               (YouTube video/audio downloading)
+#
+#   PYTHON PACKAGES (backend):
+#   - FastAPI, uvicorn     (web server framework)
+#   - OpenAI Whisper       (speech-to-text transcription)
+#   - pyannote.audio       (speaker diarization - who's speaking)
+#   - PyTorch              (machine learning framework)
+#   - librosa              (audio analysis)
+#   - praat-parselmouth    (prosody/speech analysis)
+#   - MediaPipe            (face detection)
+#   - py-feat              (facial expression analysis)
+#   - opencv-python        (computer vision)
+#   - anthropic            (Claude AI API client)
+#   - SQLAlchemy           (database ORM)
+#   - And more...
+#
+#   NODE.JS PACKAGES (frontend):
+#   - Next.js 14           (React framework)
+#   - React 18             (UI library)
+#   - TanStack React Query (data fetching)
+#   - Tailwind CSS         (styling)
+#   - Recharts             (charts/visualizations)
+#   - Lucide React         (icons)
+#
+# AFTER INSTALLATION:
+#   1. Edit backend/.env and add your ANTHROPIC_API_KEY
+#      Get one at: https://console.anthropic.com/
+#   2. Run: ./start.sh
+#   3. Open: http://localhost:3000
+#
+# SUPPORTED OPERATING SYSTEMS:
+#   - macOS (via Homebrew)
+#   - Ubuntu/Debian (via apt)
+#   - Fedora/RHEL (via dnf)
+#   - Arch Linux (via pacman)
+#
 # =============================================================================
 
 set -e  # Exit on error
@@ -24,6 +70,70 @@ NC='\033[0m' # No Color
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_DIR="$SCRIPT_DIR/backend"
 FRONTEND_DIR="$SCRIPT_DIR/frontend"
+
+# -----------------------------------------------------------------------------
+# Help Message
+# -----------------------------------------------------------------------------
+show_help() {
+    echo -e "${BLUE}"
+    echo "============================================================================="
+    echo "  MoodLeaf Training Studio - Installation Script"
+    echo "============================================================================="
+    echo -e "${NC}"
+    echo ""
+    echo "USAGE:"
+    echo "  ./install.sh           Run full installation"
+    echo "  ./install.sh --help    Show this help message"
+    echo "  ./install.sh --check   Only verify dependencies (no install)"
+    echo ""
+    echo "WHAT IT INSTALLS:"
+    echo ""
+    echo "  System Dependencies:"
+    echo "    - Python 3.10+       Programming language for backend"
+    echo "    - Node.js 18+        JavaScript runtime for frontend"
+    echo "    - ffmpeg             Audio/video processing"
+    echo "    - yt-dlp             YouTube downloading"
+    echo ""
+    echo "  Python Packages (backend):"
+    echo "    - FastAPI            Web server framework"
+    echo "    - OpenAI Whisper     Speech-to-text transcription"
+    echo "    - pyannote.audio     Speaker diarization"
+    echo "    - PyTorch            Machine learning framework"
+    echo "    - librosa            Audio analysis"
+    echo "    - MediaPipe/py-feat  Facial analysis"
+    echo "    - anthropic          Claude AI API client"
+    echo "    - And more..."
+    echo ""
+    echo "  Node.js Packages (frontend):"
+    echo "    - Next.js 14         React framework"
+    echo "    - React 18           UI library"
+    echo "    - Tailwind CSS       Styling"
+    echo "    - And more..."
+    echo ""
+    echo "AFTER INSTALLATION:"
+    echo "  1. Edit backend/.env and add your ANTHROPIC_API_KEY"
+    echo "     Get one at: https://console.anthropic.com/"
+    echo "  2. (Optional) Add HF_TOKEN for speaker diarization"
+    echo "     Get one at: https://huggingface.co/settings/tokens"
+    echo "  3. Run: ./start.sh"
+    echo "  4. Open: http://localhost:3000"
+    echo ""
+    echo "============================================================================="
+    exit 0
+}
+
+# Check for --help or --check flags
+CHECK_ONLY=false
+for arg in "$@"; do
+    case $arg in
+        --help|-h)
+            show_help
+            ;;
+        --check|-c)
+            CHECK_ONLY=true
+            ;;
+    esac
+done
 
 echo -e "${BLUE}"
 echo "============================================================================="
@@ -235,13 +345,22 @@ setup_python_env() {
 # -----------------------------------------------------------------------------
 install_python_deps() {
     echo -e "\n${BLUE}[4/6] Installing Python Dependencies...${NC}"
-    echo -e "${YELLOW}Note: This may take 5-15 minutes (PyTorch, Whisper, etc.)${NC}"
+    echo -e "${YELLOW}Note: This may take 10-20 minutes (PyTorch, Whisper, etc.)${NC}"
+    echo ""
+    echo "  Dependencies to install:"
+    echo "    - PyTorch (ML framework)"
+    echo "    - OpenAI Whisper (speech-to-text transcription)"
+    echo "    - pyannote.audio (speaker diarization)"
+    echo "    - librosa (audio analysis)"
+    echo "    - MediaPipe (facial detection)"
+    echo "    - And more..."
+    echo ""
 
     cd "$BACKEND_DIR"
     source venv/bin/activate
 
     # Install PyTorch first (required for whisper and pyannote)
-    echo "Installing PyTorch..."
+    echo -e "${BLUE}[4a/6] Installing PyTorch...${NC}"
     if [[ "$OS" == "macos" ]]; then
         # macOS - use default pip install
         pip install torch torchaudio
@@ -255,12 +374,26 @@ install_python_deps() {
             pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu
         fi
     fi
+    echo -e "${GREEN}  PyTorch installed!${NC}"
 
-    # Install requirements
-    echo "Installing requirements from requirements.txt..."
+    # Install Whisper explicitly (core transcription engine)
+    echo -e "${BLUE}[4b/6] Installing OpenAI Whisper (transcription)...${NC}"
+    pip install openai-whisper
+    echo -e "${GREEN}  Whisper installed!${NC}"
+
+    # Install remaining requirements
+    echo -e "${BLUE}[4c/6] Installing remaining Python packages...${NC}"
     pip install -r requirements.txt
 
-    echo -e "${GREEN}Python dependencies installed!${NC}"
+    # Verify key packages
+    echo ""
+    echo -e "${GREEN}Verifying key packages:${NC}"
+    python -c "import whisper; print(f'  Whisper: installed')" 2>/dev/null || echo -e "  ${RED}Whisper: FAILED${NC}"
+    python -c "import torch; print(f'  PyTorch: {torch.__version__}')" 2>/dev/null || echo -e "  ${RED}PyTorch: FAILED${NC}"
+    python -c "import librosa; print(f'  librosa: installed')" 2>/dev/null || echo -e "  ${RED}librosa: FAILED${NC}"
+    python -c "import anthropic; print(f'  anthropic: installed')" 2>/dev/null || echo -e "  ${RED}anthropic: FAILED${NC}"
+
+    echo -e "\n${GREEN}Python dependencies installed!${NC}"
 }
 
 # -----------------------------------------------------------------------------
@@ -403,6 +536,16 @@ print_summary() {
 # -----------------------------------------------------------------------------
 main() {
     detect_os
+
+    if [ "$CHECK_ONLY" = true ]; then
+        echo -e "${YELLOW}Running in CHECK ONLY mode - no installation will occur${NC}"
+        echo ""
+        verify_system_deps
+        echo ""
+        echo -e "${BLUE}To run full installation:${NC} ./install.sh"
+        exit 0
+    fi
+
     install_system_deps
     verify_system_deps
     setup_python_env
