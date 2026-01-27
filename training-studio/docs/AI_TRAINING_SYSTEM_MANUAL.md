@@ -51,10 +51,73 @@ brew upgrade yt-dlp
 
 ---
 
+## API Keys & Token Setup
+
+Before using the Training Studio, you need to configure API keys. Here's how:
+
+### Required: Anthropic API Key (Claude)
+
+This is the **only required key** for basic operation.
+
+1. Go to https://console.anthropic.com/
+2. Sign up or log in
+3. Go to **API Keys** in the sidebar
+4. Click **Create Key**
+5. Copy the key (starts with `sk-ant-`)
+6. Add to `backend/.env`:
+   ```
+   ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxxx
+   ```
+
+### Optional: Hugging Face Token (Speaker Diarization)
+
+Only needed if you want "who said what" labeling in transcripts. **Skip this if you're just getting started.**
+
+**Step 1: Accept Model Terms**
+1. Go to https://huggingface.co/pyannote/speaker-diarization-3.1
+2. Click **"Agree and access repository"** (requires HF account)
+3. Go to https://huggingface.co/pyannote/segmentation-3.0
+4. Click **"Agree and access repository"**
+
+**Step 2: Create Token**
+1. Go to https://huggingface.co/settings/tokens
+2. Click **"New token"**
+3. Settings:
+   - **Name**: `moodleaf` (or anything)
+   - **Type**: `Read` (NOT Write)
+4. Click **Create**
+5. Copy the token (starts with `hf_`)
+6. Add to `backend/.env`:
+   ```
+   HF_TOKEN=hf_xxxxxxxxxxxxx
+   ```
+
+### Your .env File Should Look Like:
+
+```bash
+# backend/.env
+
+# Required - Claude API for insight extraction
+ANTHROPIC_API_KEY=sk-ant-your-key-here
+
+# Optional - Speaker diarization (who said what)
+HF_TOKEN=hf_your-token-here
+```
+
+### Token Summary
+
+| Token | Required? | What It Does | Where to Get It |
+|-------|-----------|--------------|-----------------|
+| `ANTHROPIC_API_KEY` | **Yes** | Extracts insights from transcripts | console.anthropic.com |
+| `HF_TOKEN` | No | Identifies speakers in audio | huggingface.co/settings/tokens |
+
+---
+
 ## Table of Contents
 
 **START HERE:**
-- [Quick Start for Non-Technical Users](#quick-start-for-non-technical-users--read-this-first) ⭐ **READ THIS FIRST**
+- [API Keys & Token Setup](#api-keys--token-setup) ⭐ **SET THIS UP FIRST**
+- [Quick Start for Non-Technical Users](#quick-start-for-non-technical-users--read-this-first) ⭐ **READ THIS NEXT**
 
 **Technical Reference:**
 1. [System Architecture](#1-system-architecture)
