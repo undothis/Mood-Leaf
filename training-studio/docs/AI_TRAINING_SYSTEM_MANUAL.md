@@ -53,6 +53,10 @@ brew upgrade yt-dlp
 
 ## Table of Contents
 
+**START HERE:**
+- [Quick Start for Non-Technical Users](#quick-start-for-non-technical-users--read-this-first) ⭐ **READ THIS FIRST**
+
+**Technical Reference:**
 1. [System Architecture](#1-system-architecture)
 2. [Core Principle Kernel](#2-core-principle-kernel)
 3. [Data Collection Pipeline](#3-data-collection-pipeline)
@@ -61,11 +65,12 @@ brew upgrade yt-dlp
 6. [Advanced Research Methods](#6-advanced-research-methods)
 7. [Data Persistence & Backup](#7-data-persistence--backup)
 8. [Training Data Impact Analysis](#8-training-data-impact-analysis)
-9. [Llama Integration](#9-llama-integration)
-10. [Status Monitoring](#10-status-monitoring)
-11. [Admin Interfaces Reference](#11-admin-interfaces-reference) ⭐ **NEW**
-12. [Best Practices](#12-best-practices)
-13. [Troubleshooting](#13-troubleshooting)
+9. [Brain Studio & Visualization](#9-brain-studio--visualization) ⭐ **NEW**
+10. [Llama Integration](#10-llama-integration)
+11. [Status Monitoring](#11-status-monitoring)
+12. [Admin Interfaces Reference](#12-admin-interfaces-reference)
+13. [Best Practices](#13-best-practices)
+14. [Troubleshooting](#14-troubleshooting)
 
 ---
 
@@ -1160,9 +1165,212 @@ const diff = await getDataDiff(versionA, versionB);
 
 ---
 
-## 8. Llama Integration
+## Quick Start for Non-Technical Users ⭐ READ THIS FIRST
 
-### 11.1 Overview
+### What Is This System?
+
+MoodLeaf Training Studio lets you build a custom AI coach by feeding it real human wisdom from YouTube videos. Think of it like this:
+
+- **You find videos** with valuable life advice (therapy channels, coaches, spiritual teachers)
+- **The system extracts** the wisdom from those videos automatically
+- **You review** what it found (approve the good stuff, reject the rest)
+- **Your AI learns** from the approved wisdom over time
+
+### The Iterative Workflow (Yes, You Can Do This!)
+
+**Question: "Can I scrape videos now and review/tune later?"**
+
+**Answer: Absolutely! That's exactly how you should use it.**
+
+```
+     WEEK 1-2                    ONGOING                     LATER
+┌─────────────────┐       ┌─────────────────┐       ┌─────────────────┐
+│                 │       │                 │       │                 │
+│   ADD CHANNELS  │  ──►  │ PROCESS VIDEOS  │  ──►  │ REVIEW & TUNE   │
+│   (5-10 to      │       │ (Let it run     │       │ (Approve good   │
+│    start)       │       │  overnight)     │       │  insights)      │
+│                 │       │                 │       │                 │
+└─────────────────┘       └─────────────────┘       └─────────────────┘
+       │                         │                         │
+       │                         │                         │
+       └─────────────────────────┴─────────────────────────┘
+                    ↑ Repeat as needed ↑
+```
+
+### Step-by-Step: Your First Session
+
+**1. Add Some Channels (5 minutes)**
+- Go to **Channels** page
+- Click "Add Channel"
+- Paste YouTube channel URLs (examples below)
+- Don't overthink it - start with 5-10 channels
+
+**Suggested starter channels:**
+- Therapy in a Nutshell
+- The School of Life
+- Brené Brown
+- Dr. Ramani (narcissism/relationships)
+- Tara Brach (mindfulness)
+
+**2. Process Videos (Let It Run)**
+- Click "Process All" or process channels one at a time
+- Each video takes 1-2 minutes to process
+- You can let this run while you do other things
+- It's fine to stop and continue later - progress is saved
+
+**3. Review Later (At Your Pace)**
+- Go to **Review** tab
+- You'll see extracted insights waiting for approval
+- **Quick review options:**
+  - "Auto 90%+" - automatically approve high-quality insights
+  - "Select All" + "Approve Selected" for bulk approval
+  - Individual checkboxes for careful review
+- You can review 10 insights today, 50 tomorrow - no rush
+
+**4. Check Your Brain (Optional)**
+- Go to **Brain Studio → Brain View**
+- See which areas need more training data
+- Add channels that fill gaps
+- Process more videos
+- Repeat!
+
+### Common Questions
+
+**Q: Do I need to review everything immediately?**
+A: No! Insights sit in the "pending" queue until you review them. Take your time.
+
+**Q: What if I approve something bad?**
+A: You can always unapprove it later. Nothing is permanent.
+
+**Q: How much data do I need?**
+A: Start with 100-200 approved insights to see results. 500+ is ideal.
+
+**Q: Can I pause and come back later?**
+A: Yes! The system saves everything. You can stop mid-process and continue days later.
+
+**Q: What if the extraction fails on some videos?**
+A: That's normal. Some videos don't have transcripts, or the content isn't suitable. Just skip them.
+
+### The Big Picture
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│                        YOUR WORKFLOW                                  │
+│                                                                        │
+│    ┌─────────┐     ┌─────────┐     ┌─────────┐     ┌─────────┐       │
+│    │         │     │         │     │         │     │         │       │
+│    │  SCRAPE │ ──► │  REVIEW │ ──► │  TRAIN  │ ──► │  COACH  │       │
+│    │         │     │         │     │         │     │         │       │
+│    └─────────┘     └─────────┘     └─────────┘     └─────────┘       │
+│        ▲               │                                ▼            │
+│        │               │                                │            │
+│        │               └── Can do this anytime ─────────┘            │
+│        │                                                              │
+│        └──────────── Add more channels as needed ────────────────────│
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+**Scrape first, review later, tune as you go.** That's the MoodLeaf way.
+
+---
+
+## 9. Brain Studio & Visualization ⭐ NEW
+
+### 9.1 Overview
+
+The **Brain Studio** is the command center for monitoring and managing your AI's training data. It provides visual feedback on how your training data is distributed and what areas need more content.
+
+**Location**: `Brain Studio` tab in the main navigation
+
+### 9.2 Brain Visualization
+
+The Brain Visualization feature displays two side-by-side brain diagrams:
+
+| Brain | Description |
+|-------|-------------|
+| **Current State** | Shows what your training data actually looks like based on processed videos |
+| **Goal State** | Shows your target configuration for a balanced AI coach |
+
+**Brain Regions** are mapped to insight categories:
+
+| Region | Color | Categories | Purpose |
+|--------|-------|------------|---------|
+| **Prefrontal Cortex** | Purple | decision_making, cognitive_patterns, self_discovery | Planning, self-control |
+| **Temporal Lobe** | Blue | communication_patterns, friendship_dynamics, belonging | Social understanding |
+| **Limbic System** | Green | joy_celebration, gratitude_appreciation, hope_optimism | Emotional regulation, joy |
+| **Amygdala** | Red | fear_anxiety, emotional_struggles, trauma_recovery | Fear, anxiety, emotional memories |
+| **Hippocampus** | Amber | growth_moments, life_lessons, wisdom_perspective | Memory, learning, growth |
+| **Parietal Lobe** | Pink | embodied_emotion, somatic_markers, body_health | Self-awareness, body perception |
+| **Occipital Lobe** | Indigo | creativity_expression, awe_wonder, spirituality_faith | Perception, insight, creativity |
+| **Brainstem** | Teal | coping_strategies, vulnerability, boundaries | Core survival, basic needs |
+
+### 9.3 Red Alert Indicators
+
+When a brain region has a **gap** between current and goal percentages:
+- A **red pulsing dot** appears on that region in the Current State brain
+- The region is listed in "Regions Needing Attention"
+- Recommended channel types are suggested to fill the gap
+
+### 9.4 Brain Region Training Status
+
+Each region card shows:
+- **Current %**: How much of your training data falls into this category
+- **Goal %**: Your target percentage for this category
+- **Need +X%**: How much more training data you need
+- **Progress bar**: Visual representation of current vs goal
+- **Suggested sources**: Types of YouTube channels that would help
+
+### 9.5 How Extraction Maps to Brain Regions
+
+When you process a video:
+1. Claude extracts insights and assigns each a **category** (e.g., "emotional_struggles")
+2. The category maps to a **brain region** (e.g., Amygdala)
+3. The brain visualization updates to show where your data is concentrated
+
+**Example Flow**:
+```
+Video: Brené Brown on Vulnerability
+  → Extracts 5 insights
+  → Categories: vulnerability (3), shame_guilt (1), courage (1)
+  → Brain regions: Brainstem (+3), Amygdala (+1), Prefrontal (+1)
+```
+
+### 9.6 Default Brain Goals
+
+MoodLeaf comes with pre-configured brain goals optimized for an empathetic AI coach:
+
+| Category | Target % | Priority | Why |
+|----------|----------|----------|-----|
+| emotional_struggles | 15% | High | Core coaching skill |
+| coping_strategies | 12% | High | Practical help |
+| vulnerability | 10% | High | Connection |
+| growth_moments | 8% | High | Transformation |
+| communication_patterns | 8% | High | Relationships |
+| wisdom_perspective | 7% | Medium | Life experience |
+| joy_celebration | 5% | Medium | Balance (not just pain) |
+| fear_anxiety | 5% | Medium | Common struggle |
+
+### 9.7 Filling Your Brain
+
+To fill gaps in your brain:
+
+1. **Go to Brain Studio → Brain View** to see which regions need attention
+2. **Note the suggested channel types** for each gap
+3. **Go to Channels page** and add relevant channels
+4. **Process videos** from those channels
+5. **Return to Brain View** to see your progress
+
+**Pro Tips**:
+- Start with therapy/coaching channels (Brené Brown, Therapy in a Nutshell) for core emotional content
+- Add joy/gratitude content (SoulPancake, Yes Theory) to balance pain-focused training
+- Process 10-20 videos before checking alignment again
+- Use the Goals tab to customize your target distribution
+
+---
+
+## 10. Llama Integration
+
+### 10.1 Overview
 
 **Service**: `llamaIntegrationService.ts`
 
