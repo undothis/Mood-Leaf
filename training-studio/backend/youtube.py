@@ -197,17 +197,16 @@ class YouTubeService:
             logger.info(f"[YouTube] Fetching videos from: {normalized_url}")
             print(f"[YouTube] Fetching videos from: {normalized_url}")
 
-            # Use yt-dlp to get playlist info - request more data for thumbnails
+            # Use yt-dlp to get playlist info
             cmd = [
                 "yt-dlp",
                 "--dump-json",
                 "--flat-playlist",
                 "--playlist-end", str(max_videos * 2),  # Get extra for filtering
-                "--no-warnings",
-                "--extractor-args", "youtube:player_client=web",
                 normalized_url
             ]
 
+            logger.info(f"[YouTube] Running: {' '.join(cmd)}")
             print(f"[YouTube] Running: {' '.join(cmd)}")
 
             result = await asyncio.create_subprocess_exec(
